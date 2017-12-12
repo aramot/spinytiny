@@ -1,7 +1,4 @@
 function varargout = CaImageViewer(varargin)
-test to see how changes appear - AR 12122017
-test to see how some more changes appear - AR 12122017
-
 % CAIMAGEVIEWER MATLAB code for CaImageViewer.fig
 %      CAIMAGEVIEWER, by itself, creates a new CAIMAGEVIEWER or raises the existing
 %      singleton*.
@@ -681,18 +678,18 @@ try
                 useroption{i} = 'undefined';
             end
         end
-        choice = questdlg('Which color do you prefere?', ... % Add by Assaf for choosing colors (Red, Green or Blue) for the ROIs
-	'ROIs color', ...
-	'Red','Green', 'Blue', 'Blue');
+%        choice = questdlg('Which color do you prefere?', ... % Add by Assaf for choosing colors (Red, Green or Blue) for the ROIs
+%	'ROIs color', ...
+%	'Red','Green', 'Blue', 'Blue');
 % Handle response
-switch choice
-    case 'Red'
-        color_by_user = [1 0 0];
-    case 'Green'
-        color_by_user = [0 1 0];
-    case 'Green'
-        color_by_user = [0 0 1];
-end
+% switch choice
+%    case 'Red'
+%        color_by_user = [1 0 0];
+%    case 'Green'
+%        color_by_user = [0 1 0];
+%   case 'Green'
+%        color_by_user = [0 0 1];
+% end
 
         Scrsz = get(0, 'Screensize');
         d = dialog('Position', [(Scrsz(3)/2)-125 Scrsz(4)/2-75 250 150], 'Name', 'Found multiple ROI files...');
@@ -769,7 +766,7 @@ for a = 1:length(ROIs)
             c = uicontextmenu;
             uimenu(c, 'Label', 'Set as eliminated', 'Callback', @CategorizeSpines);
             uimenu(c, 'Label', 'Set as active', 'Callback', @CategorizeSpines);
-            glovar.ROI(a) = rectangle('Position', ROIs{a}, 'EdgeColor', color_by_user, 'Curvature', [1 1],'Tag', ['ROI', num2str(ROInum)], 'ButtonDownFcn', {@DragROI, ROInum, 'HomeWindow'}, 'Linewidth', 1, 'UIContextMenu', c); % Assaf changed [0.2 0.4 0.9] to the variable color_by_user, that is defined by the user choice of color (lines 681-602) 
+            glovar.ROI(a) = rectangle('Position', ROIs{a}, 'EdgeColor', [0.2 0.4 0.9], 'Curvature', [1 1],'Tag', ['ROI', num2str(ROInum)], 'ButtonDownFcn', {@DragROI, ROInum, 'HomeWindow'}, 'Linewidth', 1, 'UIContextMenu', c); % Assaf changed [0.2 0.4 0.9] to the variable color_by_user, that is defined by the user choice of color (lines 681-602) 
         else
             glovar.ROI(a) = rectangle('Position', ROIs{a}, 'EdgeColor', [0.2 0.4 0.9], 'Curvature', [1 1],'Tag', ['ROI', num2str(ROInum)], 'ButtonDownFcn', {@DragROI, ROInum, 'HomeWindow'}, 'Linewidth', 1);
         end
