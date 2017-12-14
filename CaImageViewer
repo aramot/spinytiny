@@ -714,11 +714,11 @@ catch
         savedFile = roifilename;
         disp('Successfully pulled ROIs from saved ROI file')
     catch
-        try
-            cd(['Z:\People\Nathan\Data\', animal])
-        catch
-            cd(['/usr/local/lab/People/Nathan/Data/', animal])
-        end
+        % try
+        %    cd([save_directory, animal]) % Assaf changed 'Z:\People\Nathan\Data\' to 'save_directory' 
+        % catch
+        %    cd(['/usr/local/lab/People/Nathan/Data/', animal]) % Assaf - why do we need that ?
+        % end
         try
             load([file, '_Analyzed'])
             savedFile = [file, '_Analyzed'];
@@ -944,11 +944,11 @@ global gui_CaImageViewer
 
 %%% Get file information %%%
 
-try
-    cd('Z:\People\Nathan\Data')
-catch
-    cd('/usr/local/lab/People/Nathan/Data')
-end
+% try       %% Assaf add % 
+%    cd('Z:\People\Nathan\Data')
+% catch
+%    cd('/usr/local/lab/People/Nathan/Data')
+% end
 
 %%% Initialize/reset parameters and settings when loading new file
 set(gui_CaImageViewer.figure.handles.MaxProjection_CheckBox, 'Value', 0);
