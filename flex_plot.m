@@ -2,19 +2,19 @@ function [line_handle] = flex_plot(x,y, stattype, colorS, linewidth)
 
 %%% Data should be ordered as: rows = observations to be summarized
 %%% columns = unique sample sets over some dependent variable, e.g. time
-
-if ~(exist('x', 'var'))
-    x = 1:size(y,2);
-end
-if ~(exist('stattype', 'var'))
-    stattype = 'Parametric';
-end
-if ~(exist('colorS', 'var'))
-    colorS = 'k';
-end
-if ~(exist('linewidth', 'var'))
-    linewidth = 2;
-end
+% 
+% if ~(exist('x', 'var'))
+%     x = 1:size(y,2);
+% end
+% if ~(exist('stattype', 'var'))
+%     stattype = 'Parametric';
+% end
+% if ~(exist('colorS', 'var'))
+%     colorS = 'k';
+% end
+% if ~(exist('linewidth', 'var'))
+%     linewidth = 2;
+% end
 
 hold on;
 if strcmpi(stattype, 'parametric')

@@ -559,16 +559,11 @@ if length(listpos) ==1
             if currentsession == 9
                 a = 1;
             end
-            found = 0;
             for j = 1:length(Beh_folder)
                 areboth = strncmp(Beh_folder(j).name, Activity(currentsession), 12);    %%% Match the behavior file with the name of the activity file
                 if areboth
                     load(Beh_folder(j).name)
                     Behavior{currentsession} = Beh_folder(j).name(1:end-4);
-                    found = 1;
-                end
-                if found
-                    break
                 end
             end
             if ~isempty(Activity{currentsession}) && ~isempty(Behavior{currentsession})
