@@ -8,7 +8,6 @@ clc, clear, close all
 animal_num = 2;  %% For the second brain, change it to 2
 
 %%% Input folder name and output stack name    %%%%%%%%%
-%%% For Windows System, you may need to change "/" to "\" manually
 cd('E:')
 folder_pre = ['E:', filesep, 'CavCre',num2str(animal_num),'.'];
 folder_post = '.vsi.Collection';
@@ -20,7 +19,7 @@ output_name = 'stack';
 %%% Loop info %%% 
 max_collection = 8;  %%% Loop from 2.1 to 2.8
 max_layer = 0;       %%% Don't need to care!
-min_layer = 0;       %%% Start the loop from 0 to max_layer
+min_layer = 0;       %%% Start the loop from 0 to max_layer (follows the naming conventions of the software used by the slide scanner)
 
 height = 1800;    
 width = 1200;
@@ -30,7 +29,10 @@ flip_ud = 1;                %%% Top - Down flip; 0 to turn off
 flip_lr = 0;                %%% Left - right flip ; 1 to turn on
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Compression and Save to stack    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%% If slices were not scanned in desired order, you need to make a
+%%%% remapping variable that can be loaded below; this will then load and
+%%%% save the slices in the order that you specify in the Slice Mapping
+%%%% file. % Added by Nathan
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 cd('E:\')
@@ -39,6 +41,9 @@ load(slicemap{1})
 current_slice_map = SliceMapping{1};
 reordered_layer = find(current_slice_map == min_layer + 1)-1;
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Compression and Save to stack    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 f_dir = [folder_pre,num2str(1),folder_post ...
         ,layer_name,num2str(reordered_layer),file_name];
@@ -60,10 +65,17 @@ end
 imwrite(img_r,[output_name,num2str(animal_num),'.tif'],...
         'Compression','packbits');
     
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Create a figure to display each image, then query whether to flip the %
+%%% image left/right to keep anatomical consistency                    %%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 sortfig = figure('Position', [456 94 1035 401]);
 keep_button = uicontrol('style', 'pushbutton', 'Units', 'Normalize','Position', [0.5703 0.025 0.16 0.08], 'callback', @flipdecision, 'String', 'Keep as-is');
 flip_button = uicontrol('style', 'pushbutton', 'Units', 'Normalize','Position', [0.745 0.025 0.16 0.08], 'callback', @flipdecision, 'String', 'Flip L/R');
 currentimage = ['Slide ', num2str(1), ' Slice ', num2str(min_layer+1), ' (Layer ', num2str(reordered_layer), ')'];
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 for i = 1:max_collection
     figure('Position', [456 582 1035 401])
@@ -113,6 +125,7 @@ for i = 1:max_collection
             title(currentimage)
             uiwait
             
+            %%% Fetch user selection and assign choice to variable flip_lr
             flipchoice = get(gcf, 'UserData');
             if strcmpi(flipchoice, 'Flip L/R');
                 flip_lr = 1;

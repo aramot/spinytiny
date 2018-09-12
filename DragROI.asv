@@ -156,11 +156,10 @@ else
     if point1(1)>(RoiRect(1)+2*RoiRect(3)/3) && point1(2)> (RoiRect(2)+2*RoiRect(4)/3) %%%resize
 %         fixedpoint = [(rectAx(1)+(xmag*RoiRect(1))), rectAx(2)+rectAx(4)-(ymag*RoiRect(2)+RoiRect(4))+(ymag*RoiRect(4))];
 %         rbbox([rectAx(1)+(xmag*RoiRect(1)), rectAx(2)+rectAx(4)-(ymag*RoiRect(2)+RoiRect(4))+(ymag*RoiRect(4)), xmag*RoiRect(3),ymag*RoiRect(4)], fixedpoint);
-        x_pos = rectAx(1)+(xmag*RoiRect(1));
-        y_pos = rectAx(2)+(ymag*RoiRect(2));
-        currentrect = [x_pos, y_pos, x_pos+(xmag*RoiRect(3)), y_pos+(ymag*RoiRect(4))];
-        fixedpoint = [x_pos, y_pos+(ymag*RoiRect(4))]; %%% Upper left corner of box
-        rbbox(currentrect, fixedpoint)
+        axpos = get(gca, 'Position');
+        currentrect = getpixelposition(gco, true);
+        fixedpoint = [rectAx(1)+(xmag*RoiRect(1)), rectAx(2)+(ymag*RoiRect(4))]; %%% Upper left corner of box
+        rbbox(currentrect)
         point2 = get(gca, 'CurrentPoint');
         point2 = point2(1,1:2);
         RoiRect(3) = point2(1)-RoiRect(1);

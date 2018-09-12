@@ -2,8 +2,8 @@ function PercentOverlap = CalcSpineDendOverlap(varargin)
 
 
 if isempty(varargin)
-    files = fastdir('C:\Users\Komiyama\Desktop\ActivitySummary_UsingRawData', '_Summary');
-    cd('C:\Users\Komiyama\Desktop\ActivitySummary_UsingRawData');
+    files = fastdir('E:\ActivitySummary', '_Summary');
+    cd('E:\ActivitySummary');
     
     usefiles = inputdlg('Use how many files? (e.g. 20, half, all)', 'File number selection', 1, {'All'});
     

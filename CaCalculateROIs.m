@@ -54,13 +54,13 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 load_type = gui_CaImageViewer.Load_Type;
-fname = [save_directory, gui_CaImageViewer.filename];
+fullfname = [save_directory, gui_CaImageViewer.filename];
 filename = gui_CaImageViewer.filename;
 pathname = save_directory;
 
-ext = strfind(fname, '_summed_50.tif');
+ext = strfind(fullfname, '_summed_50.tif');
 if ~isempty(ext)
-    fname = fname(1:ext-1);
+    fullfname = fullfname(1:ext-1);
 end
 summed = strfind(pathname, 'summed');
 if ~isempty(summed)
@@ -70,19 +70,18 @@ else % Added for when the ROI is drawn on raw movies. Aki 171012
 end
 
 if strcmpi(load_type, 'Compressed')
-    fname = fname;
-    CaImage_File_info = imfinfo(fname);
+    CaImage_File_info = imfinfo(fullfname);
     timecourse_image_number = numel(CaImage_File_info);
     steps = 5;
 elseif strcmpi(load_type, 'Full')
-    a = regexp(fname, '\w+00[0]*\d+_\d+', 'match');
-    feat_sep = regexp(a{1}, '_');           %%% File identifiers are separated by underscores
-    filegeneral = a{1}(1:feat_sep(end-1)-1);
-    firstimfile = a{1}(1:feat_sep(end)-1);    %%% Use the last underscore as an indicator of where the filename is separated for frame bin numbers (e.g. NH002(animal)_160316(date)_001(acquisition/experiment)_001(frame bin))
-    animal = regexp(fname, '[A-Z]{2,3}0*[0-9]*', 'match');
+    fname = regexp(fullfname, '\w+00[0]*\d+_\d+', 'match');
+    feat_sep = regexp(fname{1}, '_');           %%% File identifiers are separated by underscores
+    filegeneral = fname{1}(1:feat_sep(end-1)-1);
+    firstimfile = fname{1}(1:feat_sep(end)-1);    %%% Use the last underscore as an indicator of where the filename is separated for frame bin numbers (e.g. NH002(animal)_160316(date)_001(acquisition/experiment)_001(frame bin))
+    animal = regexp(fullfname, '[A-Z]{2,3}0*[0-9]*', 'match');
     animal = animal{1};
-    fname = [pname,filegeneral];
-    numberofzerosusedinnaming = length(regexp(a{1}(feat_sep(end):end), '0'));
+    fullfname = [pname,filegeneral];
+    numberofzerosusedinnaming = length(regexp(fname{1}(feat_sep(end):end), '0'));
     CaImage_File_info = imfinfo([pname,firstimfile,'_',repmat('0', 1,numberofzerosusedinnaming),'1_corrected.tif']);
     D = dir(pname);
     if isempty(D)
@@ -269,8 +268,8 @@ if ~isempty(existing_ROI)
             for i = 1:DendNum
                 counter = 1;
                 for j = 1:length(DendROIs)
-                    a = regexp(DendROIs(j), ['Dendrite ', num2str(i)]);
-                    if ~isempty(a{1})
+                    dendrites = regexp(DendROIs(j), ['Dendrite ', num2str(i)]);
+                    if ~isempty(dendrites{1})
                         Group{i}{counter} = DendROIs(j);
                         counter = counter+1;
                     end
@@ -434,8 +433,8 @@ if ~isempty(existing_ROI)
                 end
 %                 imnum = sprintf(['%0', num2str(numberofzerosusedinnaming+1), 'd'], j);
                 imnum = frame_bin_count(j,:);
-                filepattern = [fname, '_',acquisition_step(j,:),'_',imnum, '_corrected.tif'];
-                if j == 1 || j ==2 || j == timecourse_image_number  %%% Acquisition 1 is easily overwritten by an accidental double-click of the 'grab' button, and can therefore be a different length; thus, find the length of the first file, then establish the standard length of acqusition two (all others except the final should be this length).
+                filepattern = [fullfname, '_',acquisition_step(j,:),'_',imnum, '_corrected.tif'];
+                if j == 1 || j ==2 || j == timecourse_image_number || ismember(j,find(diff(acquisition_step(:,end)))) %%% Length of each file assumed to be constant UNLESS it's the start of a new acquisition (or in some cases the second image, since the first one is sometimes overwritten)
                     CaImage_File_info = imfinfo(filepattern);
                 else
                 end
@@ -682,7 +681,7 @@ zoomval = str2num(get(gui_CaImageViewer.figure.handles.Zoom_EditableText, 'Strin
 %%%%%%%%%%%%%%%%%% Save %%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-fname = gui_CaImageViewer.filename;
+fullfname = gui_CaImageViewer.filename;
 
 a.deltaF = deltaF;
 a.dF_over_F = dF_over_F;
@@ -691,7 +690,7 @@ a.Fluorescence_Intensity = Fluorescence_Intensity;
 a.Total_Intensity = Total_Intensity;
 a.Pixel_Number = Pixel_Number;
 a.Fluorescence_Measurement = Fluorescence_Measurement;
-a.Filename = fname;
+a.Filename = fullfname;
 % a.Poly_deltaF = Poly_deltaF;
 % a.Poly_dF_over_F = Poly_dF_over_F;
 a.Poly_Fluorescence_Intensity = Poly_Fluorescence_Intensity;
@@ -745,16 +744,16 @@ else
 end
 
 try
-    fname = fname(1:length(fname)-4);
-    save_fname = [fname, analysis_tidbits , user];
+    fullfname = fullfname(1:length(fullfname)-4);
+    save_fname = [fullfname, analysis_tidbits , user];
     evalc([save_fname, '= a']);
     start_dir = cd;
     target_dir = save_directory;
     cd(target_dir);
     save(save_fname, save_fname);
 catch
-    fname = altname;
-    save_fname = [fname, analysis_tidbits, user];
+    fullfname = altname;
+    save_fname = [fullfname, analysis_tidbits, user];
     evalc([save_fname, '= a']);
     start_dir = cd;
     target_dir = save_directory;

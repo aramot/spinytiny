@@ -4,7 +4,7 @@ usersearch = 'Nathan';  %%% Change this to search for analyzed files from a diff
 
 if isempty(varargin)
     if ispc
-        foldertouse = 'C:\Users\Komiyama\Desktop\ActivitySummary_UsingRawData';
+        foldertouse = 'E:\ActivitySummary';
         cd(foldertouse)
         files = dir(cd);
         for i = 1:length(files)
@@ -41,7 +41,7 @@ if isempty(varargin)
     end
 else
     if ispc
-        foldertouse = 'C:\Users\Komiyama\Desktop\ActivitySummary_UsingRawData';
+        foldertouse = 'E:\ActivitySummary';
         cd(foldertouse)
         files = dir(cd);
         for i = 1:length(files)

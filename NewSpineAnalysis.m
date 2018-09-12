@@ -30,7 +30,7 @@ if length(experimentnames) == 1
     %%%%%%%%%%%% Load calcium imaging data for the animal
 
     if strcmpi(getenv('computername'), 'Nathan-Lab-PC')
-        cd('C:\Users\Komiyama\Desktop\ActivitySummary_UsingRawData')
+        cd('E:\ActivitySummary')
     end
 
     activitydata = fastdir(cd, [experimentnames, '.+_Summary']);

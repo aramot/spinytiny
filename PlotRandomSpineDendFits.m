@@ -1,6 +1,6 @@
-cd('C:\Users\Komiyama\Desktop\ActivitySummary_UsingRawData');
+cd('E:\ActivitySummary');
 
-files = dir('C:\Users\Komiyama\Desktop\ActivitySummary_UsingRawData');
+files = dir('E:\ActivitySummary');
 
 firstfileofint = 4;
 

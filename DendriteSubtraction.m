@@ -30,7 +30,7 @@ numberofSpines = File.NumberofSpines;
 % Date = regexp(File, '\d{6}', 'match');
 % Date = Date{1};
 
-cd(['C:\Users\Komiyama\Desktop\ActivitySummary_UsingRawData'])
+cd(['E:\ActivitySummary'])
 
 % files = dir(cd);
 % check = 0;

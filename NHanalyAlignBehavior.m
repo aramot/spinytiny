@@ -1,4 +1,4 @@
-function [Correlations, Classified, Trial] = NHanalyAlignBehavior(varargin)
+function [Correlations, Classified, Trial, PredictionModel] = NHanalyAlignBehavior(varargin)
 
 %%% Note: The data contained in the behavior file is confusing, but is
 %%% organized in the following way:
@@ -18,6 +18,14 @@ function [Correlations, Classified, Trial] = NHanalyAlignBehavior(varargin)
 
 global LeverTracePlots
 
+
+Correlations = [];
+Classified = [];
+Trial = [];
+PredictionModel = [];
+
+va = varargin;
+
 %%%%%%%%%%%%%%%%%%%%%%
 %%Color Information%%%
 %%%%%%%%%%%%%%%%%%%%%%
@@ -31,9 +39,7 @@ global LeverTracePlots
     red = [0.93 0.11 0.14];     black = [0 0 0];
     colorj = {red,lblue,green,lgreen,gray,brown,yellow,blue,purple,magenta,orange,brown,lbrown};
 
-
-va = varargin;
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 if isfield(va{1}, 'DispatcherData')
     Behavior = va{1};
@@ -42,6 +48,10 @@ else
     Behavior = va{2};
     Fluor = va{1};
 end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Determine the framework of all of the data acquisition, as defined by
+%%% Dispatcher
 
 if isfield(Behavior, 'StartAtTrial')
     firsttrial = Behavior.StartAtTrial;
@@ -53,10 +63,6 @@ numberofTrials = length(firsttrial:length(Behavior.Behavior_Frames));
 lasttrial = length(Behavior.Behavior_Frames);
 numberofSpines = length(Fluor.dF_over_F);
 numberofDendrites = size(Fluor.Dendrite_dFoF,1);
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Determine the framework of all of the data acquisition, as defined by
-%%% Dispatcher
 
 imagingframestouse = [];
 behaviorframestouse = [];
@@ -85,7 +91,7 @@ used_trial = [];
 
 countedasfirsttrial = find([bitcode.behavior_trial_num]==1);
 
-if length(countedasfirsttrial) > 1 && firsttrial == 1
+if length(countedasfirsttrial) > 1 && firsttrial == 1 && countedasfirsttrial(end)<100   
     firsttrial = countedasfirsttrial(end);
 end
 
@@ -265,10 +271,12 @@ if ~exist('trial_cue_downsampled') || ~exist('trial_binary_behavior_downsampled'
     Correlations = [];
     Classified = [];
     Trial = [];
+    PredictionModel= [];
     return
 end
 
 binarycue = cell2mat(trial_cue_downsampled);
+lever_movement = cell2mat(trial_movement_downsampled');
 binary_behavior = cell2mat(trial_binary_behavior_downsampled');
 successful_behavior = cell2mat(trial_rewarded_presses_downsampled');
 OverallSpine_Data = cell2mat(Trial_OverallSpineActivity);
@@ -279,6 +287,8 @@ DendSubspinedatatouse = cell2mat(Trial_SynapseOnlyBinarized_DendriteSubtracted);
 movementduringcue = binarycue.*binary_behavior';
 reward_delivery = cell2mat(reward_period');
 punishment = cell2mat(punish_period');
+
+floored_spine_data =  spinedatatouse.*cell2mat(Trial_dFoF);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Broaden select binarized variables' activity window
@@ -356,6 +366,7 @@ SpineActStillPeriods = spinedatatouse'.*~repmat(binary_behavior,1,size(DendSubsp
 [r_causal, p_causal] = corrcoef([binarycue', binary_behavior,wide_window, premovement', successful_behavior,wide_succ_window,movementduringcue', reward_delivery, punishment, causal_Data', Dend']);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%% Save Correlation Variables in Structure %%%%%%%%%%%%%%%%%%%%%
 
 Correlations.OverallSpineCorrelations = r_Overallspine;
 Correlations.OverallSpinePValues = p_Overallspine;
@@ -365,6 +376,7 @@ Correlations.DendSubtractedSpineCorrelations = r_DSspine;
 Correlations.DendSubtractedSpinePValues = p_DSspine;
 Correlations.SpineDuringMovePeriods = r_mov;
 Correlations.SpineDuringStillPeriods = r_still;
+Correlations.LeverMovement = lever_movement;
 Correlations.BinarizedBehavior = binary_behavior;
 Correlations.CausalCorrelations = r_causal;
 Correlations.CausalPValues = p_causal;
@@ -372,6 +384,7 @@ Correlations.CausalPValues = p_causal;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%% Statistical Classification of ROIs 
+
 
 [Classified.CueSpines,~,~] = mv_related_classifi(spinedatatouse, binarycue, 'cue');
 [Classified.MovementSpines,~, ~] = mv_related_classifi(spinedatatouse, binary_behavior', 'movement');
@@ -399,6 +412,10 @@ Correlations.CausalPValues = p_causal;
 [Classified.CausalMovementSpines, ~, ~] = mv_related_classifi(causal_Data, binary_behavior', 'causal movement');
 [Classified.CausalMovementSpLiberal, ~,~] = mv_related_classifi(causal_Data, wide_window', 'extended causal movement');
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %%% Spine Reliability %%%
 
 bound = find(diff([Inf; binary_behavior; Inf])~=0);
@@ -416,6 +433,27 @@ for i = 1:length(movespines)
 end
    
 Classified.MovementSpineReliability = MovementSpineReliability;
+
  
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Multiple linear regression of spine activity data with movement %%%%%%%
+
+%%%% Data options:
+%%%% Spine activity data: Raw traces, floored traces (only activity
+%%%% periods, preserves event amplitudes), binary traces, 
+%%%% Movement data: Raw traces, floored traces WITH pushes and pulls
+%%%% preserved, floored traces withOUT differentiating pushes and pulls,
+%%%% binarized data
+
+activitydataformodel = spinedatatouse;
+movementdataformodel = binary_behavior;
+
+[Model,PredictedMovement, PredictionAccuracy] = PredictMovementfromSpineAct(activitydataformodel, movementdataformodel);
+
+PredictionModel.Model = Model;
+PredictionModel.PredictionAccuracy = PredictionAccuracy;
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 disp(['Done with session ', num2str(Fluor.Session)])
 

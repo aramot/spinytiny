@@ -129,7 +129,7 @@ else
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     else
         disp('COULD NOT LINK TO TARGET DIRECTORY; PULLING FROM PREVIOUS ANALYSIS!!')
-        cd('E:\ActivitySummary')
+        cd('E:\ActivitySummary_UsingRawData')
         files = dir(cd);
         for i = 1:length(files)
             if ~isempty(regexp(files(i).name, [folder, '_', Date])) && ~isempty(regexp(files(i).name,'_Summary')) && isempty(regexp(files(i).name,'Poly'))
@@ -165,7 +165,7 @@ Scrsz = get(0, 'Screensize');
 
 analyzed.UsePreviousPreferences = 0;
 
-foldertouse = 'E:\ActivitySummary';
+foldertouse = 'E:\ActivitySummary_UsingRawData';
 
 % if ~a.UsePreviousPreferences
 % 
@@ -256,8 +256,8 @@ if File.NumberofSpines ==  0 || File.NumberofSpines ~= length(File.deltaF)
     analyzed.NumberofSpines = length(File.deltaF);
 end
 % 
-SpineNo = randi(File.NumberofSpines,1); %%% Will choose a random spine from the available ones for this file
-% SpineNo = 8;  %%% Manually select spine to be considered
+% SpineNo = randi(File.NumberofSpines,1); %%% Will choose a random spine from the available ones for this file
+SpineNo = 8;  %%% Manually select spine to be considered
 
 
 DendNum = File.NumberofDendrites;
@@ -457,6 +457,8 @@ if showFig == 1
     procplot = subplot(2,2,3:4);
     hold on; plot(File.Time, processed_dFoF(SpineNo,:), 'Color',[0.2 0.2 0.2], 'LineWidth', 1);
     linkaxes([rawplot,procplot], 'x');
+    abovethresh = floored(SpineNo,:);
+    abovethresh(abovethresh == 0) = nan;
     topspikes = riders(SpineNo,:);
     plot(1:length(File.Time), topspikes, 'Color', dred, 'LineWidth', 2);
     plot(File.Time, both(SpineNo,:)*(med(SpineNo,1)+thresh(SpineNo,1)), 'Color', yellow, 'LineWidth', 2)
@@ -758,7 +760,6 @@ if showFig == 1
     plot(File.Time, Dendtrueeventcount(DendriteChoice,:)*Dthresh(DendriteChoice,1),'Color', lblue, 'LineWidth', 2);
     
     legend({'Smoothed Data', 'Activity above Thresh', 'Binary Activity', 'Threshold', 'Global Event', 'Counted Events'}, 'Location', 'SouthEastOutside')        
-    pause(0.1)
     axpos2 = get(procdend, 'Position');
     set(rawdend, 'Position', [axpos2(1), axpos(2), axpos2(3), axpos(4)])
     set(procdend, 'Box', 'on')
@@ -805,7 +806,6 @@ if showFig
     axes(procplot)
     plot(analyzed.Floored_DendriteSubtracted(SpineNo, :), 'Color', [0.7 0.7 0.7], 'Linewidth', 1.5)
     legend({'Smoothed Data', 'Activity above Thresh', 'Binary Activity', 'Counted Events', 'Threshold', 'Baseline', 'Dend-subtracted'}, 'Location', 'SouthEastOutside')
-    pause(0.1)
     axpos3 = get(procplot, 'Position');
     set(rawplot, 'Position', [axpos3(1), axpos(2), axpos3(3), axpos(4)])
     set(procplot, 'Box', 'on')
@@ -1369,7 +1369,7 @@ analyzed.FarSpineToSpineCorrelation = FarCorrelations;
 analyzed.Session = currentsession;
 if ispc
     if spinetraceoption == 1
-        cd('E:\ActivitySummary')
+        cd('E:\ActivitySummary_UsingRawData')
     else
         cd('C:\Users\Komiyama\Desktop\ActivitySummary')
     end

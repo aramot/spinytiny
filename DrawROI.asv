@@ -30,7 +30,7 @@ if ~isempty(regexp(running, 'CaImageViewer'))
     glovar = gui_CaImageViewer;
     axes1 = glovar.figure.handles.GreenGraph;
     axes2 = glovar.figure.handles.RedGraph;
-    twochannels = glovar.figure.handles.TwoChannels_CheckBox.Value;
+    twochannels = glovar.figure.handles.TwoChannels_CheckBox;
     zoom = str2num(get(glovar.figure.handles.Zoom_EditableText, 'String'));
     if zoom > 10 
         radius = 30;
@@ -139,7 +139,7 @@ elseif strcmpi(Router, 'FineSelect') && ROInum ~=0
     uistack(glovar.ROI(ROInum+1), 'top');
     glovar.ROItext(ROInum+1) = text(Fl_ROI(1)-2, Fl_ROI(2)-2, num2str(ROInum), 'color', 'white', 'Tag', ['ROI', num2str(ROInum), ' Text'], 'ButtonDownFcn', @DeleteROI, 'FontSize', textsize);
 
-    if twochannels
+    if twochannels == 1;
         axes(axes2)
         glovar.ROIred(ROInum+1) = rectangle('Position', Fl_ROI, 'EdgeColor', 'red', 'Curvature', [1 1], 'Tag', ['ROIred', num2str(ROInum)],'ButtonDownFcn', {@DragROI, ROInum, 'ZoomWindow'});
         glovar.ROIredtext(ROInum+1) = text(Fl_ROI(1), Fl_ROI(2), num2str(ROInum), 'color', 'white', 'Tag', ['ROIred', num2str(ROInum), ' Text'],'ButtonDownFcn', 'Ca_deleteROI');

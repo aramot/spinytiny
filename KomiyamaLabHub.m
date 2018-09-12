@@ -243,7 +243,7 @@ listpos = get(handles.AnimalName_ListBox, 'Value');
 list = get(handles.AnimalName_ListBox, 'String');
 h1 = waitbar(0, 'Initializing...');
 % datafolder = getappdata(KomiyamaLabHub, 'Folder');
-datafolder = 'C:\Users\Komiyama\Desktop\ActivitySummary_UsingRawData';
+datafolder = 'E:\ActivitySummary';
 
 if length(listpos) == 1
     folder = dir(datafolder);
@@ -303,7 +303,7 @@ h1 = waitbar(0, 'Initializing...');
 Activity = get(handles.AnalyzeActivity_ToggleButton, 'Value');
 Behavior = get(handles.AnalyzeBehavior_ToggleButton, 'Value');
 % datafolder = getappdata(KomiyamaLabHub, 'Folder');
-datafolder = 'C:\Users\Komiyama\Desktop\ActivitySummary_UsingRawData';
+datafolder = 'E:\ActivitySummary';
 
 if Activity == 1 && Behavior == 0
     folder = dir(datafolder);
@@ -637,7 +637,7 @@ Activity = cell(14,1);
 Beh_folder = dir('C:\Users\Komiyama\Desktop\Behavioral Data\All Summarized Behavior Files list');
 % storeddata = getappdata(KomiyamaLabHub);
 % datafolder = storeddata.Folder;
-datafolder = 'C:\Users\Komiyama\Desktop\ActivitySummary_UsingRawData';
+datafolder = 'E:\ActivitySummary';
 Act_folder = dir(datafolder);
 Output_folder = dir('C:\Users\Komiyama\Desktop\Output Data');
 
@@ -645,7 +645,7 @@ scsz = get(0, 'ScreenSize');
 
 LeverTracePlots.figure = figure('Position', scsz);
 
-if length(listpos) ==1
+if length(listpos) == 1
     animal = list{listpos};
     for i = 1:length(Act_folder)
         cd(datafolder);
@@ -667,7 +667,8 @@ if length(listpos) ==1
             if ~isempty(Activity{currentsession}) && ~isempty(Behavior{currentsession})
                 eval(['[', animal, '_Correlations{', num2str(currentsession), '},', ...
                     animal, '_StatClassified{', num2str(currentsession), '},', ...
-                    animal, '_TrialInformation{', num2str(currentsession),...
+                    animal, '_TrialInformation{', num2str(currentsession), '},',...
+                    animal, '_PredictionModel{', num2str(currentsession), ...
                     '}] = NHanalyAlignBehavior(', Activity{currentsession},',', Behavior{currentsession}, ');'])
                 clear(Activity{currentsession})
                 clear(Behavior{currentsession})
@@ -684,12 +685,14 @@ if length(listpos) ==1
     fnameCorrelations = [animal, '_Correlations'];
     fnameStatClass = [animal, '_StatClassified'];
     fnameTrial = [animal, '_TrialInformation'];
+    fnamePrediction = [animal, '_PredictionModel'];
     
     cd('C:\Users\Komiyama\Desktop\Output Data');
     
     save(fnameCorrelations, fnameCorrelations);
     save(fnameStatClass, fnameStatClass);
     save(fnameTrial, fnameTrial, '-v7.3');
+    save(fnamePrediction, fnamePrediction);
     toclear = who(['*', animal, '*']);
     for c = 1:length(toclear)
         clear(toclear{c})
@@ -958,7 +961,7 @@ h1 = waitbar(0, 'Initializing...');
 Activity = get(handles.AnalyzeActivity_ToggleButton, 'Value');
 Behavior = get(handles.AnalyzeBehavior_ToggleButton, 'Value');
 % datafolder = getappdata(KomiyamaLabHub, 'Folder');
-datafolder = 'C:\Users\Komiyama\Desktop\ActivitySummary_UsingRawData';
+datafolder = 'E:\ActivitySummary';
 
 if Activity == 1 && Behavior == 1
     numfiles = 0;

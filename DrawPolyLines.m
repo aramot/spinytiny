@@ -119,13 +119,12 @@ x = []; y = [];
 %%% length; note: double-clicks can cause early termination, so remove this
 %%% functionality with a "listener" function
 
-if strcmpi(User, 'Giulia') 
-    [x, y] = getline; close(dendwindow);
-else
-    h = addlistener(handle(gcf), 'WindowButtonDownFcn', 'PostSet', @changedWBDFcn);
-    [x, y] = getline; close(dendwindow);
-    delete(h)
-end
+
+%     h = addlistener(handle(gcf), 'WindowButtonDownFcn', 'PostSet', @changedWBDFcn);
+%     [x, y] = getline; close(dendwindow);
+%     delete(h)
+
+[x, y] = getline; close(dendwindow);
 
 x = x+xmin;
 y = y+ymin;

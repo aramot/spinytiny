@@ -59,11 +59,11 @@ function [Threshold, DriftBaseline, ProcessedData] = AnalyzeTrace(Data, Options)
     %%% Kernel Density Estimation (Aki's method) %%%
     switch BeingAnalyzed
         case 'Spine'
-            windowsize = 15;
+            windowsize = driftbaselinesmoothwindow;
         case 'Poly'
-            windowsize = 15;
+            windowsize = driftbaselinesmoothwindow;
         case 'Dendrite'
-            windowsize = 15;
+            windowsize = driftbaselinesmoothwindow;
     end
     truebaseline = baseline_kde(padded_data',20,windowsize,20);    %%% inputs = downsample ratio, window size, step
     truebaseline = truebaseline(padlength+1:end-padlength);
@@ -105,14 +105,9 @@ function [Threshold, DriftBaseline, ProcessedData] = AnalyzeTrace(Data, Options)
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             %%% Final variable
             
-            filterorder = 11;        %%% Polynomial order with which to filter the final signal. This will depend on the imaging frequency as well as the noise of the signal. 
-            
-            if ~mod(smoothwindow,2)
-                smoothwindow = smoothwindow+1;
-            else
-            end
+            filterorder = 5;        %%% Polynomial order with which to filter the final signal. This will depend on the imaging freq
     
-            processed_dFoF = sgolayfilt(dFoF,filterorder,smoothwindow);
+            processed_dFoF = sgolayfilt(dFoF,filterorder,smoothwindow+1);
 
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             
@@ -155,7 +150,7 @@ function [Threshold, DriftBaseline, ProcessedData] = AnalyzeTrace(Data, Options)
     else
         switch BeingAnalyzed
             case 'Spine';
-                spinethresh = 0.5;
+                spinethresh = 0.25;
                 if spread < spinethresh
                     thresh = spinethresh;
                 else
