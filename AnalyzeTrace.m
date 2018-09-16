@@ -59,11 +59,11 @@ function [Threshold, DriftBaseline, ProcessedData] = AnalyzeTrace(Data, Options)
     %%% Kernel Density Estimation (Aki's method) %%%
     switch BeingAnalyzed
         case 'Spine'
-            windowsize = 15;
+            windowsize = 30;
         case 'Poly'
-            windowsize = 15;
+            windowsize = 30;
         case 'Dendrite'
-            windowsize = 15;
+            windowsize = 30;
     end
     truebaseline = baseline_kde(padded_data',20,windowsize,20);    %%% inputs = downsample ratio, window size, step
     truebaseline = truebaseline(padlength+1:end-padlength);

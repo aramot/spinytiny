@@ -134,7 +134,8 @@ elseif strcmpi(Router, 'FineSelect') && ROInum ~=0
     else
         glovar.BackgroundROI(ROInum+1) = NaN;
     end
-    glovar.ROI(ROInum+1) = rectangle('Position', Fl_ROI, 'EdgeColor', linecolor, 'Curvature', [1 1], 'Tag', ['ROI', num2str(ROInum)], 'ButtonDownFcn', {@DragROI, ROInum, 'ZoomWindow'}, 'Linewidth', edgewidth);
+%     glovar.ROI(ROInum+1) = rectangle('Position', Fl_ROI, 'EdgeColor', linecolor, 'Curvature', [1 1], 'Tag', ['ROI', num2str(ROInum)], 'ButtonDownFcn', {@DragROI, ROInum, 'ZoomWindow'}, 'Linewidth', edgewidth);
+    glovar.ROI(ROInum+1) = drawellipse('Tag', ['ROI', num2str(ROInum)], 
     rectangle('Position', Fl_ROI, 'EdgeColor', 'w', 'Curvature', [0 0], 'Tag', 'ROI confine','Linewidth', 1, 'LineStyle', ':');
     uistack(glovar.ROI(ROInum+1), 'top');
     glovar.ROItext(ROInum+1) = text(Fl_ROI(1)-2, Fl_ROI(2)-2, num2str(ROInum), 'color', 'white', 'Tag', ['ROI', num2str(ROInum), ' Text'], 'ButtonDownFcn', @DeleteROI, 'FontSize', textsize);
@@ -236,7 +237,7 @@ elseif strcmpi(Router, 'Spine')
         glovar.Spine_Number = ROInum;
     end
     
-    global sideline
+%     global sideline
     
 elseif strcmpi(Router, 'Nearby')
     set(glovar.figure.handles.NearbySpine_ToggleButton, 'Value', 0)

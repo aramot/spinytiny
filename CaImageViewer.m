@@ -22,7 +22,7 @@ function varargout = CaImageViewer(varargin)
 
 % Edit the above text to modify the response to help CaImageViewer
 
-% Last Modified by GUIDE v2.5 20-Apr-2018 14:01:21
+% Last Modified by GUIDE v2.5 14-Sep-2018 11:22:24
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -2081,7 +2081,7 @@ function ShiftROIsBetweenSessions_DropDown_Callback(hObject, eventdata, handles)
 
 global gui_CaImageViewer
 
-warpmatrix = gui_CaImageViewer.NewSpineAnalysisInfo.WarpMatrix
+warpmatrix = gui_CaImageViewer.NewSpineAnalysisInfo.WarpMatrix;
 
 
 ROIs_original = round(cell2mat(cellfun(@(x) x(1:4), get(gui_CaImageViewer.ROI, 'Position'),'uni', false)));
@@ -2106,3 +2106,157 @@ for i = 1:length(ROIs_original)
     gui_CaImageViewer.ROI(i) = rectangle('Position', [round(newpos(i,1)),round(newpos(i,2)),ROIs_original(i,3), ROIs_original(i,4)], 'EdgeColor', [0.2 0.4 0.9], 'Curvature', [1 1],'Tag', ['ROI', num2str(ROInum)], 'ButtonDownFcn', {@DragROI, ROInum, 'HomeWindow'}, 'Linewidth', 1, 'UIContextMenu', c1);
     gui_CaImageViewer.ROItext(i) = text(round(newpos(i,1))-6, round(newpos(i,2))-4, num2str(i-1), 'color', 'white', 'Tag', ['ROI', num2str(ROInum), ' Text'],'ButtonDownFcn', 'DeleteROI', 'Fontsize', 6);
 end
+
+
+% --- Executes on button press in Longitudinal_CheckBox.
+function Longitudinal_CheckBox_Callback(hObject, eventdata, handles)
+% hObject    handle to Longitudinal_CheckBox (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of Longitudinal_CheckBox
+
+
+% --- Executes on selection change in ROIColor_PopUpMenu.
+function ROIColor_PopUpMenu_Callback(hObject, eventdata, handles)
+% hObject    handle to ROIColor_PopUpMenu (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns ROIColor_PopUpMenu contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from ROIColor_PopUpMenu
+
+
+global gui_CaImageViewer
+
+ColorOptions = get(handles.ROIColor_PopUpMenu, 'String');
+ColorSelection = get(handles.ROIColor_PopUpMenu, 'Value');
+NewColor = ColorOptions{ColorSelection};
+
+if strcmpi(NewColor, 'ROI Color')
+    return
+end
+
+ROIs = findobj('Type', 'rectangle', '-and', '-not', {'-regexp', 'Tag', 'Dendrite'}, '-and', '-not', {'-regexp', 'Tag', 'Background'});
+
+for i = 1:length(ROIs)
+    set(ROIs(i), 'EdgeColor', NewColor)
+end
+
+
+% --- Executes during object creation, after setting all properties.
+function ROIColor_PopUpMenu_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to ROIColor_PopUpMenu (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on selection change in PolyColor_PopUpMenu.
+function PolyColor_PopUpMenu_Callback(hObject, eventdata, handles)
+% hObject    handle to PolyColor_PopUpMenu (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns PolyColor_PopUpMenu contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from PolyColor_PopUpMenu
+
+global gui_CaImageViewer
+
+ColorOptions = get(handles.PolyColor_PopUpMenu, 'String');
+ColorSelection = get(handles.PolyColor_PopUpMenu, 'Value');
+NewColor = ColorOptions{ColorSelection};
+
+if strcmpi(NewColor, 'Poly Color')
+    return
+end
+
+PolyROIs = findobj('Type', 'rectangle', '-and', {'-regexp', 'Tag', 'Dendrite'}, '-and', '-not', {'-regexp', 'Tag', 'Background'});
+PolyLine = findobj('Type', 'line', '-and', {'-regexp', 'Tag', 'Poly'});
+
+for i = 1:length(PolyROIs)
+    set(PolyROIs(i), 'EdgeColor', NewColor)
+end
+
+for i = 1:length(PolyLine)
+    set(PolyLine(i), 'Color', NewColor)
+end
+
+% --- Executes during object creation, after setting all properties.
+function PolyColor_PopUpMenu_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to PolyColor_PopUpMenu (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on selection change in LineWidth_PopUpMenu.
+function LineWidth_PopUpMenu_Callback(hObject, eventdata, handles)
+% hObject    handle to LineWidth_PopUpMenu (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: contents = cellstr(get(hObject,'String')) returns LineWidth_PopUpMenu contents as cell array
+%        contents{get(hObject,'Value')} returns selected item from LineWidth_PopUpMenu
+
+
+global gui_CaImageViewer
+
+WidthOptions = get(handles.LineWidth_PopUpMenu, 'String');
+WidthSelection = get(handles.LineWidth_PopUpMenu, 'Value');
+NewWidth = WidthOptions{WidthSelection};
+
+if strcmpi(NewWidth, 'Poly Color')
+    return
+end
+
+ROIs = findobj('Type', 'rectangle', '-and', '-not', {'-regexp', 'Tag', 'Dendrite'}, '-and', '-not', {'-regexp', 'Tag', 'Background'});
+
+for i = 1:length(ROIs)
+    set(ROIs(i), 'LineWidth', str2num(NewWidth))
+end
+
+% --- Executes during object creation, after setting all properties.
+function LineWidth_PopUpMenu_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to LineWidth_PopUpMenu (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: popupmenu controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+% --- Executes on button press in LaunchController_PushButton.
+function LaunchController_PushButton_Callback(hObject, eventdata, handles)
+% hObject    handle to LaunchController_PushButton (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+global gui_CaImageViewer
+
+refpos = get(handles.figure1, 'Position');
+
+figwidth = 0.2;
+figheight = 0.15;
+
+controllerposition = [refpos(1)+(refpos(3)/2)-(figwidth/2), refpos(2)+(refpos(4)/2)-(figheight/2), figwidth, figheight];
+
+gui_CaImageViewer.ROIController = figure('Name', 'ROI Controller','Units', 'Normalized', 'Position', controllerposition); %%% Create a figure and center it in the middle of the main GUI 
+
+upbutton = uicontrol('Parent', gui_CaImageViewer.ROIController, 'Style', 'pushbutton','Units', 'normalized', 'Position', [.45,0.75,0.1,0.15]);
+downbutton = uicontrol('Parent', gui_CaImageViewer.ROIController, 'Style', 'pushbutton','Units', 'normalized', 'Position', [.45,0.2,0.1,0.15]);
+leftbutton = uicontrol('Parent', gui_CaImageViewer.ROIController, 'Style', 'pushbutton','Units', 'normalized', 'Position', [.2,0.45,0.1,0.15]);
+rightbutton = uicontrol('Parent', gui_CaImageViewer.ROIController, 'Style', 'pushbutton','Units', 'normalized', 'Position', [.7,0.45,0.1,0.15]);
