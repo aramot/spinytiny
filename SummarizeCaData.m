@@ -257,7 +257,7 @@ if File.NumberofSpines ==  0 || File.NumberofSpines ~= length(File.deltaF)
 end
 % 
 SpineNo = randi(File.NumberofSpines,1); %%% Will choose a random spine from the available ones for this file
-SpineNo = 5;  %%% Manually select spine to be considered
+% SpineNo = 16;  %%% Manually select spine to be considered
 
 
 DendNum = File.NumberofDendrites;
@@ -320,8 +320,6 @@ end
 %     end  
 % end
 
-
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % %% Describe the basic shape of each calcium trace
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -359,7 +357,6 @@ Options.BeingAnalyzed = 'Spine';
 
 for i = 1:numberofSpines
     [spine_thresh(i,1), spinedriftbaseline(i,:), processed_dFoF(i,:)] = AnalyzeTrace(spinedatatouse{i}, Options);
-
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -565,18 +562,19 @@ for i = 1:DendNum
 
     for j = polyptstouse(1):polyptstouse(end)
         
-        temp = File.Poly_Fluorescence_Measurement{j};
-        try
-            temp(isnan(temp)) = nanmean([temp(find(isnan(temp))-1),temp(find(isnan(temp))+1)]);
-        catch
-            temp(isnan(temp)) = 0;
-        end
-        
-        temp(1:10) = temp(randi([20,100],1,10)); temp(end-9:end) = temp(randi([length(temp)-100,length(temp)-20],1,10));
-        File.Poly_Fluorescence_Measurement{j} = temp;
-        poly.Poly_Fluorescence_Measurement{j} = temp;
-        
-        rawpoly{j} = temp;
+%         temp = File.Poly_Fluorescence_Measurement{j};
+%         try
+%             temp(isnan(temp)) = nanmean([temp(find(isnan(temp))-1),temp(find(isnan(temp))+1)]);
+%         catch
+%             temp(isnan(temp)) = 0;
+%         end
+%         
+%         temp(1:10) = temp(randi([20,100],1,10)); temp(end-9:end) = temp(randi([length(temp)-100,length(temp)-20],1,10));
+%         File.Poly_Fluorescence_Measurement{j} = temp;
+%         poly.Poly_Fluorescence_Measurement{j} = temp;
+%         
+%         rawpoly{j} = temp;
+        rawpoly{j} = File.Poly_Fluorescence_Measurement{j};
         
         %%%%%%%%%%%%%%%%%%%%%%
         
@@ -988,21 +986,45 @@ end
 counter = 1;
 for i = 1:File.NumberofDendrites
     Branch{i}(1,1) = 0;
-%     zeropoint = [(File.PolyLinePos{counter}(1)+File.PolyLinePos{counter}(3)/2), (File.PolyLinePos{counter}(2)+File.PolyLinePos{counter}(4)/2)]; %%% zeropoint(x,y) = center in x,y coordinates of the beginning of a dendrite
-    PolyX_center{i}(1,1) = File.PolyLinePos{counter}(1)+File.PolyLinePos{counter}(3)/2;
-    PolyY_center{i}(1,1) = File.PolyLinePos{counter}(2)+File.PolyLinePos{counter}(4)/2;
+    if length(File.PolyLinePos{counter})>2
+        method = 'old';    
+    elseif length(File.PolyLinePos{counter}) == 2
+        method = 'new';
+    else
+        error('Could not determine method used to draw ROIs')
+    end
+    switch method
+        case 'old'
+            PolyX_center{i}(1,1) = File.PolyLinePos{counter}(1)+File.PolyLinePos{counter}(3)/2; %%% The old method of ROI drawing used rectangles, which has a 1x4 position dimension [x,y,w,h]
+            PolyY_center{i}(1,1) = File.PolyLinePos{counter}(2)+File.PolyLinePos{counter}(4)/2;
+        case 'new'
+            PolyX_center{i}(1,1) = File.PolyLinePos{counter}(1);     %%% The new way of drawing ROIs uses ellipse objects, which return the coordinates of the center of the ellipse [x,y];
+            PolyY_center{i}(1,1) = File.PolyLinePos{counter}(2);
+    end
     Pix_Dist{i}(1,1) = 0;
     Mic_Dist{i}(1,1) = 0;
     for j = 2:File.DendritePolyPointNumber(i)
         counter = counter+1;
-        PolyX_center{i}(1,j) = File.PolyLinePos{counter}(1)+File.PolyLinePos{counter}(3)/2;
-        PolyY_center{i}(1,j) = File.PolyLinePos{counter}(2)+File.PolyLinePos{counter}(4)/2;
+        switch method
+            case 'old'
+                PolyX_center{i}(1,j) = File.PolyLinePos{counter}(1)+File.PolyLinePos{counter}(3)/2;
+                PolyY_center{i}(1,j) = File.PolyLinePos{counter}(2)+File.PolyLinePos{counter}(4)/2;
+            case 'new'
+                PolyX_center{i}(1,j) = File.PolyLinePos{counter}(1);
+                PolyY_center{i}(1,j) = File.PolyLinePos{counter}(2);
+        end
         Pix_Dist{i}(1,j) = sqrt((PolyX_center{i}(1,j)-PolyX_center{i}(j-1)).^2 + (PolyY_center{i}(j)-PolyY_center{i}(j-1)).^2);
         Mic_Dist{i}(1,j) = Pix_Dist{i}(1,j)/pixpermicron;
     end
     counter = counter+1;
     for j = File.SpineDendriteGrouping{i}(1):File.SpineDendriteGrouping{i}(end)
-        spine_pos{j} = [File.ROIPosition{j+1}(1)+File.ROIPosition{j+1}(3)/2, File.ROIPosition{j+1}(2)+File.ROIPosition{j+1}(4)/2]; %%% Don't forget that position 1 in this cell is actually ROI0/background ROI!!!! 
+        switch method 
+            case 'old'
+                spine_pos{j} = [File.ROIPosition{j+1}(1)+File.ROIPosition{j+1}(3)/2, File.ROIPosition{j+1}(2)+File.ROIPosition{j+1}(4)/2]; %%% Don't forget that position 1 in this cell is actually ROI0/background ROI!!!! 
+            case 'new'
+                spineROI = get(File.SpineROIs(j+1));
+                spine_pos{j} = spineROI.Center;
+        end
         [distance, index] = min(sqrt(((PolyX_center{i}-spine_pos{j}(1)).^2)+(PolyY_center{i}-spine_pos{j}(2)).^2)); %%% Find the closest ROI along the dendrite (usually spaced evenly and regularly enough that it should be right at the base of the spine, more or less)
 %         spine_address{j} = [PolyX_center{i}(1,index), PolyY_center{i}(1,index)]; %%% Set a spine's "address" as that point along the dendrite, found above
         spine_address{j}.Dendrite = i;

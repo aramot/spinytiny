@@ -634,7 +634,7 @@ h1 = waitbar(0, 'Initializing...');
 Behavior = cell(14,1);
 Activity = cell(14,1);
 
-Beh_folder = dir('C:\Users\Komiyama\Desktop\Behavioral Data\All Summarized Behavior Files list');
+Beh_folder = dir('E:\Behavioral Data\All Summarized Behavior Files list');
 % storeddata = getappdata(KomiyamaLabHub);
 % datafolder = storeddata.Folder;
 datafolder = 'E:\ActivitySummary';
@@ -656,7 +656,7 @@ if length(listpos) == 1
             load(Act_folder(i).name)
             eval(['currentsession = ', Act_folder(i).name(1:end-4), '.Session;'])
             Activity{currentsession} = Act_folder(i).name(1:end-4);
-            cd('C:\Users\Komiyama\Desktop\Behavioral Data\All Summarized Behavior Files list');
+            cd('E:\Behavioral Data\All Summarized Behavior Files list');
             for j = 1:length(Beh_folder)
                 areboth = strncmp(Beh_folder(j).name, Activity(currentsession), 12);    %%% Match the behavior file with the name of the activity file
                 if areboth

@@ -578,6 +578,17 @@ if isempty(strfind(inputname(1), 'SpineCorrelationTimecourse'))
                 SuccessSpines = StatClass{session}.DendSub_SuccessSpines;
                 RewardSpines = StatClass{session}.DendSub_RewardSpines;
                 CueORMovementSpines = StatClass{session}.DendSub_CueORMovementSpines;
+            else
+                SessionCorrData = Correlations{session}.SpineCorrelations;
+                SessionMovCorrData = Correlations{session}.SpineDuringMovePeriods;
+                SessionStillCorrData = Correlations{session}.SpineDuringStillPeriods;
+                CueSpines = StatClass{session}.CueSpines;
+                MovementSpines = StatClass{session}.MovementSpines;
+                MovementDuringCueSpines = StatClass{session}.MovementDuringCueSpines;
+                PreSuccessSpines = StatClass{session}.PreSuccessSpines;
+                SuccessSpines = StatClass{session}.SuccessSpines;
+                RewardSpines = StatClass{session}.RewardSpines;
+                CueORMovementSpines = StatClass{session}.CueORMovementSpines;
             end
             
             %%

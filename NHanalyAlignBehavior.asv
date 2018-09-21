@@ -221,7 +221,7 @@ for i = firsttrial:lasttrial
         if startpunish == 0
             startpunish = 1;
         end
-        punish_period{i}(startpunish:endtrial_imframes) = 1;
+        punish_period{i}(Trial{i}.ResultStart:endtrial_imframes) = 1;
         startmovement = [];
         endmovement = [];
         Trial{i}.MovementStart = [];
@@ -231,13 +231,13 @@ for i = firsttrial:lasttrial
         Trial{i}.ResultEnd = Behavior.Behavior_Frames{i}.states.punish(2)-starttrial_imframes;
         Trial{i}.EndLicking = [];
         Trial{i}.cueactivity = Trial_dFoF_DendriteSubtracted{i}(startcue:endcue);
-%         if Trial{i}.ResultStart == 0 || Trial{i}.ResultEnd == 0
-%             alltrialframes = 1:endtrial_imframes;
-%             allmovement = trial_binary_behavior{i}(1:endtrial_imframes);
-%             alltrialmovementframes = alltrialframes(logical(allmovement));
-%             Trial{i}.failureactivity{punish} = Trial_SynapseOnlyBinarized_DendriteSubtracted{i}(startcue:endtrial_imframes);
-%             continue
-%         end
+        if Trial{i}.ResultStart == 0 || Trial{i}.ResultEnd == 0
+            alltrialframes = 1:endtrial_imframes;
+            allmovement = trial_binary_behavior{i}(1:endtrial_imframes);
+            alltrialmovementframes = alltrialframes(logical(allmovement));
+            Trial{i}.failureactivity{punish} = Trial_SynapseOnlyBinarized_DendriteSubtracted{i}(startcue:endtrial_imframes);
+            continue
+        end
         alltrialframes = 1:endtrial_imframes;
         allmovement = trial_binary_behavior{i}(1:endtrial_imframes);
         alltrialmovementframes = alltrialframes(logical(allmovement));

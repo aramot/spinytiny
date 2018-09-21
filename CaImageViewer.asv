@@ -1185,7 +1185,7 @@ if isfield(glovar, 'PolyROI') && ~isempty(coordinates)
                     x = [x,coordinates{i}(1)+radius];
                     y = [y,coordinates{i}(2)+radius];
                 case 'new'
-                    glovar.PolyLinePos{i} = savedFile.PolyROI{i}.Center;
+                    glovar.PolyLinePos{i} = [coordinates{i}(1), coordinates{i}(2)];
                     glovar.PolyROI{i} = drawellipse('Center', savedFile.PolyROI{i}.Center,'RotationAngle', savedFile.PolyROI{i}.RotationAngle, 'SemiAxes', savedFile.PolyROI{i}.SemiAxes,...
                         'AspectRatio', savedFile.PolyROI{i}.AspectRatio, 'Tag', ['Dendrite ', num2str(currDend), ' PolyROI ', num2str(polycount)], 'FaceAlpha', 0, 'Color', 'g', 'DrawingArea',...
                         'unlimited', 'HandleVisibility', 'on','InteractionsAllowed', 'none', 'Linewidth', 1);
@@ -1193,6 +1193,7 @@ if isfield(glovar, 'PolyROI') && ~isempty(coordinates)
                     y = [y,coordinates{i}(2)];
             end
             if i < sum(PPsperDend(1:currDend))
+                currDend = currDend;
                 polycount = polycount+1;
             else
                 currDend = currDend+1;

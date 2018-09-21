@@ -176,14 +176,14 @@ else
                 thresh = spread;
             end
         case 'Poly'
-            dendthresh = 0.25;
+            dendthresh = 0.5;
             if spread < dendthresh
                 thresh = dendthresh;
             else
                 thresh = spread;
             end
         case 'Dendrite'
-            dendthresh = 0.25;
+            dendthresh = 0.5;
             if spread < dendthresh
                 thresh = dendthresh;
             else

@@ -167,6 +167,7 @@ end
     glovar.PolyLinePos = cell(1,sum(glovar.DendritePolyPointNumber));
     glovar.PolyROI = cell(1,sum(glovar.DendritePolyPointNumber));
     
+    combin = mat2cell([x,y], ones(size(x,1),1), 2);
 %     combinpos = mat2cell([x-radius,y-radius,...
 %       radius*2*ones(length(x),1),...
 %     radius*2*ones(length(y),1)], ones(size(x,1),1), 4);   %%% Old way
@@ -193,10 +194,8 @@ for i = 1:glovar.Dendrite_Number
         for j = 1:length(newindex)
             ROInum = newindex(j);
 %             glovar.PolyROI{ROInum} = rectangle('Position', glovar.PolyLinePos{newindex(j)}, 'EdgeColor', linecolor, 'Tag', ['Dendrite ', num2str(DendriteNum), ' PolyROI ', num2str(j)], 'Curvature', [1 1], 'ButtonDownFcn', {@Drag_Poly, ROInum});
-            glovar.PolyROI{ROInum} = drawellipse('Center', glovar.PolyLinePos{newindex(j)},'RotationAngle', 0, 'SemiAxes', [radius, radius],...
-                'AspectRatio', 1, 'Tag', ['Dendrite ', num2str(DendriteNum), ' PolyROI ', num2str(j)], 'FaceAlpha', 0, 'Color', linecolor, 'DrawingArea',...
-                'unlimited', 'HandleVisibility', 'on','InteractionsAllowed', 'none', 'Linewidth', 1);
-            glovar.polyListener(ROInum) = listener(glovar.PolyROI{ROInum}, 'ROIMoved', @RefreshPolyLine);
+            glovar.PolyROI{ROInum} = drawellipse('Center', glovar.PolyLinePos{newindex(j)},'RotationAngle', 0, 'SemiAxes', [radius*2, radius*2], 'AspectRatio', 1, 'Tag', ['Dendrite ', num2str(DendriteNum)], 'FaceAlpha', 0, 'Color', linecolor, 'DrawingArea', 'unlimited', 'HandleVisibility', 'on');
+            polyListener(i) = listener(glovar.PolyROI{ROInum}, 'MovingROI', @Refresh
         end
     else
         glovar.PolyLinePos(newindex) = cellfun(@(x) x(:)', tempPos(oldindex(1):oldindex(end)), 'UniformOutput', false);

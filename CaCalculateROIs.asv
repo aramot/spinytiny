@@ -175,7 +175,7 @@ if newspineanalysis || islong
     if isempty(currentfield)
         cf = inputdlg('No field number found; Enter field number:', '1', 1);
         currentfield = str2num(cf{1});
-        gui_CaImageViewer.NewSpineAnalysisInfo.CurrentImagingField = currentfield; 
+        gui_CaImageViewer.NewSpineAnalysisInfo.CurrentImaggingField = currentfield; 
     end
     drawer = get(gui_CaImageViewer.figure.handles.figure1, 'UserData');
     if ~isempty(drawer)
@@ -272,8 +272,8 @@ waitbar(2/steps, wb, 'Locating dendrite ROIs...');
 
 allDendriticROIObjects = flipud(findobj(gui_CaImageViewer.figure.handles.GreenGraph, 'Type', 'images.roi.ellipse', '-and', {'-regexp', 'Tag', 'Dendrite'}));
 
-if isfield(gui_CaImageViewer, 'PolyROI')
-    DendROIs = findobj('-regexp', 'Tag', 'Dendrite \d');
+if isfield(gui_CaImageViewer, 'PolyROI');
+    DendROIs = findobj('-regexp', 'Tag', ['Dendrite \d']);
     DendROIs = get(DendROIs, 'Tag');
         for i = 1:DendNum
             counter = 1;
@@ -289,8 +289,8 @@ if isfield(gui_CaImageViewer, 'PolyROI')
     DendPPNum= gui_CaImageViewer.DendritePolyPointNumber;
 
     CummulativeDist = 0; %%% Build the length of dendrite
-    for i = 1:length(gui_CaImageViewer.PolyROI)
-        if ishandle(gui_CaImageViewer.PolyROI{i})
+    for i = 1:length(gui_CaImageViewer.PolyROI);
+        if ishandle(gui_CaImageViewer.PolyROI{i});
 %             PolyROI_pos{i} = gui_CaImageViewer.PolyLinePos{i};
 %             Polyx_r{i} = PolyROI_pos{i}(3)/2;                                %%%%% x radius being w/2
 %             Polyy_r{i} = PolyROI_pos{i}(4)/2;                                %%%%% y radius being y/2
@@ -419,7 +419,7 @@ end
                     else
                         Fluorescence_Measurement{i-1}(1,actual_image_counter) = (tmp_mean_intensity-Background_Mean_Int)*Pixel_Number{i-1};
                     end
-                    if twochannels == 1
+                    if twochannels == 1;
                         Red_Intensity{i-1} = current_image(ROIreg{i},2);
                         Total_Red_Intensity{i-1} = sum(Red_Intensity{i-1}(:));
                         Red_Measurement{i-1}(1,actual_image_counter) = (nanmean(Red_Intensity{i-1}(:))-Background_Mean_Red)*Pixel_Number{i-1};
@@ -467,7 +467,7 @@ end
 %%% ROIs that appear one one day and not another, populate that ROIs cell
 %%% with NaNs the length of the imaging time course
 
-if newspineanalysis || islong
+if gui_CaImageViewer.NewSpineAnalysis
     experimentlength = length(Fluorescence_Measurement{1});
     nullspinedata = nan(1,experimentlength);
     insert = mat2cell(repmat(nullspinedata,length(nullspines),1),ones(length(nullspines),1),experimentlength);
@@ -623,7 +623,7 @@ end
 user = get(gui_CaImageViewer.figure.handles.figure1, 'UserData');
 
 if gui_CaImageViewer.NewSpineAnalysis 
-    analysis_tidbits = '_Longitudinal_Analyzed_By';
+    analysis_tidbits = '_NewSpines_Analyzed_By';
 else
     analysis_tidbits = '_Analyzed_By';
 end
