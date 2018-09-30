@@ -656,7 +656,9 @@ if length(listpos) == 1
             load(Act_folder(i).name)
             eval(['currentsession = ', Act_folder(i).name(1:end-4), '.Session;'])
             Activity{currentsession} = Act_folder(i).name(1:end-4);
+            
             cd('E:\Behavioral Data\All Summarized Behavior Files list');
+
             for j = 1:length(Beh_folder)
                 areboth = strncmp(Beh_folder(j).name, Activity(currentsession), 12);    %%% Match the behavior file with the name of the activity file
                 if areboth
