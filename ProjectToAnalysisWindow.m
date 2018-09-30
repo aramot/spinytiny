@@ -4,9 +4,14 @@ global gui_CaImageViewer
 
 selectedaxes = findobj(gcf, 'XColor', [0 1 0]);     %%% Finds the selected axes based on the color set to 'XColor' in function HighLightAxis)
 
-
+figtitle = regexp(get(gcf, 'Name'), '[A-Z]{2,3}0+\d+', 'match');
+if ~isempty(figtitle)
+    experiment = figtitle{1};
+    animal = experiment;
+else
     animal = regexp(gui_CaImageViewer.filename, '[A-Z]{2,3}[0-9]*', 'match');
     animal = animal{1};
+end
     experimenter = regexp(gui_CaImageViewer.save_directory, ['People.\w+'], 'match');
     experimenter = experimenter{1};
     experimenter = experimenter(strfind(experimenter, '\')+1:end);
@@ -78,7 +83,7 @@ else
     %%%% Set up parameters in an accessible substructure within the main GUI
     gui_CaImageViewer.NewSpineAnalysis = 1;
     gui_CaImageViewer.NewSpineAnalysisInfo.CurrentDate = sorteddates(1,:);
-    gui_CaImageViewer.MultipleDates = sorteddates;
+    gui_CaImageViewer.NewSpineAnalysisInfo.MultipleDates = sorteddates;
 
     title = get(get(selectedaxes(1),'XLabel'), 'String');
 

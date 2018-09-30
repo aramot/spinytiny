@@ -30,7 +30,7 @@ numberofSpines = File.NumberofSpines;
 % Date = regexp(File, '\d{6}', 'match');
 % Date = Date{1};
 
-cd(['C:\Users\Komiyama\Desktop\ActivitySummary_UsingRawData'])
+cd 'E:\ActivitySummary'
 
 % files = dir(cd);
 % check = 0;
@@ -151,7 +151,7 @@ File.Alphas = alpha;
 UseMinAlpha = 1;
 File.UsedMinAlpha = UseMinAlpha;
 
-MinAlpha = 1;
+MinAlpha = 0;
 File.MinAlpha = MinAlpha;
 
 for i = 1:DendNum
@@ -198,12 +198,9 @@ for i = 1:numberofSpines
     temp = File.Processed_dFoF_DendriteSubtracted(i,:);
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%% Define Threshold %%%%%%%%%%%%%%%%%
-    
-%     if File.SpineThreshold(i,1)<0.75;
-%         File.SpineThreshold(i,1) = 0.75;
-%     else
-%     end
+
     temp(temp<File.SpineThreshold(i,1)) = 0;
+    
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
     floored_Dsubtracted(i,:) = temp;
@@ -263,7 +260,7 @@ if strcmp(Router, 'Redo')
         plot(File.Fluorescence_Measurement{SpineNo}, 'k')
         
         
-        filename = regexp(File.Filename, '[A-Z]{2,3}0+\d+_\d{4,6}', 'match');
+        filename = regexp(File.Filename, '[A-Z]{2,3}0+\d+_\d{3,6}', 'match');
         filename = filename{1};
         session = File.Session;
         

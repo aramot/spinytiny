@@ -24,6 +24,14 @@ elseif dendsubtract
     SuccessSpines = StatClass.DendSub_SuccessSpines;
     MovementDuringCueSpines = StatClass.DendSub_MovementDuringCueSpines;
     RewardSpines = StatClass.DendSub_RewardSpines;
+else
+    MovementSpines = StatClass.MovementSpines;
+    CueSpines = StatClass.CueSpines;
+    CueORMovementSpines = StatClass.CueORMovementSpines;
+    PreSuccessSpines = StatClass.PreSuccessSpines;
+    SuccessSpines = StatClass.SuccessSpines;
+    MovementDuringCueSpines = StatClass.MovementDuringCueSpines;
+    RewardSpines = StatClass.RewardSpines;
 end
 
 cluster_ind = [];

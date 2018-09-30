@@ -1,6 +1,6 @@
-cd('C:\Users\Komiyama\Desktop\ActivitySummary_UsingRawData');
+cd('E:\ActivitySummary');
 
-files = dir('C:\Users\Komiyama\Desktop\ActivitySummary_UsingRawData');
+files = dir('E:\ActivitySummary');
 
 firstfileofint = 4;
 
@@ -60,7 +60,7 @@ switch method
                     if isfield(currentstruct, 'MinAlpha')
                         minalpha = currentstruct.MinAlpha;
                     else
-                        minalpha = 0.5;
+                        minalpha = 1;
                     end
                     plot(min(dendDataforfit):max(dendDataforfit)/100:max(dendDataforfit), minalpha*(min(dendDataforfit):max(dendDataforfit)/100:max(dendDataforfit)), 'b', 'linewidth', 2)
                     title([files(randnum(scroll)).name(1:12), ',' 'sp', num2str(randspine)], 'Interpreter', 'none', 'FontSize', 8)

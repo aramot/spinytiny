@@ -31,6 +31,7 @@ if strcmpi(clicktype, 'alt')
     LineY(PolyROItoRemove) = [];
     delete(PolyLine);
     gui_CaImageViewer.PolyLine(str2num(SelectedDend)) = line(LineX,LineY, 'Tag', ['PolyLine ', SelectedDend], 'color', 'cyan');
+    gui_CaImageViewer.PolyLine(str2num(SelectedDend)) = gui_CaImageViewer.PolyLine(str2num(SelectedDend))-1;
 else
     point1 = get(gca, 'CurrentPoint');  %%% Button down detected and position parameters stored (x, y, width, height)
     point1 = point1(1,1:2);             %%% Extract x and y

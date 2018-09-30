@@ -25,10 +25,29 @@ if strcmpi(stattype, 'parametric')
             line([x(i),x(i)], [nanmean(y{i})-SEM, nanmean(y{i})+SEM], 'linewidth', 0.5, 'color', colorS);
         end
     else
-        line_handle = plot(x,nanmean(y,1), 'color', colorS, 'Linewidth', linewidth);
+        if size(y,1) == length(x) && size(y,2) ~= length(x)
+            repeatedmeasures_dim = 1;
+            sample_dim = 2;
+        elseif size(y,2) == length(x) && size(y,1) ~= length(x)
+            repeatedmeasures_dim = 2;
+            sample_dim = 1;
+        else
+            sample_dim = 1;
+        end
+        line_handle = plot(x,nanmean(y,sample_dim), 'color', colorS, 'Linewidth', linewidth);
         for i = 1:size(y,2)
             SEM = nanstd(y(:,i))/sqrt(sum(~isnan(y(:,i))));
             line([x(i),x(i)], [nanmean(y(:,i))-SEM, nanmean(y(:,i))+SEM], 'linewidth', 0.5, 'color', colorS);
+        end
+        X = repmat(x,size(y,sample_dim),1);
+        y = y(find(~isnan(y)));
+        X = X(find(~isnan(y)));
+        [~,p] = corrcoef(y,X);
+        if length(p)>1
+            if p(1,2) < 0.05
+                ydata = get(line_handle, 'YData');
+                text(length(x)+1, ydata(end), '*', 'color', colorS, 'Fontsize', 14)
+            end
         end
     end
 elseif strcmpi(stattype, 'nonparametric')

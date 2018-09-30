@@ -81,7 +81,7 @@ for curr_trial_indx = 1:size(curr_trial_list,1);
         % b) find which subfields are numeric
         curr_numeric_subfields = structfun(@isnumeric,bhv_frames{curr_trial}.(curr_fieldnames{curr_field}));
         % c) subtract offset from numeric fields and convert to frames
-        for subfield_offset_fix = find(curr_numeric_subfields)';
+        for subfield_offset_fix = find(curr_numeric_subfields)'
             % get current values of the subfield
             curr_bhv_times = bhv_frames{curr_trial}.(curr_fieldnames{curr_field}).(curr_subfields{subfield_offset_fix});
             % compensate for offset

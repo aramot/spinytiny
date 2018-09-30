@@ -18,11 +18,12 @@ if gui_CaImageViewer.NewSpineAnalysis
     experimenter = regexp(gui_CaImageViewer.save_directory, ['People.\w+'], 'match');
     experimenter = experimenter{1};
     experimenter = experimenter(strfind(experimenter, '\')+1:end);
-    if ~isempty(gui_CaImageViewer.MultipleDates)
-        dates = gui_CaImageViewer.MultipleDates;
+    if ~isempty(gui_CaImageViewer.NewSpineAnalysisInfo.MultipleDates)
+        dates = gui_CaImageViewer.NewSpineAnalysisInfo.MultipleDates;
         gui_CaImageViewer.save_directory = ['Z:\People\',experimenter,'\Data\', animal, '\', dates(ImageNum,:), '\summed\'];
         mostlikelyfile = fastdir(gui_CaImageViewer.save_directory, 'summed_50.tif');
         gui_CaImageViewer.filename = mostlikelyfile{1};
+        gui_CaImageViewer.NewSpineAnalysisInfo.CurrentDate = dates(ImageNum,:);
     else
     end
 end

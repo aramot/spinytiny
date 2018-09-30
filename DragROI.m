@@ -95,7 +95,7 @@ if strcmpi(clicktype, 'alt') %%% This is the terminal call for the "Fine Select"
             uimenu(c, 'Label', 'Set as eliminated', 'Callback', @CategorizeSpines);
             uimenu(c, 'Label', 'Set as active', 'Callback', @CategorizeSpines);
             gui_CaImageViewer.ROI(ROInum+1) = rectangle('Position', adjustedpos, 'EdgeColor', linecolor, 'ButtonDownFcn', {@DragROI, ROInum, 'HomeWindow'}, 'Curvature', [1 1],'Tag', ['ROI', num2str(ROInum)], 'UIContextMenu', c);
-            gui_CaImageViewer.NewSpineAnalysisInfo.SpineList = [gui_CaImageViewer.NewSpineAnalysisInfo.SpineList; 1];
+            gui_CaImageViewer.NewSpineAnalysisInfo.SpineList = [gui_CaImageViewer.NewSpineAnalysisInfo.SpineList, 1];
         else
             c = uicontextmenu;
             uimenu(c, 'Label', 'Add Surround Background', 'Callback', @ModifyROI);
@@ -138,24 +138,29 @@ else
 
     RoiRect = get(gco, 'Position') ;    %%% Get placement of current object in REFERENCE TO THE AXES
 
-    set(gcf, 'Units', 'normalized');
+    set(gcf, 'Units', 'pixels');
     rectFig = get(gcf, 'Position');     %%% Get position of current figure on the screen
 
-    set(gca, 'Units', 'normalized');
+    set(gca, 'Units', 'pixels');
     rectAx = get(gca, 'Position');      %%% Get position of current axes in REFERENCE TO THE FIGURE
 
     set(0, 'Units', 'Pixels');
     scrnsz = get(0,'ScreenSize');
 
-    xmag = rectAx(3)/128;                %%% screen pixel/image pixel
+    xmag = rectAx(3)/length(get(findobj(gca, 'Type', 'Image'), 'CData'));                %%% screen pixel/image pixel
     xoffset =rectAx(1)*rectFig(3);
-    ymag = rectAx(4)/128;
+    ymag = rectAx(4)/length(get(findobj(gca, 'Type', 'Image'), 'CData'));
     yoffset = rectAx(2)*rectFig(4);
     rect1 = [xmag*RoiRect(1)+xoffset+0.5, ymag*(scrnsz(2)-RoiRect(2)-RoiRect(4))+yoffset+.5, xmag*RoiRect(3), ymag*RoiRect(4)];
 
     if point1(1)>(RoiRect(1)+2*RoiRect(3)/3) && point1(2)> (RoiRect(2)+2*RoiRect(4)/3) %%%resize
-        fixedpoint = [(rectAx(1)+(xmag*RoiRect(1))), rectAx(2)+rectAx(4)-(ymag*RoiRect(2)+RoiRect(4))+(ymag*RoiRect(4))];
-        rbbox([rectAx(1)+(xmag*RoiRect(1)), rectAx(2)+rectAx(4)-(ymag*RoiRect(2)+RoiRect(4))+(ymag*RoiRect(4)), xmag*RoiRect(3),ymag*RoiRect(4)], fixedpoint);
+%         fixedpoint = [(rectAx(1)+(xmag*RoiRect(1))), rectAx(2)+rectAx(4)-(ymag*RoiRect(2)+RoiRect(4))+(ymag*RoiRect(4))];
+%         rbbox([rectAx(1)+(xmag*RoiRect(1)), rectAx(2)+rectAx(4)-(ymag*RoiRect(2)+RoiRect(4))+(ymag*RoiRect(4)), xmag*RoiRect(3),ymag*RoiRect(4)], fixedpoint);
+        x_pos = rectAx(1)+(xmag*RoiRect(1));
+        y_pos = rectAx(2)+(ymag*RoiRect(2));
+        currentrect = [x_pos, y_pos, x_pos+(xmag*RoiRect(3)), y_pos+(ymag*RoiRect(4))];
+        fixedpoint = [x_pos, y_pos+(ymag*RoiRect(4))]; %%% Upper left corner of box
+        rbbox(currentrect, fixedpoint)
         point2 = get(gca, 'CurrentPoint');
         point2 = point2(1,1:2);
         RoiRect(3) = point2(1)-RoiRect(1);
