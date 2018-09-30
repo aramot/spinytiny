@@ -142,33 +142,41 @@ end
 
 %%% ROIs
 ROI_stamp = cell(1,length(existing_ROI));
-ROI_pos = cell(1,length(existing_ROI));
-x_r = cell(1,length(existing_ROI));
-y_r = cell(1,length(existing_ROI));
-x_c = cell(1,length(existing_ROI));
-y_c = cell(1,length(existing_ROI));
+% ROI_pos = cell(1,length(existing_ROI));
+% x_r = cell(1,length(existing_ROI));
+% y_r = cell(1,length(existing_ROI));
+% x_c = cell(1,length(existing_ROI));
+% y_c = cell(1,length(existing_ROI));
 x1 = cell(1,length(existing_ROI));
 y1 = cell(1,length(existing_ROI));
 ROIreg = cell(1,length(existing_ROI));
 
 %%% PolyROIs
 PolyROI_pos = cell(1,length(gui_CaImageViewer.PolyROI));
-Polyx_r = cell(1,length(gui_CaImageViewer.PolyROI));
-Polyy_r = cell(1,length(gui_CaImageViewer.PolyROI));
+% Polyx_r = cell(1,length(gui_CaImageViewer.PolyROI));
+% Polyy_r = cell(1,length(gui_CaImageViewer.PolyROI));
 Polyx_c = cell(1,length(gui_CaImageViewer.PolyROI));
 Polyy_c = cell(1,length(gui_CaImageViewer.PolyROI));
-Polyx1 = cell(1,length(gui_CaImageViewer.PolyROI));
-Polyy1 = cell(1,length(gui_CaImageViewer.PolyROI));
+% Polyx1 = cell(1,length(gui_CaImageViewer.PolyROI));
+% Polyy1 = cell(1,length(gui_CaImageViewer.PolyROI));
 PolyROIreg = cell(1,length(gui_CaImageViewer.PolyROI));
 
 % xsize = size(gui_CaImageViewer.GCaMP_Image{1},1);
 xsize = size(gui_CaImageViewer.ch1image,1);
 ysize = size(gui_CaImageViewer.ch1image,2);
 
-if gui_CaImageViewer.NewSpineAnalysis
+islong = gui_CaImageViewer.figure.handles.Longitudinal_CheckBox.Value;
+newspineanalysis = gui_CaImageViewer.NewSpineAnalysis;
+
+if newspineanalysis || islong
     terminus = regexp(save_directory, animal, 'end');
     targ_folder = save_directory(1:terminus);
     currentfield = gui_CaImageViewer.NewSpineAnalysisInfo.CurrentImagingField;
+    if isempty(currentfield)
+        cf = inputdlg('No field number found; Enter field number:', '1', 1);
+        currentfield = str2num(cf{1});
+        gui_CaImageViewer.NewSpineAnalysisInfo.CurrentImagingField = currentfield; 
+    end
     drawer = get(gui_CaImageViewer.figure.handles.figure1, 'UserData');
     if ~isempty(drawer)
         userspecificpart = [drawer,'_'];
@@ -176,7 +184,12 @@ if gui_CaImageViewer.NewSpineAnalysis
         userspecificpart = [];
     end
     load([targ_folder, filesep,userspecificpart,'Imaging Field ', num2str(currentfield), ' Spine Registry'])
-    instanceofappearance = logical(strcmpi(SpineRegistry.DatesAcquired, gui_CaImageViewer.NewSpineAnalysisInfo.CurrentDate));
+    if isempty(gui_CaImageViewer.NewSpineAnalysisInfo.CurrentDate)
+        date = regexp(save_directory, '[0-9]{6}', 'match'); date = date{1};
+    else
+        date = gui_CaImageViewer.NewSpineAnalysisInfo.CurrentDate;
+    end
+    instanceofappearance = logical(strcmpi(SpineRegistry.DatesAcquired, date));
     SpineList = SpineRegistry.Data(:,instanceofappearance); %%% Note: Although the first ROI is always ROI0 (background), this is excluded (wrt indexing) for the final variables, so a direct translation of spine number is possible here
     nullspines = find(SpineList==0);
         Fluorescence_Intensity = cell(length(SpineList),1);
@@ -206,22 +219,24 @@ Poly_Fluorescence_Measurement= cell(length(gui_CaImageViewer.PolyROI),1);
 
 waitbar(1/steps, wb, 'Creating ROI masks...');
 
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%% Define primary ROIs %%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+allROIobjects = flipud(findobj(gui_CaImageViewer.figure.handles.GreenGraph, 'Type', 'images.roi.ellipse', '-and', '-not', {'-regexp', 'Tag', 'Dendrite'}));
+
 for i = 1:length(existing_ROI)
-    ROI_stamp{i} = get(gui_CaImageViewer.ROI(i), 'Position');    %%%%% Same as ROI_pos, but used this for consistency between programs...
-    ROI_pos{i} = ROI_stamp{i};                                   %%%%% Returns coordinate position of ROI with format [x y w h]
-    x_r{i} = ROI_pos{i}(3)/2;                                    %%%%% x radius being w/2
-    y_r{i} = ROI_pos{i}(4)/2;                                    %%%%% y radius being y/2
-    x_c{i} = ROI_pos{i}(1)+ROI_pos{i}(3)/2;                      %%%%% x center being the x coordinate (bottom left corner) + the radius of the ROI (finds the center)
-    y_c{i} = ROI_pos{i}(2)+ROI_pos{i}(4)/2;                      %%%%% y center being the y coordinate (bottom left corner) + the radius of the ROI (finds the center)
-    theta = (0:1/20:1)*2*pi;
-    x1{i} = round(sqrt(x_r{i}^2*y_r{i}^2./(x_r{i}^2*sin(theta).^2 + y_r{i}^2*cos(theta).^2)).*cos(theta) + x_c{i});    %%%%% Derives from the formula for an ellipse, wherein X(theta) = a * cos(theta)  
-    y1{i} = round(sqrt(x_r{i}^2*y_r{i}^2./(x_r{i}^2*sin(theta).^2 + y_r{i}^2*cos(theta).^2)).*sin(theta) + y_c{i});    %%%%% Derives from the formula for an ellipse, wherein Y(theta) = b * sin(theta)
-    ROImask{i} = roipoly(xsize,ysize, x1{i}, y1{i});
+%     ROI_stamp{i} = get(gui_CaImageViewer.ROI(i), 'Position');    %%%%% Same as ROI_pos, but used this for consistency between programs...
+%     ROI_pos{i} = ROI_stamp{i};                                   %%%%% Returns coordinate position of ROI with format [x y w h]
+%     x_r{i} = ROI_pos{i}(3)/2;                                    %%%%% x radius being w/2
+%     y_r{i} = ROI_pos{i}(4)/2;                                    %%%%% y radius being y/2
+%     x_c{i} = ROI_pos{i}(1)+ROI_pos{i}(3)/2;                      %%%%% x center being the x coordinate (bottom left corner) + the radius of the ROI (finds the center)
+%     y_c{i} = ROI_pos{i}(2)+ROI_pos{i}(4)/2;                      %%%%% y center being the y coordinate (bottom left corner) + the radius of the ROI (finds the center)
+%     theta = (0:1/20:1)*2*pi;
+%     x1{i} = round(sqrt(x_r{i}^2*y_r{i}^2./(x_r{i}^2*sin(theta).^2 + y_r{i}^2*cos(theta).^2)).*cos(theta) + x_c{i});    %%%%% Derives from the formula for an ellipse, wherein X(theta) = a * cos(theta)  
+%     y1{i} = round(sqrt(x_r{i}^2*y_r{i}^2./(x_r{i}^2*sin(theta).^2 + y_r{i}^2*cos(theta).^2)).*sin(theta) + y_c{i});    %%%%% Derives from the formula for an ellipse, wherein Y(theta) = b * sin(theta)
+%     ROImask{i} = roipoly(xsize,ysize, x1{i}, y1{i});
+    ROImask{i} = createMask(allROIobjects(i), gui_CaImageViewer.GCaMP_Image{1});    %%% Create a mask based on the elliptical features of the drawn ROI and size of the first image
     ROIreg{i} = find(ROImask{i}(:));
     if gui_CaImageViewer.UsingSurroundBackground
         if i > 1
@@ -255,8 +270,10 @@ pixpermic = pix_per_micronat20x*zoom/20;
 
 waitbar(2/steps, wb, 'Locating dendrite ROIs...');
 
-if isfield(gui_CaImageViewer, 'PolyROI');
-    DendROIs = findobj('-regexp', 'Tag', ['Dendrite \d']);
+allDendriticROIObjects = flipud(findobj(gui_CaImageViewer.figure.handles.GreenGraph, 'Type', 'images.roi.ellipse', '-and', {'-regexp', 'Tag', 'Dendrite'}));
+
+if isfield(gui_CaImageViewer, 'PolyROI')
+    DendROIs = findobj('-regexp', 'Tag', 'Dendrite \d');
     DendROIs = get(DendROIs, 'Tag');
         for i = 1:DendNum
             counter = 1;
@@ -272,17 +289,20 @@ if isfield(gui_CaImageViewer, 'PolyROI');
     DendPPNum= gui_CaImageViewer.DendritePolyPointNumber;
 
     CummulativeDist = 0; %%% Build the length of dendrite
-    for i = 1:length(gui_CaImageViewer.PolyROI);
-        if ishandle(gui_CaImageViewer.PolyROI{i});
-            PolyROI_pos{i} = gui_CaImageViewer.PolyLinePos{i};
-            Polyx_r{i} = PolyROI_pos{i}(3)/2;                                %%%%% x radius being w/2
-            Polyy_r{i} = PolyROI_pos{i}(4)/2;                                %%%%% y radius being y/2
-            Polyx_c{i} = PolyROI_pos{i}(1)+PolyROI_pos{i}(3)/2;              %%%%% x center being the x coordinate + the width of the ROI (going from edge to edge)
-            Polyy_c{i} = PolyROI_pos{i}(2)+PolyROI_pos{i}(4)/2;              %%%%% y center being the y coordinate + the width of the ROI (going from edge to edge)
-            Polytheta = (0:1/20:1)*2*pi;
-            Polyx1{i} = round(sqrt(Polyx_r{i}^2*Polyy_r{i}^2./(Polyx_r{i}^2*sin(theta).^2 + Polyy_r{i}^2*cos(theta).^2)).*cos(theta) + Polyx_c{i});    %%%%% Derives from the formula for an ellipse, wherein X(theta) = a * cos(theta)  
-            Polyy1{i} = round(sqrt(Polyx_r{i}^2*Polyy_r{i}^2./(Polyx_r{i}^2*sin(theta).^2 + Polyy_r{i}^2*cos(theta).^2)).*sin(theta) + Polyy_c{i});    %%%%% Derives from the formula for an ellipse, wherein Y(theta) = b * sin(theta)
-            PolyROIreg{i} = roipoly(xsize,ysize, Polyx1{i}, Polyy1{i});
+    for i = 1:length(gui_CaImageViewer.PolyROI)
+        if ishandle(gui_CaImageViewer.PolyROI{i})
+%             PolyROI_pos{i} = gui_CaImageViewer.PolyLinePos{i};
+%             Polyx_r{i} = PolyROI_pos{i}(3)/2;                                %%%%% x radius being w/2
+%             Polyy_r{i} = PolyROI_pos{i}(4)/2;                                %%%%% y radius being y/2
+%             Polyx_c{i} = PolyROI_pos{i}(1)+PolyROI_pos{i}(3)/2;              %%%%% x center being the x coordinate + the width of the ROI (going from edge to edge)
+%             Polyy_c{i} = PolyROI_pos{i}(2)+PolyROI_pos{i}(4)/2;              %%%%% y center being the y coordinate + the width of the ROI (going from edge to edge)
+                Polyx_c{i} = allDendriticROIObjects(i).Center(1);
+                Polyy_c{i} = allDendriticROIObjects(i).Center(2);
+%             Polytheta = (0:1/20:1)*2*pi;
+%             Polyx1{i} = round(sqrt(Polyx_r{i}^2*Polyy_r{i}^2./(Polyx_r{i}^2*sin(theta).^2 + Polyy_r{i}^2*cos(theta).^2)).*cos(theta) + Polyx_c{i});    %%%%% Derives from the formula for an ellipse, wherein X(theta) = a * cos(theta)  
+%             Polyy1{i} = round(sqrt(Polyx_r{i}^2*Polyy_r{i}^2./(Polyx_r{i}^2*sin(theta).^2 + Polyy_r{i}^2*cos(theta).^2)).*sin(theta) + Polyy_c{i});    %%%%% Derives from the formula for an ellipse, wherein Y(theta) = b * sin(theta)
+%             PolyROImask{i} = roipoly(xsize,ysize, Polyx1{i}, Polyy1{i});
+            PolyROImask{i} = createMask(allDendriticROIObjects(i), gui_CaImageViewer.GCaMP_Image{1});
             if i == 1
                 Pix_Dist{i} = 0;
                 Mic_Dist{i} = 0;
@@ -290,7 +310,7 @@ if isfield(gui_CaImageViewer, 'PolyROI');
                 Pix_Dist{i} = sqrt((Polyx_c{i}-Polyx_c{i-1}).^2 + (Polyy_c{i}-Polyy_c{i-1}).^2);
                 Mic_Dist{i} = Pix_Dist{i}/pixpermic;
             end
-            PolyROIreg{i} = find(PolyROIreg{i}(:));
+            PolyROIreg{i} = find(PolyROImask{i}(:));
             CummulativeDist = CummulativeDist+Mic_Dist{i};
             Poly_Dist{i} = CummulativeDist;
         end
@@ -323,8 +343,8 @@ end
 
         actual_image_counter = 1;
         I_handles = [];
-        for i = 1:length(gui_CaImageViewer.PolyROI);
-            if ishandle(gui_CaImageViewer.PolyROI{i});
+        for i = 1:length(gui_CaImageViewer.PolyROI)
+            if ishandle(gui_CaImageViewer.PolyROI{i})
                 I_handles(end+1) = i;
             end
         end
@@ -332,7 +352,6 @@ end
             if actual_image_counter>=imseriesend
                 break
             end
-%                 imnum = sprintf(['%0', num2str(numberofzerosusedinnaming+1), 'd'], j);
             imnum = frame_bin_count(j,:);
             filepattern = [fullfname, '_',acquisition_step(j,:),'_',imnum, '_corrected.tif'];
             if j == 1 || j ==2 || j == timecourse_image_number || ismember(j,find(diff(acquisition_step(:,end)))) %%% Length of each file assumed to be constant UNLESS it's the start of a new acquisition (or in some cases the second image, since the first one is sometimes overwritten)
@@ -400,7 +419,7 @@ end
                     else
                         Fluorescence_Measurement{i-1}(1,actual_image_counter) = (tmp_mean_intensity-Background_Mean_Int)*Pixel_Number{i-1};
                     end
-                    if twochannels == 1;
+                    if twochannels == 1
                         Red_Intensity{i-1} = current_image(ROIreg{i},2);
                         Total_Red_Intensity{i-1} = sum(Red_Intensity{i-1}(:));
                         Red_Measurement{i-1}(1,actual_image_counter) = (nanmean(Red_Intensity{i-1}(:))-Background_Mean_Red)*Pixel_Number{i-1};
@@ -432,41 +451,6 @@ end
                     end
                     Mean_Dend(i,actual_image_counter) = nanmean(PolyFMat(dendgroup,actual_image_counter),1);
                 end
-
-                movie_toggle = get(gui_CaImageViewer.figure.handles.ViewMovie_Checkbox, 'Value');
-
-                if movie_toggle == 1;
-                    if filterwindow == 0;
-                        filterwindow = 1;
-                    end
-                    if filterwindow == 1;
-                        axes(gui_CaImageViewer.figure.handles.GreenGraph);
-                        imshow(gui_CaImageViewer.GCaMP_Image{j}, [default_lower, default_upper]);
-
-                        axes(gui_CaImageViewer.figure.handles.RedGraph);
-                        imshow(gui_CaImageViewer.Red_Image{j}, [default_lower, default_upper])
-                    elseif isnumeric(filterwindow)
-                        smoothing_green = filter2(ones(filterwindow, filterwindow)/filterwindow^2, gui_CaImageViewer.GCaMP_Image{j});
-                        smoothing_red = filter2(ones(filterwindow, filterwindow)/filterwindow^2, gui_CaImageViewer.Red_Image{j});
-
-                        axes(gui_CaImageViewer.figure.handles.GreenGraph);
-                        imshow(smoothing_green, [default_lower, default_upper]);
-
-                        axes(gui_CaImageViewer.figure.handles.RedGraph);
-                        imshow(smoothing_red, [default_lower, default_upper]);
-                    end
-
-                    set(gui_CaImageViewer.figure.handles.Frame_EditableText, 'String', i);
-                    set(gui_CaImageViewer.figure.handles.ImageSlider_Slider, 'Value', i);
-
-                    if ~isempty(existing_ROI)
-                        axes(gui_CaImageViewer.figure.handles.GreenGraph);
-                        gui_CaImageViewer.ROI = rectangle('Position', ROI_stamp, 'EdgeColor', 'green', 'Curvature', [1 1]);
-                        axes(gui_CaImageViewer.figure.handles.RedGraph);
-                        rectangle('Position', ROI_stamp, 'EdgeColor', 'red', 'Curvature', [1 1]);
-                    end
-                else
-                end
                 actual_image_counter = actual_image_counter + 1;
                 if(mod(actual_image_counter,20)==0)
                     waitbar(actual_image_counter/steps, wb, ['Processing image ', num2str(actual_image_counter)])
@@ -483,7 +467,7 @@ end
 %%% ROIs that appear one one day and not another, populate that ROIs cell
 %%% with NaNs the length of the imaging time course
 
-if gui_CaImageViewer.NewSpineAnalysis
+if newspineanalysis || islong
     experimentlength = length(Fluorescence_Measurement{1});
     nullspinedata = nan(1,experimentlength);
     insert = mat2cell(repmat(nullspinedata,length(nullspines),1),ones(length(nullspines),1),experimentlength);
@@ -494,31 +478,31 @@ if gui_CaImageViewer.NewSpineAnalysis
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%% Define Baseline %%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+bl = 'All';     %%% If you want a different baseline, indicate here
+
 if twochannels == 1
-    baselineFrames = 32;
+    baselineFrames = [];
 else
-    bl = get(gui_CaImageViewer.figure.handles.BaselineFrames_EditableText, 'String');
     if strcmpi(bl, 'All')
-        if strcmpi(load_type, 'Compressed')
-            bl = 1:gui_CaImageViewer.imageserieslength;
-        elseif strcmpi(load_type, 'Full')
-            bl = 1:actual_image_counter -1;
-        end
+        bl = 1:actual_image_counter -1;
     else
         bl = str2num(bl);
     end
     baselineFrames = bl;
 end
 
+a.BaselineFrames = bl;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%% Find baselines %%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-waitbar((steps-4)/steps, wb, 'Calculating baseline...');
+waitbar((steps-4)/steps, wb, 'Calculating baselines...');
 
+spine_baseline = zeros(1,length(Fluorescence_Measurement));
 
 for i = 1:length(Fluorescence_Measurement)
     roundstodo = 10;
@@ -533,6 +517,8 @@ for i = 1:length(Fluorescence_Measurement)
     end        
     spine_baseline(1,i) = median(trace);
 end
+
+dend_baseline(1,i) = zeros(1,DendNum);
   
 for i = 1:DendNum
     roundstodo = 10;
@@ -552,6 +538,10 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%% Delta Values %%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+deltaF = cell(1,length(Fluorescence_Measurement));
+deltaDend = nan(DendNum, length(Mean_Dend));
+dF_over_F = cell(1,length(Fluorescence_Measurement));
 
 for i = 1:length(existing_ROI)-1
     deltaF{i} = Fluorescence_Measurement{i}-spine_baseline(1,i);
@@ -596,19 +586,11 @@ a.Poly_Pixel_Number = Poly_Pixel_Number;
 a.Poly_Fluorescence_Measurement = Poly_Fluorescence_Measurement;
 a.Dendrite_Fluorescence_Measurement = Mean_Dend;
 a.Dendrite_dFoF = deltaDend;
-% a.MeanEventAmp = amp;
-% a.EventNumber = freq;
-% a.SynapticEvents = deltaF_subtracted;
-% a.Alphas = alpha;
-% a.ActivityMap = binarized;
 a.ZoomValue = zoomval;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-islong = get(gui_CaImageViewer.figure.handles.Longitudinal_CheckBox, 'Value');
-
 a.IsLongitudinal = islong;
-
 
 %%% for restoring ROIs
 try
@@ -629,7 +611,6 @@ catch
     disp(['Could not save all ROIs during analysis. Make sure you''ve saved them before you clear them!'])
 end
 
-
 if twochannels == 1
     a.Red_Intensity = Red_Intensity;
     a.Total_Red_Intensity = Total_Red_Intensity;
@@ -642,7 +623,7 @@ end
 user = get(gui_CaImageViewer.figure.handles.figure1, 'UserData');
 
 if gui_CaImageViewer.NewSpineAnalysis 
-    analysis_tidbits = '_NewSpines_Analyzed_By';
+    analysis_tidbits = '_Longitudinal_Analyzed_By';
 else
     analysis_tidbits = '_Analyzed_By';
 end
@@ -731,6 +712,7 @@ if twochannels == 1
 end
 
 function y = sloppy_mean(x,dim)
+
     if(nargin<2)  % from official mean of Matlab R2014a
         % preserve backward compatibility with 0x0 empty
         if isequal(x,[])
@@ -745,9 +727,6 @@ function y = sloppy_mean(x,dim)
 function temp_fn = tempname_if_on_network(fn)
     persistent isNetworkDrive isNetworkDriveBackup
     
-%     temp_fn=[];
-%     return;
-%     
     
     switch(fn)
         case 'on'
@@ -780,6 +759,7 @@ function temp_fn = tempname_if_on_network(fn)
     end
     
 function [stack,info] = read_tiff(fn,info_all)
+
     if(nargin<1)
         [filename, pathname]=uigetfile({'*.tiff;*.tif','Tiff Files(*.tiff, *.tif)'},'Select Tiff file');
         fn = fullfile(pathname,filename);
@@ -858,102 +838,3 @@ function [stack,info] = read_tiff(fn,info_all)
         end
         rethrow(e)
     end
-%%% Figure 2: Dendrite-subtracted spine values
-
-% % h2 = figure; plot(Time,dF_over_F{1}); hold on;
-% 
-% h2 = figure;
-% set(h2, 'Position', [scrsz(3)/2, scrsz(2), scrsz(3)/2, scrsz(4)]);
-% 
-% for i = 1:length(deltaF_subtracted)
-%     col1 = mod(i-1, length(colorj))+1;
-%     plot(Time, deltaF_subtracted{i}, 'color', colorj{col1}, 'LineWidth', 2); hold on;
-%     xlim([0 gui_CaImageViewer.imageserieslength]);
-% end
-% 
-% k = zeros(1,length(Time))*nanmean(dF_over_F{1}(baselineFrames));
-% plot(Time, k, '--k');
-% xlabel('Time(sec)');
-% ylabel('\DeltaF/F_0_S_p_i_n_e-\alpha\DeltaF/F_0_D_e_n_d_r_i_t_e');
-% xlim([0 gui_CaImageViewer.imageserieslength]);
-% yl = ylim(gca);
-% ylim([0 yl(2)]);
-% legend(forleg);
-% 
-% barA = axes('Position', [0.25 0.75 0.2 0.1]); hold on;
-% barF = axes('Position', [0.50 0.75 0.2 0.1]); hold on;
-% 
-% for i = 1:length(deltaF_subtracted)
-%     col1 = mod(i-1, length(colorj))+1;
-%     axes(barA);
-%     bar(i,amp(1,i), 'FaceColor', colorj{col1});
-%     axes(barF);
-%     bar(i,freq(1,i), 'FaceColor', colorj{col1});
-% end
-% 
-% axes(barA)
-% title(barA, 'Amp. of Peaks for Each Spine');
-% xlabel('Spine');
-% ylabel('Mean Amp');
-% 
-% axes(barF)
-% title(barF, 'Freq. of Peaks for Each Spine');
-% xlabel('Spine');
-% ylabel('# of Spikes');
-
-%%%
-
-% if isfield(gui_CaImageViewer, 'PolyROI')
-%     if ~isempty(gui_CaImageViewer.PolyROI)
-%         h3 = figure;
-%         for i = 1:length(gui_CaImageViewer.PolyROI)
-%                 plot(Time,Poly_dF_over_F{i});
-%                 subplot(ceil(length(gui_CaImageViewer.PolyLinePos)/4),4, i);
-%                 plot(Time, Poly_deltaF{i});
-%                 xlim([0 gui_CaImageViewer.imageserieslength]);
-%                 ylim([0 10]);
-%                 xlabel('Time(sec)');
-%                 ylabel('\deltaF');
-%                 title(num2str(Poly_Dist{i}));
-%         end
-%         set(h3, 'Position', [0, 0, scrsz(3)/2, scrsz(4)/2]);
-%     end
-% end
-
-% if twochannels == 1
-%     h4 = figure;
-% 
-%     Data_Trace = [];
-%     for j = 0:29;
-%         Data_Trace = [Data_Trace; deltaF{1}(baselineFrames + j*(baselineFrames/2) : baselineFrames + (j+1) * (baselineFrames/2)) - deltaF{1}(baselineFrames + j*(baselineFrames/2))];
-%     end
-% 
-%     Time = 0:(2/17):2;
-%     Time = Time(1:17);
-% 
-%     plot(Time, nanmean(Data_Trace), '-ok');
-%     xlabel('Time (sec)')
-%     ylabel('\DeltaF')
-%     title('Uncaging-triggered Ave')
-%     
-%     set(h4, 'Position', [scrsz(3)/2, 0, scrsz(3)/2, scrsz(4)/2]);
-% else
-%     h4 = figure;
-%     
-%     imagesc(binarized);
-%     ylabel('Spine Number')
-%     set(h4, 'Position', [scrsz(3)/2, 0, scrsz(3)/2, scrsz(4)/2]);
-%     title('Raster plot of synaptic events')
-% end
-
-
-
-
-% try
-%     cd('/Users/theposhfox/Desktop/Analyzed Ca2+ Data');
-%     Date_tag = regexp(target_dir, '\wH00\d', 'split');
-%     Date_tag = Date_tag{2}(1:end-1);
-%     save_fname2 = [save_fname, Date_tag];
-%     save(save_fname2, save_fname);
-%     cd(start_dir);
-% end

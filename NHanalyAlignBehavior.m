@@ -107,10 +107,10 @@ for i = firsttrial:lasttrial
     if i>length(bitcode_offset)
         continue
     end
-    if bitcode_offset(i) == bitcode(end).behavior_trial_num;    %%% Occasionally, the first trial is accidentally overwritten, and this becomes counted as the last trial
+    if bitcode_offset(i) == bitcode(end).behavior_trial_num    %%% Occasionally, the first trial is accidentally overwritten, and this becomes counted as the last trial
         continue
     end
-    if Behavior.Behavior_Frames{i}.states.state_0(2,1)-Behavior.Behavior_Frames{i}.states.state_0(1,2)<=1;
+    if Behavior.Behavior_Frames{i}.states.state_0(2,1)-Behavior.Behavior_Frames{i}.states.state_0(1,2)<=1
         continue
     end
     if length(Fluor.Processed_dFoF)< Behavior.Behavior_Frames{i}.states.state_0(1,2) || length(Fluor.Processed_dFoF)<Behavior.Behavior_Frames{i}.states.state_0(2,1)
@@ -206,7 +206,7 @@ for i = firsttrial:lasttrial
         Trial{i}.MovementStart = startmovement-starttrial_imframes;
         Trial{i}.MovementEnd = endmovement-starttrial_imframes;
         Trial{i}.Result = 'Reward';
-        Trial{i}.ResultStart = Behavior.Behavior_Frames{i}.states.reward(1)-starttrial_imframes;
+        Trial{i}.ResultStart = startreward;
         Trial{i}.ResultEnd = Behavior.Behavior_Frames{i}.states.reward(2)-starttrial_imframes;
         Trial{i}.EndLicking = endtrial_imframes;
         Trial{i}.cueactivity = Trial_dFoF_DendriteSubtracted{i}(startcue:endcue);
@@ -217,16 +217,27 @@ for i = firsttrial:lasttrial
     else
         punish = punish+1;
         trial_rewarded_presses{i} = zeros(length(trial_binary_behavior{i}),1);
+        startpunish = Behavior.Behavior_Frames{i}.states.punish(1)-starttrial_imframes;
+        if startpunish == 0
+            startpunish = 1;
+        end
+        punish_period{i}(startpunish:endtrial_imframes) = 1;
         startmovement = [];
         endmovement = [];
         Trial{i}.MovementStart = [];
         Trial{i}.MovementEnd = [];
         Trial{i}.Result = 'Punish';
-        Trial{i}.ResultStart = Behavior.Behavior_Frames{i}.states.punish(1)-starttrial_imframes;
+        Trial{i}.ResultStart = startpunish;
         Trial{i}.ResultEnd = Behavior.Behavior_Frames{i}.states.punish(2)-starttrial_imframes;
         Trial{i}.EndLicking = [];
         Trial{i}.cueactivity = Trial_dFoF_DendriteSubtracted{i}(startcue:endcue);
-        punish_period{i}(Trial{i}.ResultStart:endtrial_imframes) = 1;
+%         if Trial{i}.ResultStart == 0 || Trial{i}.ResultEnd == 0
+%             alltrialframes = 1:endtrial_imframes;
+%             allmovement = trial_binary_behavior{i}(1:endtrial_imframes);
+%             alltrialmovementframes = alltrialframes(logical(allmovement));
+%             Trial{i}.failureactivity{punish} = Trial_SynapseOnlyBinarized_DendriteSubtracted{i}(startcue:endtrial_imframes);
+%             continue
+%         end
         alltrialframes = 1:endtrial_imframes;
         allmovement = trial_binary_behavior{i}(1:endtrial_imframes);
         alltrialmovementframes = alltrialframes(logical(allmovement));
@@ -241,7 +252,7 @@ for i = firsttrial:lasttrial
     Trial{i}.allmovementduringtrialactivity = Trial_SynapseOnlyBinarized_DendriteSubtracted{i}(:,1:end).*repmat(trial_movement_downsampled{i}(1:end)', Fluor.NumberofSpines,1);
     Trial{i}.movementduringcueactivity = zeros(Fluor.NumberofSpines,length(Trial_SynapseOnlyBinarized_DendriteSubtracted{i}));
     Trial{i}.movementduringcueactivity(:,startcue:endcue) = Trial_SynapseOnlyBinarized_DendriteSubtracted{i}(:,startcue:endcue).*repmat(trial_movement_downsampled{i}(startcue:endcue)', Fluor.NumberofSpines,1);
-    if ~mod(Behavior.Behavior_Frames{i}.states.state_0(1,2),1); %%% Test if integer value (any integer value put into 'mod' (e.g. mod(3,1)) returns zero. Any non-integer returns a nonzero. So using a 'not' boolean means the value is an integer)
+    if ~mod(Behavior.Behavior_Frames{i}.states.state_0(1,2),1) %%% Test if integer value (any integer value put into 'mod' (e.g. mod(3,1)) returns zero. Any non-integer returns a nonzero. So using a 'not' boolean means the value is an integer)
         trial_frames(i,1:2) = [Behavior.Behavior_Frames{i}.states.state_0(1,2), Behavior.Behavior_Frames{i}.states.state_0(2,1)];
         imagingframestouse = [imagingframestouse,Behavior.Behavior_Frames{i}.states.state_0(1,2):Behavior.Behavior_Frames{i}.states.state_0(2,1)];  %%% Designates the imaging frames to use according to when Dispatcher starts each trials
         trialstouse(i,1) = 1;

@@ -35,7 +35,6 @@ if DendriteNum <= glovar.Dendrite_Number
     ROIboxes = flipud(findobj(program.Children, '-regexp', 'Tag',  ['Dendrite ', num2str(DendriteNum)]));
     ROIlines = flipud(findobj(program.Children, 'Type', 'Line', '-or', 'Tag', 'PolyLine '));
 
-    boxtags = get(ROIboxes, 'Tag');
     linetags = get(ROIlines,'Tag');
     
     a = [];
@@ -168,8 +167,10 @@ end
     glovar.PolyLinePos = cell(1,sum(glovar.DendritePolyPointNumber));
     glovar.PolyROI = cell(1,sum(glovar.DendritePolyPointNumber));
     
-    combin = mat2cell([x,y], ones(size(x,1),1), 2);
-    combinpos = mat2cell([x-radius,y-radius,radius*2*ones(length(x),1), radius*2*ones(length(y),1)], ones(size(x,1),1), 4);
+%     combinpos = mat2cell([x-radius,y-radius,...
+%       radius*2*ones(length(x),1),...
+%     radius*2*ones(length(y),1)], ones(size(x,1),1), 4);   %%% Old way
+    combinpos = mat2cell([x,y], ones(size(x,1),1), 2);
 
 for i = 1:glovar.Dendrite_Number
     
@@ -191,16 +192,17 @@ for i = 1:glovar.Dendrite_Number
         glovar.PolyLinePos(newindex(1):newindex(end)) = cellfun(@(x) x(:)', combinpos, 'UniformOutput', false);
         for j = 1:length(newindex)
             ROInum = newindex(j);
-            glovar.PolyROI{ROInum} = rectangle('Position', glovar.PolyLinePos{newindex(j)}, 'EdgeColor', linecolor, 'Tag', ['Dendrite ', num2str(DendriteNum), ' PolyROI ', num2str(j)], 'Curvature', [1 1], 'ButtonDownFcn', {@Drag_Poly, ROInum});
+%             glovar.PolyROI{ROInum} = rectangle('Position', glovar.PolyLinePos{newindex(j)}, 'EdgeColor', linecolor, 'Tag', ['Dendrite ', num2str(DendriteNum), ' PolyROI ', num2str(j)], 'Curvature', [1 1], 'ButtonDownFcn', {@Drag_Poly, ROInum});
+            glovar.PolyROI{ROInum} = drawellipse('Center', glovar.PolyLinePos{newindex(j)},'RotationAngle', 0, 'SemiAxes', [radius, radius],...
+                'AspectRatio', 1, 'Tag', ['Dendrite ', num2str(DendriteNum), ' PolyROI ', num2str(j)], 'FaceAlpha', 0, 'Color', linecolor, 'DrawingArea',...
+                'unlimited', 'HandleVisibility', 'on','InteractionsAllowed', 'none', 'Linewidth', 1);
+            glovar.polyListener(ROInum) = listener(glovar.PolyROI{ROInum}, 'ROIMoved', @RefreshPolyLine);
         end
     else
         glovar.PolyLinePos(newindex) = cellfun(@(x) x(:)', tempPos(oldindex(1):oldindex(end)), 'UniformOutput', false);
         glovar.PolyROI(newindex) = cellfun(@(x) x, tempROI(oldindex(1):oldindex(end)), 'UniformOutput', false);
     end
-    
-%     glovar.PolyLineVertices{i} = [x(i-ExistingDROIs), y(i-ExistingDROIs)];
-%     glovar.PolyLinePos{i} = [x(i-ExistingDROIs)-radius, y(i-ExistingDROIs)-radius, radius*2, radius*2];
-    
+        
 end
 
 if twochannels == 1
@@ -208,7 +210,7 @@ if twochannels == 1
     axes(axes2)
     glovar.RedPolyLine = line(x,y, 'Tag', 'PolyLine', 'color', 'cyan');
 
-    for i = 1:length(x);
+    for i = 1:length(x)
         glovar.RedPolyLinePos{i} = [x(i)-radius, y(i)-radius, radius*2, radius*2];
         ROInum = i;
         glovar.RedPolyROI{i} = rectangle('Position', glovar.RedPolyLinePos{i}, 'EdgeColor', 'cyan', 'Tag', ['Dendrite ', num2str(DendriteNum), ' RedPolyROI', num2str(i)], 'Curvature', [1 1],'ButtonDownFcn', {@Drag_Poly, ROInum});
