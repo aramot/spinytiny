@@ -2,7 +2,7 @@ function RemoveFrames(~,~,~)
 
 global gui_CaImageViewer
 
-framestocut = inputdlg('Exclude frames (use image number) :', 'Cut frame', 1, {'1'});
+framestocut = inputdlg('Exclude frames (use downsampled image number) :', 'Cut frame', 1, {'1'});
 
 framestocut = str2num(framestocut{1});
 

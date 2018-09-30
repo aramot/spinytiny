@@ -1,6 +1,7 @@
 function RedoAnalysis(varargin)
 
 usersearch = 'Nathan';  %%% Change this to search for analyzed files from a different user!
+imagedsensor = 'GluSnFR';
 
 if isempty(varargin)
     if ispc
@@ -34,7 +35,7 @@ if isempty(varargin)
                 date = date{1}(2:end-1);
                 cd(foldertouse)
                 currentsession = files{i}{2};
-                SummarizeCaData(usersearch,[mouse, '_', date], currentsession, 0);
+                SummarizeCaData(usersearch,imagedsensor,[mouse, '_', date], currentsession, 0);
             end
         end
 
@@ -54,7 +55,7 @@ else
                     cd(foldertouse)
                     load(files(i).name);
                     eval(['current_session = ', mouse, '_', date, '_Summary.Session;'])
-                    SummarizeCaData(usersearch,[mouse, '_', date], current_session, 0);
+                    SummarizeCaData(usersearch,imagedsensor,[mouse, '_', date], current_session, 0);
 %                     File = eval(files(i).name(1:end-4));
 %                     SummarizeCaData(usersearch,File, current_session, 0);
                     clear(files(i).name(1:end-4))
@@ -76,7 +77,7 @@ else
                     date = date{1}(2:end-1);
                     cd(foldertouse)
                     currentsession = files{i}{2};
-                    SummarizeCaData(usersearch,[mouse, '_', date], currentsession, 0);
+                    SummarizeCaData(usersearch,imagedsensor,[mouse, '_', date], currentsession, 0);
                 end
             end
         end
