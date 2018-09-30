@@ -7,6 +7,26 @@ ImageNum = get(gui_CaImageViewer.figure.handles.ImageSlider_Slider, 'Value');
 twochannels = get(gui_CaImageViewer.figure.handles.TwoChannels_CheckBox, 'Value');
 
 set(gui_CaImageViewer.figure.handles.MaxProjection_CheckBox, 'Value', 0);
+set(gui_CaImageViewer.figure.handles.AveProjection_CheckBox, 'Value', 0);
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+if gui_CaImageViewer.NewSpineAnalysis
+    animal = regexp(gui_CaImageViewer.filename, '[A-Z]{2,3}[0-9]*', 'match');
+    animal = animal{1};
+    experimenter = regexp(gui_CaImageViewer.save_directory, ['People.\w+'], 'match');
+    experimenter = experimenter{1};
+    experimenter = experimenter(strfind(experimenter, '\')+1:end);
+    if ~isempty(gui_CaImageViewer.NewSpineAnalysisInfo.MultipleDates)
+        dates = gui_CaImageViewer.NewSpineAnalysisInfo.MultipleDates;
+        gui_CaImageViewer.save_directory = ['Z:\People\',experimenter,'\Data\', animal, '\', dates(ImageNum,:), '\summed\'];
+        mostlikelyfile = fastdir(gui_CaImageViewer.save_directory, 'summed_50.tif');
+        gui_CaImageViewer.filename = mostlikelyfile{1};
+        gui_CaImageViewer.NewSpineAnalysisInfo.CurrentDate = dates(ImageNum,:);
+    else
+    end
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
@@ -18,12 +38,6 @@ elseif ImageNum < 1
     set(gui_CaImageViewer.figure.handles.ImageSlider_Slider, 'Value', 1);
 end
 
-
-%%%% Create ROI stamps if ROIs exist %%%%
-
-% [ROI_stamp, coordinates] = CaCreateROIstamps;
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%% Modify and filter the new frame like the previous one(s) %%%
 
@@ -37,13 +51,19 @@ if ~isinteger(ImageNum)
     ImageNum = ceil(ImageNum);
 end
 
-
+merged = get(gui_CaImageViewer.figure.handles.Merge_ToggleButton, 'Value');
 
 if filterwindow == 1;
     
-    channel1 = gui_CaImageViewer.GCaMP_Image{ImageNum};
-    if twochannels == 1
+    channel1 = double(gui_CaImageViewer.GCaMP_Image{ImageNum});
+    if twochannels && ~merged
         channel2 = gui_CaImageViewer.Red_Image{ImageNum};
+    elseif twochannels && merged
+        channel1 = repmat(channel1/max(max(channel1)),[1 1 3]);
+        channel1(:,:,1) = zeros(size(channel1,1), size(channel1,2));
+        channel1(:,:,3) = zeros(size(channel1,1), size(channel1,2));
+        channel1(:,:,1) = double(gui_CaImageViewer.Red_Image{ImageNum})/max(max(double(gui_CaImageViewer.Red_Image{ImageNum})));
+        channel2 = [];
     else
         channel2 = [];
     end
@@ -57,7 +77,7 @@ if filterwindow == 1;
 else
     smoothing_green = filter2(ones(filterwindow, filterwindow)/filterwindow^2, gui_CaImageViewer.GCaMP_Image{ImageNum});
     channel1 = smoothing_green;
-    if twochannels == 1
+    if twochannels 
         smoothing_red = filter2(ones(filterwindow, filterwindow)/filterwindow^2, gui_CaImageViewer.Red_Image{ImageNum});
         channel2 = smoothing_red;
     else

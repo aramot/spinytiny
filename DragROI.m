@@ -20,10 +20,14 @@ running = program.FileName;
 %%% Determine desired behavior based on click type
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%% A left-click draws ROIs, while a right click finalizes the drawing of
+%%% an ROI from the "Fine-select" window called by the "DrawROI" function.
+
 clicktype = get(gcbf, 'SelectionType');
 
-if strcmpi(clicktype, 'alt') %%% This is the terminal call for the "Fine Select" portion of the draw ROI program
+if strcmpi(clicktype, 'alt') %%% This is the terminal call for the "Fine Select" portion of the draw ROI program, and is the part that ACTUALLY DRAWS THE FINAL ROI
     if strcmp(CurrentWindow, 'ZoomWindow')
+        
         newROI = findobj(gcf, 'Type', 'Rectangle', 'Tag', ['ROI', num2str(ROInum)]);
         newROIpos = round(get(newROI, 'Position'));
         oldROIpos = round(get(gui_CaImageViewer.ROI(ROInum+1), 'Position'));
@@ -37,33 +41,96 @@ if strcmpi(clicktype, 'alt') %%% This is the terminal call for the "Fine Select"
         catch
         end
         axes(gui_CaImageViewer.figure.handles.GreenGraph)
-        delete(findobj('Type', 'rectangle', '-and', 'Tag', ['ROI', num2str(ROInum)]))
-        delete(findobj('Type', 'text', '-and', 'Tag', ['ROI', num2str(ROInum), ' Text']))
+        
+        %%% Delete any ROI features with the same tag
+        delete(findobj('Type', 'rectangle', '-and', 'Tag', ['ROI', num2str(ROInum), ' Starter']))
+%         delete(findobj('Type', 'rectangle', '-and', 'Tag', ['BackgroundROI', num2str(ROInum)]))
+        delete(findobj('Type', 'text', '-and', 'Tag', ['ROI', num2str(ROInum), ' Text Starter']))
 
+        InsertOpt = get(glovar.figure.handles.InsertSpine_ToggleButton,'Value');
+        if InsertOpt
+            ROInum = glovar.InsertPoint;
+            AllROIs = flipud(findobj('Type', 'rectangle', '-and', '-not', {'-regexp', 'Tag', 'Dendrite'}, '-and', '-not', {'-regexp', 'Tag', 'Background'},'-and', '-not', 'Tag', ['ROI0']));
+            AllROItexts = flipud(findobj('Type', 'text', '-and', {'-regexp', 'Tag', 'ROI'}));
+            AllROItexts = AllROItexts(2:end);
+            AllBackgrounds = nan(1,length(gui_CaImageViewer.BackgroundROI));
+            AllBackgrounds(logical(~isnan(gui_CaImageViewer.BackgroundROI))) = flipud(findobj('Type', 'rectangle', '-and', {'-regexp', 'Tag', 'Background'}));    
+            AllBackgrounds = AllBackgrounds(2:end); %%% ignore "background ROI/ROI0;
+            oldpositions = get(AllROIs, 'Position');
+            oldBGpositions = cell(1,length(gui_CaImageViewer.BackgroundROI));
+            oldBGpositions(logical(~isnan(AllBackgrounds))) = get(AllBackgrounds(logical(~isnan(AllBackgrounds))), 'Position');
+            delete(AllROIs(ROInum:end))
+            delete(AllROItexts(ROInum:end))
+            Backgroundstodelete = AllBackgrounds(ROInum:end);
+            delete(Backgroundstodelete(logical(~isnan(Backgroundstodelete))))
+%             ROImat = nan(1,length(gui_CaImageViewer.ROI)+1);
+%                 ROImat(1:ROInum) = gui_CaImageViewer.ROI(1:ROInum); %%% The .ROI indices include background ROI0 at position 1, so all ROI numbers are shifted +1 in this indexing
+%                 ROImat(ROInum+2:end) = gui_CaImageViewer.ROI(ROInum+1:end);
+%                 gui_CaImageViewer.ROI = ROImat;
+%             BGROImat = nan(CaImage1,length(gui_CaImageViewer.BackgroundROI)+1);
+%                 BGROImat(1:ROInum) = gui_CaImageViewer.BackgroundROI(1:ROInum);
+%                 BGROImat(ROInum+2:end) = gui_CaImageViewer.BackgroundROI(ROInum+1:end);
+%                 gui_CaImageViewer.BackgroundROI = BGROImat;
+        end
+        
+        %%%%%%%%%%%%%%%%%%%%
+        %%% Draw final ROI
+        %%%%%%%%%%%%%%%%%%%%
+        
         cmap = glovar.CurrentCMap; 
 
-        if strcmpi(cmap, 'RGB')
-            linecolor = 'b';
-        elseif strcmpi(cmap, 'Jet')
-            linecolor = 'w';
-        elseif strcmpi(cmap, 'Hot')
-            linecolor = 'c';
-        elseif strcmpi(cmap, 'Fire')
-            linecolor = 'g'; %ZL comment, change the color of ROI during drawing
+        switch cmap
+            case 'RGB'
+                linecolor = 'b';
+            case 'Jet'
+                linecolor = 'w';
+            case 'Hot'
+                linecolor = 'c';
+            case 'Fire'
+                linecolor = 'g'; %ZL comment, change the color of ROI during drawing
         end
-
+        
         if gui_CaImageViewer.NewSpineAnalysis
             c = uicontextmenu;
             uimenu(c, 'Label', 'Set as eliminated', 'Callback', @CategorizeSpines);
             uimenu(c, 'Label', 'Set as active', 'Callback', @CategorizeSpines);
             gui_CaImageViewer.ROI(ROInum+1) = rectangle('Position', adjustedpos, 'EdgeColor', linecolor, 'ButtonDownFcn', {@DragROI, ROInum, 'HomeWindow'}, 'Curvature', [1 1],'Tag', ['ROI', num2str(ROInum)], 'UIContextMenu', c);
-            gui_CaImageViewer.NewSpineAnalysisInfo.SpineList = [gui_CaImageViewer.NewSpineAnalysisInfo.SpineList; 1];
+            gui_CaImageViewer.NewSpineAnalysisInfo.SpineList = [gui_CaImageViewer.NewSpineAnalysisInfo.SpineList, 1];
         else
-            gui_CaImageViewer.ROI(ROInum+1) = rectangle('Position', adjustedpos, 'EdgeColor', linecolor, 'Curvature', [1 1],'Tag', ['ROI', num2str(ROInum)]);
+            c = uicontextmenu;
+            uimenu(c, 'Label', 'Add Surround Background', 'Callback', @ModifyROI);
+            uimenu(c, 'Label', 'Remove Surround Background', 'Callback', @ModifyROI);
+            %%%
+            gui_CaImageViewer.ROI(ROInum+1) = rectangle('Position', adjustedpos, 'EdgeColor', linecolor, 'Curvature', [1 1],'Tag', ['ROI', num2str(ROInum)], 'UIContextMenu', c);
+            %%%
+            if gui_CaImageViewer.UsingSurroundBackground
+                surroundoffset = gui_CaImageViewer.SurroundBackgroundBuffer;
+                gui_CaImageViewer.BackgroundROI(ROInum+1) = rectangle('Position', [adjustedpos(1)-surroundoffset/2, adjustedpos(2)-surroundoffset/2, adjustedpos(3)+surroundoffset, adjustedpos(4)+surroundoffset], 'EdgeColor', 'w', 'Curvature', [1 1], 'Tag', ['BackgroundROI', num2str(ROInum)], 'Linewidth', 0.75);
+            else
+                gui_CaImageViewer.BackgroundROI(ROInum+1) = NaN;
+            end
         end
-        gui_CaImageViewer.ROItext(ROInum+1) = text(adjustedpos(1)-4, adjustedpos(2)-3, num2str(ROInum), 'color', 'white', 'Tag', ['ROI', num2str(ROInum), ' Text'],'ButtonDownFcn', 'DeleteROI', 'Fontsize', 6);
-    else
         
+        gui_CaImageViewer.ROItext(ROInum+1) = text(adjustedpos(1)-4, adjustedpos(2)-3, num2str(ROInum), 'color', 'white', 'Tag', ['ROI', num2str(ROInum), ' Text'],'ButtonDownFcn', 'DeleteROI', 'Fontsize', 6);
+        set(gui_CaImageViewer.figure.handles.InsertSpine_ToggleButton, 'Value', 0);
+        set(gui_CaImageViewer.figure.handles.InsertSpine_ToggleButton, 'Enable', 'off');
+        
+        if InsertOpt %%% Redraw the deleted ROIs, now with the numbers increased by 1
+            c1 = uicontextmenu;
+            uimenu(c1, 'Label', 'Add Surround Background', 'Callback', @ModifyROI);
+            uimenu(c1, 'Label', 'Remove Surround Background', 'Callback', @ModifyROI);
+            for a = ROInum:length(oldpositions)
+                gui_CaImageViewer.ROI(a+2) = rectangle('Position', oldpositions{a}, 'EdgeColor', [0.2 0.4 0.9], 'Curvature', [1 1],'Tag', ['ROI', num2str(a+1)], 'ButtonDownFcn', {@DragROI, a+1, 'HomeWindow'}, 'Linewidth', 1, 'UIContextMenu', c1);
+                gui_CaImageViewer.ROItext(a+2) = text(oldpositions{a}(1)-6, oldpositions{a}(2)-4, num2str(a+1), 'color', 'white', 'Tag', ['ROI', num2str(a+1), ' Text'],'ButtonDownFcn', 'DeleteROI', 'Fontsize', 6);
+                if ~isempty(oldBGpositions{a})
+                    gui_CaImageViewer.BackgroundROI(a+2) = rectangle('Position', oldBGpositions{a}, 'EdgeColor', 'w', 'Curvature', [1 1], 'Tag', ['BackgroundROI', num2str(a+1)], 'Linewidth', 0.75);
+                else
+                    gui_CaImageViewer.BackgroundROI(a+2) = NaN;
+                end
+            end
+        end
+    
+    else %%% Disregard this function if not in the "Zoom Window" called by DrawROI
     end
 else
     point1 = get(gca, 'CurrentPoint');  %%% Button down detected and position parameters stored (x, y, width, height)
@@ -71,24 +138,29 @@ else
 
     RoiRect = get(gco, 'Position') ;    %%% Get placement of current object in REFERENCE TO THE AXES
 
-    set(gcf, 'Units', 'normalized');
+    set(gcf, 'Units', 'pixels');
     rectFig = get(gcf, 'Position');     %%% Get position of current figure on the screen
 
-    set(gca, 'Units', 'normalized');
+    set(gca, 'Units', 'pixels');
     rectAx = get(gca, 'Position');      %%% Get position of current axes in REFERENCE TO THE FIGURE
 
     set(0, 'Units', 'Pixels');
     scrnsz = get(0,'ScreenSize');
 
-    xmag = rectAx(3)/128;                %%% screen pixel/image pixel
+    xmag = rectAx(3)/length(get(findobj(gca, 'Type', 'Image'), 'CData'));                %%% screen pixel/image pixel
     xoffset =rectAx(1)*rectFig(3);
-    ymag = rectAx(4)/128;
+    ymag = rectAx(4)/length(get(findobj(gca, 'Type', 'Image'), 'CData'));
     yoffset = rectAx(2)*rectFig(4);
     rect1 = [xmag*RoiRect(1)+xoffset+0.5, ymag*(scrnsz(2)-RoiRect(2)-RoiRect(4))+yoffset+.5, xmag*RoiRect(3), ymag*RoiRect(4)];
 
     if point1(1)>(RoiRect(1)+2*RoiRect(3)/3) && point1(2)> (RoiRect(2)+2*RoiRect(4)/3) %%%resize
-        fixedpoint = [(rectAx(1)+(xmag*RoiRect(1))), rectAx(2)+rectAx(4)-(ymag*RoiRect(2)+RoiRect(4))+(ymag*RoiRect(4))];
-        rbbox([rectAx(1)+(xmag*RoiRect(1)), rectAx(2)+rectAx(4)-(ymag*RoiRect(2)+RoiRect(4))+(ymag*RoiRect(4)), xmag*RoiRect(3),ymag*RoiRect(4)], fixedpoint);
+%         fixedpoint = [(rectAx(1)+(xmag*RoiRect(1))), rectAx(2)+rectAx(4)-(ymag*RoiRect(2)+RoiRect(4))+(ymag*RoiRect(4))];
+%         rbbox([rectAx(1)+(xmag*RoiRect(1)), rectAx(2)+rectAx(4)-(ymag*RoiRect(2)+RoiRect(4))+(ymag*RoiRect(4)), xmag*RoiRect(3),ymag*RoiRect(4)], fixedpoint);
+        x_pos = rectAx(1)+(xmag*RoiRect(1));
+        y_pos = rectAx(2)+(ymag*RoiRect(2));
+        currentrect = [x_pos, y_pos, x_pos+(xmag*RoiRect(3)), y_pos+(ymag*RoiRect(4))];
+        fixedpoint = [x_pos, y_pos+(ymag*RoiRect(4))]; %%% Upper left corner of box
+        rbbox(currentrect, fixedpoint)
         point2 = get(gca, 'CurrentPoint');
         point2 = point2(1,1:2);
         RoiRect(3) = point2(1)-RoiRect(1);
@@ -120,6 +192,11 @@ else
     set(actualROI, 'Position', RoiRect_final);
     rectangle('Position', RoiRect_final, 'EdgeColor', 'w', 'Curvature', [0 0], 'Tag', 'ROI confine', 'Linewidth', 1, 'LineStyle', ':');
     uistack(actualROI, 'top');
+    if gui_CaImageViewer.UsingSurroundBackground
+        oldsurround = findobj(gcf, 'Type', 'rectangle', '-and', 'Tag', ['BackgroundROI', num2str(ROInum)]);
+        surroundoffset = gui_CaImageViewer.SurroundBackgroundBuffer;
+        set(oldsurround,'Position', [RoiRect_final(1)-surroundoffset/2, RoiRect_final(2)-surroundoffset/2, RoiRect_final(3)+surroundoffset, RoiRect_final(4)+surroundoffset]);
+    end
         
     if twochannels == 1
         if ~isempty(strfind(Roi_Rect_tag, 'red'))

@@ -22,7 +22,7 @@ function [analyzed, poly] = AdjustFrequency(File, currentsession, showFig)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%    
 
-isbeingcalled = length(dbstack)>1;  %%% if the number of programs in 'dbstack' is greater than 1, then this file is being called by another function.
+isbeingcalled = length(dbstack)>1;  %%% if the number of programs in 'dbstack' is greater than 1, then this file is being called by another function
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%% Find the file being called %%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -48,14 +48,14 @@ else
         files = dir(cd);
         check = 0;
         for i = 1:length(files)
-            if ~isempty(regexp(files(i).name,'_001_001_summed_50_Analyzed_ByNathan')) || ~isempty(regexp(files(i).name,'_001_001_summed_50Analyzed_ByNathan'))
+            if ~isempty(regexp(files(i).name,'_summed_50_Analyzed_ByNathan')) || ~isempty(regexp(files(i).name,'_summed_50Analyzed_ByNathan'))
                 load(files(i).name)
                 check = 1;
             end
         end
         if ~check   %%% If no files were found using the above criteria
             for i = 1:length(files)
-                if ~isempty(regexp(files(i).name, '001_001_summed_50_Analyzed'))
+                if ~isempty(regexp(files(i).name, '_summed_50_Analyzed'))
                     load(files(i).name)
                 else
                 end
@@ -174,8 +174,8 @@ else
     spinethreshmultiplier = 2*ones(1,length(File.dF_over_F));       %%% multiplier to binarize events
     spinevalueslimitforbaseline = 3;                                %%% for capping values to estimate baseline
     spinevalueslimitfornoise = 2;
-    driftbaselinesmoothwindow = 450;
-    spinebaselinesmoothwindow = 60;
+    driftbaselinesmoothwindow = 1800;
+    spinebaselinesmoothwindow = 450;
     spinesmoothwindow = 15;
     polythreshmultiplier = 2*ones(1,length(File.Poly_Fluorescence_Measurement));
     Dendthreshmultiplier = 2*ones(1,File.NumberofDendrites);
@@ -209,12 +209,13 @@ analyzed.SpectralLengthConstant = SpectralLengthConstant;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Select which spine to plot %%%
 
-if File.NumberofSpines ==  0
+if File.NumberofSpines ==  0 || File.NumberofSpines ~= length(File.deltaF)
     File.NumberofSpines = length(File.deltaF);
+    analyzed.NumberofSpines = length(File.deltaF);
 end
 % 
-SpineNo = randi(File.NumberofSpines,1);
-% SpineNo = 49;
+SpineNo = randi(File.NumberofSpines,1); %%% Will choose a random spine from the available ones for this file
+SpineNo = 20;  %%% Mantually select spine to be considered
 
 
 DendNum = File.NumberofDendrites;
@@ -589,6 +590,8 @@ for i = 1:DendNum
 
 end
 
+analyzed.DendriteThreshold = Dthresh;
+
 for i = 1:File.NumberofDendrites
     temp = processed_Dendrite(i,:);
     
@@ -742,147 +745,15 @@ analyzed.Compiled_Dendrite_Fluorescence_Measurement = compiledDendData;
 
 if length(File.dF_over_F) ~= File.SpineDendriteGrouping{end}(end)
     File.SpineDendriteGrouping{end} = File.SpineDendriteGrouping{end}(1):length(File.dF_over_F);
+    analyzed.SpineDendriteGrouping{end} = analyzed.SpineDendriteGrouping{end}(1):length(analyzed.dF_over_F);
 end
+% 
 
-alpha = cell(1,File.NumberofDendrites);
-
-%%%%%%%%%%%%%%%%%%%
-%%% Perform fitting
-%%%%%%%%%%%%%%%%%%%
-
-for i = 1:DendNum
-    counter = 1;
-%     dendDataforfit = floored_Dend(i,:).*globaldendriteevents{i};
-%     dendDataforfit(dendDataforfit<=0) = nan;
-    dendDataforfit = processed_Dendrite(i,:);
-    dendDataforfit(dendDataforfit<=Dthresh(i)) = nan;
-%     dendDataforfit = compiledDendData(i,:);
-
-    
-    for j = File.SpineDendriteGrouping{i}(1):File.SpineDendriteGrouping{i}(end)
-%         spineDataforfit = floored(j,:);
-%         spineDataforfit(spineDataforfit<=0)=nan;
-        spineDataforfit = processed_dFoF(j,:);
-        spineDataforfit(spineDataforfit<=0) = nan;   %%%%%%%%%%%%%%%%%%%%%%%%% Changed 12/9 !!!!!!!!!!!!!!!!!!!!!!!!!!!
-%         spineDataforfit = File.Fluorescence_Measurement{j};
-
-            %%% Downsample spine baseline (based on matching downsampled
-            %%% dend data)
-%             S_baseline = spineDataforfit(floored(i,:)==0);
-%             S_signal = spineDataforfit(floored(i,:)~=0);
-%             S_baseline = S_baseline(1:dwnsmpfact:end);
-%             spineDataforfit = [S_baseline, S_signal];
-              spineDataforfit(spineDataforfit<=thresh(j)) = nan;
-            
-        try
-            alpha{i}(1:2,counter) = robustfit(dendDataforfit,spineDataforfit);
-        catch
-            dendDataforfit = processed_Dendrite(i,:);
-            dendDataforfit(dendDataforfit<=0) = nan;
-            spineDataforfit = processed_dFoF(j,:);
-            spineDataforfit(spineDataforfit<=0) = nan;
-            alpha{i}(1:2,counter) = robustfit(dendDataforfit,spineDataforfit);
-        end
-        counter = counter + 1;
-    end
-end
-
-%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Perform subtraction
-%%%%%%%%%%%%%%%%%%%%%%%%
-
-UseMinAlpha = 1;
-File.UsedMinAlpha = UseMinAlpha;
-
-MinAlpha = 0.8;
-File.MinAlpha = MinAlpha;
-
-for i = 1:DendNum
-    counter = 1;
-    for j = File.SpineDendriteGrouping{i}(1):File.SpineDendriteGrouping{i}(end)
-        if alpha{i}(2,counter) == 0
-            disp(['Spine ', num2str(j), ' was not fit properly'])
-        end
-        if UseMinAlpha;
-            if alpha{i}(2,counter) < MinAlpha
-                alphatouse = MinAlpha;
-            else
-                alphatouse = alpha{i}(2,counter);
-            end
-            processed_dFoF_Dendsubtracted(j,:) = processed_dFoF(j,:)-(alphatouse*processed_Dendrite(i,:));   %%% Subtracted all individual points   
-%             processed_dFoF_Dendsubtracted(j,:) = processed_dFoF(j,:)-(alpha{i}(2,counter)*floored_Dend(i,:));%.*Dglobal(i,:);           %%% Use Dglobal to only subtract times when the dendrite is active
-            processed_dFoF_Dendsubtracted(j,processed_dFoF_Dendsubtracted(j,:)<0) = 0;
-        else
-            if alpha{i}(2,counter)>0.01  %%%%%%%%%%%%%%%%%%%%%%%%% Changed 12/9 !!!!!!!!!!!!!!!!!!!!!!!!!!!
-                processed_dFoF_Dendsubtracted(j,:) = processed_dFoF(j,:)-(alpha{i}(2,counter)*processed_Dendrite(i,:));   %%% Subtracted all individual points   
-    %             processed_dFoF_Dendsubtracted(j,:) = processed_dFoF(j,:)-(alpha{i}(2,counter)*floored_Dend(i,:));%.*Dglobal(i,:);           %%% Use Dglobal to only subtract times when the dendrite is active
-                processed_dFoF_Dendsubtracted(j,processed_dFoF_Dendsubtracted(j,:)<0) = 0;
-            else
-    %             processed_dFoF_Dendsubtracted(j,:) = processed_dFoF(j,:)-processed_Dendrite(i,:);
-    %             alpha{i}(2,counter) = 1;
-    %             processed_dFoF_Dendsubtracted(j,:) = processed_dFoF(j,:)-(floored_Dend(i,:));%.*Dglobal(i,:));
-                processed_dFoF_Dendsubtracted(j,:) = zeros(1,length(processed_dFoF(j,:)));
-                processed_dFoF_Dendsubtracted(j,processed_dFoF_Dendsubtracted(j,:)<0) = 0;
-            end
-        end
-        counter = counter + 1;
-    end
-end
-
-for i = 1:numberofSpines
-    temp = processed_dFoF_Dendsubtracted(i,:);
-    
-    temp(temp<thresh(i,1)) = 0;
-    
-    floored_Dsubtracted(i,:) = temp;
-    tamp = temp;
-    tamp = smooth(tamp,30);
-    dtamp = diff(tamp);     %%% first derivative of the binarized data
-    dtamp = [0;dtamp];
-    dtamp(dtamp>0) = 1; dtamp(dtamp<0) = -1;
-    d2tamp = diff(dtamp);
-    d2tamp = [0;d2tamp];    %%% Second derivative of the binarized data (concavity)
-    d2tamp(d2tamp>0) = 1; d2tamp(d2tamp<0) = -1;
-    temp(d2tamp>0) = nan; %% For plateau spikes, when the 2nd derivative is positive (concave up, corresponding to dips), punch a 'hole' in the data, so that multiple peaks will be counted
-    riders_Dsubtracted(i,:) = temp;
-end
-
-%%% Set all events = 1, making square pulses corresponding to
-%%% activity
-
-square_Ds = [];
-ternarized_Ds = riders_Dsubtracted;
-ternarized_Ds(isnan(ternarized_Ds)) = 0;
-ternarized_Ds(ternarized_Ds~=0) = riderthresh2-1.5;
-
-
-for i = 1:numberofSpines
-    temp = floored_Dsubtracted(i,:);   %%% This value will eventually be used to define "synapse only" events, which only requires knowledge of when spines are above a threshold (e.g. spikes riding on top of activity need not be considered)
-    temp(temp~=0)= 1;
-    square_Ds(i,:) = temp;
-    temp = [];
-    temp = square_Ds(i,:)+ternarized_Ds(i,:); %% Can remove 'ternarized' to get rid of plateau spike summing
-    both_Dsubtracted(i,:) = temp;
-    temp2 = (diff(temp)>0.1)>0;
-    temp3 = [0, temp2];          %%% Any use of 'diff' shortens the vector by 1
-    smeared = smooth(temp3, 5);  %%% Smoothing factor is taken from the reported decay constant of GCaMP6f (~150ms), converted to frames 
-    smeared(smeared>0) = 1;
-    trueeventcount_Dsubtracted(i,:) = smeared;
-    frequency_Dsubtracted(i,1) = (nnz(diff(trueeventcount_Dsubtracted(i,:)>0.5)>0)/((length(File.Time)/30.49)/60))';
-end
-
-
-analyzed.ActivityMap_DendriteSubtracted = trueeventcount_Dsubtracted;
-analyzed.MeanEventAmp = amp;
-
-analyzed.Frequency_DendriteSubtracted = frequency_Dsubtracted;
-analyzed.Processed_dFoF_DendriteSubtracted = processed_dFoF_Dendsubtracted;
-analyzed.SynapseOnlyBinarized_DendriteSubtracted = square_Ds;
-analyzed.Alphas = alpha;
+analyzed = DendriteSubtraction(analyzed, [], 'Initial');
 
 if showFig
     axes(procplot)
-    plot(floored_Dsubtracted(SpineNo, :), 'Color', [0.7 0.7 0.7], 'Linewidth', 1.5)
+    plot(analyzed.Floored_DendriteSubtracted(SpineNo, :), 'Color', [0.7 0.7 0.7], 'Linewidth', 1.5)
     legend({'Smoothed Data', 'Activity above Thresh', 'Binary Activity', 'Counted Events', 'Threshold', 'Baseline', 'Dend-subtracted'}, 'Location', 'SouthEastOutside')
     axpos2 = get(procplot, 'Position');
     set(rawplot, 'Position', [axpos2(1), axpos(2), axpos2(3), axpos(4)])
@@ -958,7 +829,7 @@ for i = 1:numberofSpines
             synapticEvents(i,synapticEvents(i,:)<1) = 0;
             synapseOnlyFreq(i,1) = (nnz(diff(synapticEvents(i,:)>0.5)>0)/((length(analyzed.Time)/30.49)/60))';
             %%%
-            withAPs(i,:) = square_Ds(i,:)+logical(Dboth(onDend,:));   %%% Add binarized spine data to dendrite data to illustrate when dendrite and spines are co-firing
+            withAPs(i,:) = analyzed.SynapseOnlyBinarized_DendriteSubtracted(i,:)+logical(Dboth(onDend,:));   %%% Add binarized spine data to dendrite data to illustrate when dendrite and spines are co-firing
             %%%
             withAPsFreq(i,1) = (nnz(diff(withAPs(i,:)>1.5)>0)/((length(analyzed.Time)/30.49)/60))';
             withAPs(i,(withAPs(i,:)==1)) = 0;
@@ -1085,7 +956,14 @@ for i = 1:File.NumberofDendrites
     if length(File.SpineDendriteGrouping{i})>1
         for j = File.SpineDendriteGrouping{i}(1):File.SpineDendriteGrouping{i}(end-1)
             for k = (j+1):File.SpineDendriteGrouping{i}(end)
-                SpineToSpineDistance(j,k) = abs(sum(Mic_Dist{spine_address{j}.Dendrite}(spine_address{j}.Index:spine_address{k}.Index))-Mic_Dist{spine_address{j}.Dendrite}(spine_address{j}.Index));  %%% Find the sum of linear distances from the current point to the nearby spine
+            if j>k
+                lower = spine_address{k}.Index;
+                higher = spine_address{j}.Index;
+            else
+                lower = spine_address{j}.Index;
+                higher = spine_address{k}.Index;
+            end
+                SpineToSpineDistance(j,k) = abs(sum(Mic_Dist{spine_address{j}.Dendrite}(lower:higher))-Mic_Dist{spine_address{j}.Dendrite}(lower));  %%% Find the sum of linear distances from the current point to the nearby spine
             end
         end 
     else
@@ -1135,7 +1013,7 @@ r_all(isnan(r_all)) = 0;
 OverallCorrelation = r_all;
 OverallPvalue = p_all;
 
-[r, p] = corrcoef(synapticEvents');
+[r, p] = corrcoef(analyzed.SynapseOnlyBinarized_DendriteSubtracted');
 r(isnan(r)) = 0;
 SpineToSpineCorrelation = r;
 SpineToSpinePValue = p;

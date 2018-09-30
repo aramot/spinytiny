@@ -2,31 +2,19 @@ function DrawPolyLines(hObject, eventdata, DendriteNum)
 
 program = get(gcf);
 
-running = program.FileName;
-
-%%%%% Handle old lines and data %%%%%%
-
-if ~isempty(regexp(running, 'CaImageViewer'))
-    global gui_CaImageViewer
-    glovar = gui_CaImageViewer;
-    axes1 = glovar.figure.handles.GreenGraph;
-    axes2 = glovar.figure.handles.RedGraph;
-    twochannels = get(glovar.figure.handles.TwoChannels_CheckBox, 'Value');
-elseif ~isempty(regexp(running, 'FluorescenceSuite'));
-    global gui_FluorescenceSuite
-    glovar = gui_FluorescenceSuite;
-    axes1 = glovar.figure.handles.Green_Axes;
-    axes2 = glovar.figure.handles.Red_Axes;
-    twochannels = get(glovar.figure.handles.TwoChannels_CheckBox, 'Value');
-end
+global gui_CaImageViewer
+glovar = gui_CaImageViewer;
+axes1 = glovar.figure.handles.GreenGraph;
+axes2 = glovar.figure.handles.RedGraph;
+twochannels = get(glovar.figure.handles.TwoChannels_CheckBox, 'Value');
 
 User = get(glovar.figure.handles.figure1, 'UserData');
-
 
 %%% Since you are drawing multiple dendrite polylines, you need to be able
 %%% to delete specific lines/circles that correspond to the dendrite that's
 %%% being overwritten (if applicable)
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 cmap = glovar.CurrentCMap;
 
 if strcmpi(cmap, 'Jet') || strcmpi(cmap, 'Fire') || strcmpi(cmap, 'Hot')
@@ -34,6 +22,10 @@ if strcmpi(cmap, 'Jet') || strcmpi(cmap, 'Fire') || strcmpi(cmap, 'Hot')
 else
     linecolor = 'r';
 end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%% Delete old lines and ROIs %%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 if DendriteNum > glovar.Dendrite_Number
     glovar.Dendrite_Number = DendriteNum;
@@ -43,7 +35,6 @@ if DendriteNum <= glovar.Dendrite_Number
     ROIboxes = flipud(findobj(program.Children, '-regexp', 'Tag',  ['Dendrite ', num2str(DendriteNum)]));
     ROIlines = flipud(findobj(program.Children, 'Type', 'Line', '-or', 'Tag', 'PolyLine '));
 
-    boxtags = get(ROIboxes, 'Tag');
     linetags = get(ROIlines,'Tag');
     
     a = [];
@@ -59,12 +50,7 @@ if DendriteNum <= glovar.Dendrite_Number
         ROIcounter = ROIcounter+1;
     end
 
-%     glovar.PolyROI = glovar.PolyROI(~cellfun(@isempty, glovar.PolyROI));
-%     glovar.PolyLinePos = glovar.PolyLinePos(~cellfun(@isempty, glovar.PolyLinePos));
-
     glovar.Dendrite_ROIs = glovar.Dendrite_ROIs-length(a);
-
-%     pause(0.1)
     
     for i = 1:length(ROIlines)
         if size(linetags,1) > 1
@@ -128,13 +114,16 @@ set(gca, 'XTick', [], 'YTick', []);
 
 x = []; y = [];
 
-if strcmpi(User, 'Giulia') 
-    [x, y] = getline; close(dendwindow);
-else
-    h = addlistener(handle(gcf), 'WindowButtonDownFcn', 'PostSet', @changedWBDFcn);
-    [x, y] = getline; close(dendwindow);
-    delete(h)
-end
+%%% Draw line along dendrite by adding regularly spaced points along its
+%%% length; note: double-clicks can cause early termination, so remove this
+%%% functionality with a "listener" function
+
+
+%     h = addlistener(handle(gcf), 'WindowButtonDownFcn', 'PostSet', @changedWBDFcn);
+%     [x, y] = getline; close(dendwindow);
+%     delete(h)
+
+[x, y] = getline; close(dendwindow);
 
 x = x+xmin;
 y = y+ymin;
@@ -178,8 +167,10 @@ end
     glovar.PolyLinePos = cell(1,sum(glovar.DendritePolyPointNumber));
     glovar.PolyROI = cell(1,sum(glovar.DendritePolyPointNumber));
     
-    combin = mat2cell([x,y], ones(size(x,1),1), 2);
-    combinpos = mat2cell([x-radius,y-radius,radius*2*ones(length(x),1), radius*2*ones(length(y),1)], ones(size(x,1),1), 4);
+%     combinpos = mat2cell([x-radius,y-radius,...
+%       radius*2*ones(length(x),1),...
+%     radius*2*ones(length(y),1)], ones(size(x,1),1), 4);   %%% Old way
+    combinpos = mat2cell([x,y], ones(size(x,1),1), 2);
 
 for i = 1:glovar.Dendrite_Number
     
@@ -201,16 +192,17 @@ for i = 1:glovar.Dendrite_Number
         glovar.PolyLinePos(newindex(1):newindex(end)) = cellfun(@(x) x(:)', combinpos, 'UniformOutput', false);
         for j = 1:length(newindex)
             ROInum = newindex(j);
-            glovar.PolyROI{ROInum} = rectangle('Position', glovar.PolyLinePos{newindex(j)}, 'EdgeColor', linecolor, 'Tag', ['Dendrite ', num2str(DendriteNum), ' PolyROI ', num2str(i)], 'Curvature', [1 1], 'ButtonDownFcn', {@Drag_Poly, ROInum});
+%             glovar.PolyROI{ROInum} = rectangle('Position', glovar.PolyLinePos{newindex(j)}, 'EdgeColor', linecolor, 'Tag', ['Dendrite ', num2str(DendriteNum), ' PolyROI ', num2str(j)], 'Curvature', [1 1], 'ButtonDownFcn', {@Drag_Poly, ROInum});
+            glovar.PolyROI{ROInum} = drawellipse('Center', glovar.PolyLinePos{newindex(j)},'RotationAngle', 0, 'SemiAxes', [radius, radius],...
+                'AspectRatio', 1, 'Tag', ['Dendrite ', num2str(DendriteNum), ' PolyROI ', num2str(j)], 'FaceAlpha', 0, 'Color', linecolor, 'DrawingArea',...
+                'unlimited', 'HandleVisibility', 'on','InteractionsAllowed', 'none', 'Linewidth', 1);
+            glovar.polyListener(ROInum) = listener(glovar.PolyROI{ROInum}, 'ROIMoved', @RefreshPolyLine);
         end
     else
-        glovar.PolyLinePos(newindex(1):newindex(end)) = cellfun(@(x) x(:)', tempPos(oldindex(1):oldindex(end)), 'UniformOutput', false);
-        glovar.PolyROI(newindex(1):newindex(end)) = cellfun(@(x) x, tempROI(oldindex(1):oldindex(end)), 'UniformOutput', false);
+        glovar.PolyLinePos(newindex) = cellfun(@(x) x(:)', tempPos(oldindex(1):oldindex(end)), 'UniformOutput', false);
+        glovar.PolyROI(newindex) = cellfun(@(x) x, tempROI(oldindex(1):oldindex(end)), 'UniformOutput', false);
     end
-    
-%     glovar.PolyLineVertices{i} = [x(i-ExistingDROIs), y(i-ExistingDROIs)];
-%     glovar.PolyLinePos{i} = [x(i-ExistingDROIs)-radius, y(i-ExistingDROIs)-radius, radius*2, radius*2];
-    
+        
 end
 
 if twochannels == 1
@@ -218,7 +210,7 @@ if twochannels == 1
     axes(axes2)
     glovar.RedPolyLine = line(x,y, 'Tag', 'PolyLine', 'color', 'cyan');
 
-    for i = 1:length(x);
+    for i = 1:length(x)
         glovar.RedPolyLinePos{i} = [x(i)-radius, y(i)-radius, radius*2, radius*2];
         ROInum = i;
         glovar.RedPolyROI{i} = rectangle('Position', glovar.RedPolyLinePos{i}, 'EdgeColor', 'cyan', 'Tag', ['Dendrite ', num2str(DendriteNum), ' RedPolyROI', num2str(i)], 'Curvature', [1 1],'ButtonDownFcn', {@Drag_Poly, ROInum});
@@ -231,9 +223,5 @@ set(glovar.figure.handles.output, 'WindowButtonDownFcn', []);
 
  %%% Overwrite the previous existing global workspace with the newly imprinted one
  
-if ~isempty(regexp(running, 'CaImageViewer'))
-    gui_CaImageViewer = glovar;
-elseif ~isempty(regexp(running, 'FluorescenceSuite'));
-    gui_FluorescenceSuite = glovar;
-end
+gui_CaImageViewer = glovar;
 

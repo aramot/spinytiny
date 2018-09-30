@@ -60,13 +60,61 @@ for A = 1:length(addresses)
             %%% search for identical clusters, then remove them
             for i = 1:length(clust)
                 for j = 1:length(clust)
-                    if i ~= j && ~isempty(clust{i}) && ~isempty(clust{j}) && length(clust{i}) == length(union(clust{i},clust{j}))
+                    if i ~= j && ~isempty(clust{i}) && ~isempty(clust{j}) && length(clust{i}) == length(union(clust{i},clust{j})) %%% If cluster n and cluster n+1 are both populated and the length of cluster n == length of the union of n and n+1, then the groups are identical, as no new indices are added from the union
                         clust{j} = [];
                     end
                 end
             end
             
             clust = clust(~cellfun(@isempty, clust));
+            
+            %%% Add contingency to remove spines that appear in multiple
+            %%% clusters
+            
+            if length(clust)>1
+                combs = nchoosek(1:length(clust),2); 
+                for i = 1:size(combs,1)
+                    if ~isempty(find(ismember(clust{combs(i,1)}, clust{combs(i,2)}),1))
+%                         if length(clust{combs(i,1)})>length(clust{combs(i,2)})
+%                             clust{combs(i,2)} = setdiff(clust{combs(i,2)},clust{combs(i,2)}(find(ismember(clust{combs(i,2)},clust{combs(i,1)}))));
+%                         else
+%                             clust{combs(i,1)} = setdiff(clust{combs(i,1)},clust{combs(i,1)}(find(ismember(clust{combs(i,1)},clust{combs(i,2)}))));
+%                         end
+                        clust{combs(i,1)} = union(clust{combs(i,1)},clust{combs(i,2)});
+                        clust{combs(i,2)} = [];
+                    end
+                end
+
+                clust = clust(cell2mat(cellfun(@(x) length(x)>1, clust, 'uni', false)));    %%% Remove clusters that only have one spine remaining
+            else
+            end
+            
+            %%% Add distance contingency
+%             DistanceMax = 10;
+% %             
+%             a = Data.DistanceHeatMap;
+%             b = a';
+%             a(isnan(a)) = b(isnan(a));
+%             Distances = a;
+%             
+%             toofar = [];
+%             for i = 1:length(clust)
+%                 for j = 1:length(clust{i})
+%                     partnerdist = [];
+%                     for k = 1:length(clust{i})
+%                         partnerdist(k) = Distances(clust{i}(j), clust{i}(k));
+%                     end
+%                     if min(partnerdist) > DistanceMax
+%                         toofar = [toofar; clust{i}(j)];
+%                     end
+%                 end
+%                 clust{i} = setdiff(clust{i},toofar);
+%                 if length(clust{i})<2
+%                     clust{i} = [];
+%                 end
+%             end
+%             
+%             clust = clust(~cellfun(@isempty, clust));
             
 
             Clustered(Clustnum+1:Clustnum+sum(~cellfun(@(x) isempty(x), clust))) = clust(~cellfun(@(x) isempty(x), clust));
@@ -85,6 +133,11 @@ for A = 1:length(addresses)
         CorrelationofClusters(Clustnum+1) = nan;
     end
 end
+
+
+
+
+
 
 %%% Highly correlated spines on different dendrites
 

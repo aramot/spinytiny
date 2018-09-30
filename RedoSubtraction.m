@@ -3,7 +3,7 @@ function RedoSubtraction(varargin)
 
 if isempty(varargin)
     if ispc
-        foldertouse = 'C:\Users\Komiyama\Desktop\ActivitySummary_UsingRawData';
+        foldertouse = 'E:\ActivitySummary';
         cd(foldertouse)
         files = dir(cd);
         for i = 1:length(files)
@@ -15,7 +15,7 @@ if isempty(varargin)
                 cd(foldertouse)
                 load(files(i).name);
                 eval(['current_session = ', mouse, '_', date, '_Summary.Session;'])
-                eval(['DendriteSubtraction(', mouse, '_', date, '_Summary, num2str(date))']);
+                eval(['DendriteSubtraction(', mouse, '_', date, '_Summary, num2str(date), ''Redo'')']);
                 clear(files(i).name(1:end-4))
                 close all
             end
@@ -34,7 +34,7 @@ if isempty(varargin)
                 cd(foldertouse)
                 currentsession = files{i}{2};
                 eval(['current_session = ', mouse, '_', date, '_Summary.Session;']);
-                eval(['DendriteSubtraction(', mouse, '_', date, '_Summary, num2str(date))']);
+                eval(['DendriteSubtraction(', mouse, '_', date, '_Summary, num2str(date), ''Redo'');']);
                 clear(files(i).name(1:end-4))
             end
         end
@@ -42,7 +42,7 @@ if isempty(varargin)
     end
 else
     if ispc
-        foldertouse = 'C:\Users\Komiyama\Desktop\ActivitySummary_UsingRawData';
+        foldertouse = 'E:\ActivitySummary';
         cd(foldertouse)
         files = dir(cd);
         for i = 1:length(files)
@@ -55,7 +55,7 @@ else
                     cd(foldertouse)
                     load(files(i).name);
                     eval(['current_session = ', mouse, '_', date, '_Summary.Session;'])
-                    eval(['DendriteSubtraction(', mouse, '_', date, '_Summary, num2str(date))']);
+                    eval(['DendriteSubtraction(', mouse, '_', date, '_Summary, num2str(date), ''Redo'');']);
                     clear(files(i).name(1:end-4))
                 end
             end

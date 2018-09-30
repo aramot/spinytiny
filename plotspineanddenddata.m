@@ -1,9 +1,9 @@
 function plotspineanddenddata(varargin)
 
 if isempty(varargin)
-    cd('C:\Users\Komiyama\Desktop\ActivitySummary_UsingRawData');
+    cd('E:\ActivitySummary');
 
-    files = dir('C:\Users\Komiyama\Desktop\ActivitySummary_UsingRawData');
+    files = dir('E:\ActivitySummary');
     
     firstfileofint = 4;
     
@@ -26,6 +26,11 @@ if isempty(varargin)
         h1 = subplot(2,3,1:3);
         plot(File.Fluorescence_Measurement{SpineNo}, 'k')
         
+        filename = regexp(File.Filename, '[A-Z]{2,3}0+\d+_\d{4,6}', 'match');
+        filename = filename{1};
+        session = File.Session;
+        title(['Comparison of traces for spine no. ', num2str(SpineNo), ' from ', filename, ' (Session ', num2str(session), ')'], 'Interpreter', 'none')
+        
         h2 = subplot(2,3,4:6);
         plot(File.Processed_dFoF(SpineNo, :), 'k');
         hold on;
@@ -34,15 +39,25 @@ if isempty(varargin)
         plot(File.Dendrite_Binarized(DendriteChoice, :)/2-2, 'm', 'Linewidth', 2)
         plot(File.Processed_dFoF_DendriteSubtracted(SpineNo,:), 'Color', [0.6 0.6 0.6], 'Linewidth', 2)
         plot(File.SynapseOnlyBinarized_DendriteSubtracted(SpineNo, :)/2, 'g', 'Linewidth', 2)
+        plot(1:length(File.Processed_dFoF_DendriteSubtracted(SpineNo,:)), File.SpineThreshold(SpineNo)*ones(1,length(File.Processed_dFoF_DendriteSubtracted(SpineNo,:))), '--r')
         linkaxes([h1,h2], 'x')
 
         legend({'Processed Spine Trace', 'Processed Dend Trace', 'Binarized Spine', 'Binarized Dend', 'Dend-subtracted spine trace', 'Binarized dend-sub'})
 
-        filename = regexp(File.Filename, '[A-Z]{2,3}0+\d+_\d{4,6}', 'match');
-        filename = filename{1};
-        session = File.Session;
+
         
-        title(['Comparison of traces for spine no. ', num2str(SpineNo), ' from ', filename, ' (Session ', num2str(session), ')'], 'Interpreter', 'none')
+        if isfield(File, 'MinAlpha')
+            MinAlpha = File.MinAlpha;
+        else
+            MinAlpha = 0;
+        end
+        
+        if isfield(File, 'Alphas')
+            alpha = cell2mat(File.Alphas);
+        else
+            alpha = zeros(2,File.NumberofSpines);
+        end
+        title(['Processed data using calc alpha of ', num2str(alpha(2,SpineNo)), ' and a min alpha of ', num2str(MinAlpha)])
 
             
 else

@@ -30,7 +30,7 @@ for i = 1:length(files)
 end
 
 
-foldertouse = 'C:\Users\Komiyama\Desktop\ActivitySummary_UsingRawData';
+foldertouse = 'E:\ActivitySummary';
 cd(foldertouse)
 files = dir(cd);
 for i = 1:length(files)

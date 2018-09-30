@@ -4,16 +4,31 @@ global gui_CaImageViewer
 
 selectedaxes = findobj(gcf, 'XColor', [0 1 0]);     %%% Finds the selected axes based on the color set to 'XColor' in function HighLightAxis)
 
+figtitle = regexp(get(gcf, 'Name'), '[A-Z]{2,3}0+\d+', 'match');
+if ~isempty(figtitle)
+    experiment = figtitle{1};
+    animal = experiment;
+else
+    animal = regexp(gui_CaImageViewer.filename, '[A-Z]{2,3}[0-9]*', 'match');
+    animal = animal{1};
+end
+    experimenter = regexp(gui_CaImageViewer.save_directory, ['People.\w+'], 'match');
+    experimenter = experimenter{1};
+    experimenter = experimenter(strfind(experimenter, '\')+1:end);
+
+    
 %%%% Project either 1 or multiple images to the CaImageViewer window. If a
 %%%% single image is projected, the slider will be disabled. If multiple
 %%%% are projected, the slider will move through them in order of date.
 
+
 if length(selectedaxes)==1
 
-    animal = regexp(gui_CaImageViewer.filename, '[A-Z]{2,3}[0-9]*', 'match');
-    animal = animal{1};
     date = get(get(selectedaxes, 'Title'), 'String');
-    gui_CaImageViewer.save_directory = ['Z:\People\Nathan\Data\', animal, '\', date, '\summed\'];
+    gui_CaImageViewer.save_directory = ['Z:\People\',experimenter,'\Data\', animal, '\', date, '\summed\'];
+    
+    mostlikelyfile = fastdir(gui_CaImageViewer.save_directory, 'summed_50.tif');
+    gui_CaImageViewer.filename = mostlikelyfile{1};
 
     im = get(get(selectedaxes, 'Children'), 'CData');
 
@@ -26,6 +41,7 @@ if length(selectedaxes)==1
     %%%% Set up parameters in an accessible substructure within the main GUI
     gui_CaImageViewer.NewSpineAnalysis = 1;
     gui_CaImageViewer.NewSpineAnalysisInfo.CurrentDate = date;
+    gui_CaImageViewer.MultipleDates = [];
 
     title = get(get(selectedaxes,'XLabel'), 'String');
 
@@ -38,16 +54,16 @@ if length(selectedaxes)==1
 
 else
     
-    animal = regexp(gui_CaImageViewer.filename, '[A-Z]{2,3}[0-9]*', 'match');
-    animal = animal{1};
     selectedaxes = flipud(selectedaxes);
     for i = 1:length(selectedaxes)
         date(i,1:6) = get(get(selectedaxes(i), 'Title'), 'String');
     end
     [sorteddates, sort_index] = sortrows(date);
-    
    
-    gui_CaImageViewer.save_directory = ['Z:\People\Nathan\Data\', animal, '\', sorteddates(1,:), '\summed\'];
+    gui_CaImageViewer.save_directory = ['Z:\People\',experimenter,'\Data\', animal, '\', sorteddates(1,:), '\summed\'];
+    
+    mostlikelyfile = fastdir(gui_CaImageViewer.save_directory, 'summed_50.tif');
+    gui_CaImageViewer.filename = mostlikelyfile{1};
     
     for i = 1:length(selectedaxes)
         im{i} = get(get(selectedaxes(sort_index(i)), 'Children'), 'CData');
@@ -66,7 +82,8 @@ else
 
     %%%% Set up parameters in an accessible substructure within the main GUI
     gui_CaImageViewer.NewSpineAnalysis = 1;
-    gui_CaImageViewer.NewSpineAnalysisInfo.CurrentDate = date(1,:);
+    gui_CaImageViewer.NewSpineAnalysisInfo.CurrentDate = sorteddates(1,:);
+    gui_CaImageViewer.NewSpineAnalysisInfo.MultipleDates = sorteddates;
 
     title = get(get(selectedaxes(1),'XLabel'), 'String');
 

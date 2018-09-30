@@ -347,6 +347,6 @@ for ii = 1:sZi3
     warpedImage(:,:,ii) = spatial_interp(double(initImage(:,:,ii)), final_warp, str, transform, nx2, ny2);
 end
 
-warpedImage = uint8(warpedImage);
+warpedImage = uint16(warpedImage);
 warp = final_warp;
 %%%

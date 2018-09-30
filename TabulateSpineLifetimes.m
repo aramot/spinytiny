@@ -4,16 +4,30 @@ function TabulateSpineLifetimes(~,~)
 
 global gui_CaImageViewer
 
+selectedaxes = findobj(gcf, 'XColor', [0 1 0]);     %%% Finds the selected axes based on the color set to 'XColor' in function HighLightAxis
+
+fieldlabel = regexp(get(get(selectedaxes(1),'XLabel'), 'String'), '\d+', 'match'); currentimagingfield = fieldlabel{1};
+
 %%% Define experiment 
-experiment = regexp(gui_CaImageViewer.filename, '[A-Z]{2}\d+[_]\d+', 'match');
-experiment = experiment{1};
-animal = experiment(1:5);
+figtitle = regexp(get(gcf, 'Name'), '[A-Z]{2,3}0+\d+', 'match');
+if ~isempty(figtitle)
+    experiment = figtitle{1};
+    animal = experiment;
+else
+    experiment = regexp(gui_CaImageViewer.filename, '[A-Z]{2}\d+[_]\d+', 'match');
+    experiment = experiment{1};
+    animal = experiment(1:5);
+end
+currentuser = get(gui_CaImageViewer.figure.handles.figure1, 'UserData');
+if ~isempty(currentuser)
+    useroption = [currentuser, '_'];
+end
 
 %%% Find spine lifetimes data specific to the current imaging field
 currentimagingfield = gui_CaImageViewer.NewSpineAnalysisInfo.CurrentImagingField;
 terminus = regexp(gui_CaImageViewer.save_directory, animal, 'end');
 targ_folder = gui_CaImageViewer.save_directory(1:terminus);
-load([targ_folder, '\Imaging Field ', num2str(currentimagingfield), ' Spine Registry'])
+load([targ_folder, filesep, useroption,'Imaging Field ', num2str(currentimagingfield), ' Spine Registry'])
 
 %%% Collect and organize data for tabulation
 data = SpineRegistry.Data;

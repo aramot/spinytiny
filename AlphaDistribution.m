@@ -3,7 +3,7 @@ function AlphaDistribution(varargin)
 Alphas = cell(1,14);
 
 if isempty(varargin)
-    foldertouse = 'C:\Users\Komiyama\Desktop\ActivitySummary_UsingRawData';
+    foldertouse = 'E:\ActivitySummary';
     cd(foldertouse)
     files = dir(cd);
     for i = 1:length(files)
@@ -20,7 +20,7 @@ if isempty(varargin)
         end
     end
 else
-    foldertouse = 'C:\Users\Komiyama\Desktop\ActivitySummary_UsingRawData';
+    foldertouse = 'E:\ActivitySummary';
     cd(foldertouse)
     files = dir(cd);
     for i = 1:length(files)

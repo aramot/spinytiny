@@ -1,4 +1,4 @@
-function behavior_trials = parse_behavior_bitcode(xsg_trace,xsg_sample_rate)
+function behavior_trials = parse_behavior_bitcode(xsg_trace,xsg_sample_rate,Session)
 % seperated from AP_ReadBitCode
 
 if(nargin<2)
@@ -45,13 +45,25 @@ else
         curr_bitcode = zeros(1,num_bits);
         for curr_bit = 1:num_bits
             % boundaries for bits: between the half of each break
-            % (bitcode_sync+5ms+2.5ms = 7.5ms)
-            bit_boundary_min = bitcode_sync(curr_bitcode_sync) + 7.5*(xsg_sample_rate/1000) + ...
-                (curr_bit-1)*10.6*(xsg_sample_rate/1000);
-            bit_boundary_max = bitcode_sync(curr_bitcode_sync) + 7.5*(xsg_sample_rate/1000) + ...
-                (curr_bit)*10.6*(xsg_sample_rate/1000);
+            % (bitcode_sync+5ms+2.5ms = 7.5ms) 2016 Aki
+%             bit_boundary_min = bitcode_sync(curr_bitcode_sync) + 7.5*(xsg_sample_rate/1000) + ...
+%                 (curr_bit-1)*10.3*(xsg_sample_rate/1000);
+%             bit_boundary_max = bitcode_sync(curr_bitcode_sync) + 7.5*(xsg_sample_rate/1000) + ...
+%                 (curr_bit)*10.3*(xsg_sample_rate/1000);
+            % This should have been 5 ms? 5/1/2018 Aki
+            bit_boundary_min = bitcode_sync(curr_bitcode_sync) + ...
+                (curr_bit-0.5)*10.3*(xsg_sample_rate/1000);
+            bit_boundary_max = bitcode_sync(curr_bitcode_sync) + ...
+                (curr_bit+0.5)*10.3*(xsg_sample_rate/1000);
             if any(rising_bitcode > bit_boundary_min & rising_bitcode < bit_boundary_max)
                 curr_bitcode(curr_bit) = 1;
+                % uncomment this part to report if the window is centered.
+                % ideally, they all should be 5050 if completely centered.
+                % this reports if the bit is there, how the window is
+                % centered. If there are many bits right at the edge, 
+                % adjust the parameters above. 5/1/2018 Aki
+                i = find(rising_bitcode > bit_boundary_min & rising_bitcode < bit_boundary_max);
+                disp([rising_bitcode(i)-bit_boundary_min bit_boundary_max-rising_bitcode(i)]);
             end
         end
         curr_bitcode_trial = sum(curr_bitcode.*bit_values);
@@ -75,6 +87,7 @@ else
         figure;
         subplot(2,1,1);hist(d(d<1000),1000);
         subplot(2,1,2);plot([behavior_trials.behavior_trial_num],'.');
+        title(['Bitcode from session ', num2str(Session)])
         figure(hf);
     end
     

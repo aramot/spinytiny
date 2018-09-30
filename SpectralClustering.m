@@ -15,7 +15,8 @@ Spatiotemporal_Adjacency = cell(1,DendNum);
 Spatiotemporal_Laplacian = cell(1,DendNum);
     Dend_SpatTemp_Deg = [];
     SpatioTemporal_FirstEigenvector = cell(1,DendNum);
-
+    
+SpectralLengthConstant = 10;
 
 for j = 1:DendNum     
     firstspine = inputData.SpineDendriteGrouping{j}(1);
@@ -23,21 +24,25 @@ for j = 1:DendNum
     if j == DendNum && lastspine ~= length(inputData.dF_over_F)
         lastspine = length(inputData.dF_over_F);
     end
-    if Choices.UseStatDends
-        if ~StatClass{session}.MovementDendrites(j)
-            Spatial_Deg{j} = nan(length(firstspine:lastspine),1);
-            Spatiotemporal_Deg{j} = nan(length(firstspine:lastspine),1);
-            Temporal_Deg{j} = nan(length(firstspine:lastspine),1);
-            continue
-        end
-    end
+%     if Choices.UseStatDends
+%         if isempty(StatClass{session})
+%             SpectralData = [];
+%             return
+%         end
+%         if ~StatClass{session}.MovementDendrites(j)
+%             Spatial_Deg{j} = nan(length(firstspine:lastspine),1);
+%             Spatiotemporal_Deg{j} = nan(length(firstspine:lastspine),1);
+%             Temporal_Deg{j} = nan(length(firstspine:lastspine),1);
+%             continue
+%         end
+%     end
     if firstspine ~= lastspine
-%         fullDist = full(triu(inputData.DistanceHeatMap));
-%         A{i} = fullDist(firstspine:lastspine, firstspine:lastspine);
-%         A{i}(A{i}<1) = 1;
-%         A{i} = 1./exp(A{i}./SpectralLengthConstant);          %%% Adjacency matrix --> 1/e^x, where x = distance
-%         A{i}(isnan(A{i})) = 0;                                %%% Since the diagonal of the laplacian == the degree, set NaNs in A to be zero to maintain this identity;
-        ad = inputData.AdjacencyMatrix{j};
+        fullDist = full(triu(inputData.DistanceHeatMap));
+        ad = fullDist(firstspine:lastspine, firstspine:lastspine);
+        ad(ad<1) = 1;
+        ad = 1./exp(ad./SpectralLengthConstant);          %%% Adjacency matrix --> 1/e^x, where x = distance
+        ad(isnan(ad)) = 0;                                %%% Since the diagonal of the laplacian == the degree, set NaNs in A to be zero to maintain this identity;
+%         ad = inputData.AdjacencyMatrix{j};
         ad(ad==0) = nan;
         Spatial_Deg{j} = nanmean(ad,2);
         if strcmpi(Choices.LaplacianToUse, 'Normalized')
@@ -57,7 +62,7 @@ for j = 1:DendNum
 
 %                     Spatial_Deg{session}{j}(Spatial_Deg{session}{j} == 0) = nan;
 
-        Temporal_Deg{j} = nansum(corrmat,2);                                %%% Temporal degree matrix
+        Temporal_Deg{j} = nanmean(corrmat,2);                                %%% Temporal degree matrix
         Temporal_Deg{j} = Temporal_Deg{j};
         Temporal_Laplacian{j} = diag(Temporal_Deg{j})-corrmat;     %%% L = D-A;
         if strcmpi(Choices.LaplacianToUse, 'Normalized')

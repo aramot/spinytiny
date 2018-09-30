@@ -14,7 +14,7 @@ function [movement_cells, quiescent_cells, movement_p] = mv_related_classifi (df
 % workable with both switch frame format nx2 or lever_active_frames format
 % 1xn
 
-disp(['classifying ', type , ' related ROIs']);
+% disp(['classifying ', type , ' related ROIs']);
 
 if size(df,1)>size(df,2)
     df = df';
