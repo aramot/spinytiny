@@ -49,7 +49,7 @@ eval([experiment_name{1}, '_Behavior = a']);
 save_name = [experiment_name{1}, '_Behavior'];
 save(save_name, save_name);
 try
-    cd('E:\Behavioral Data\All Summarized Behavior Files list')
+    cd('C:\Users\Komiyama\Desktop\Behavioral Data\All Summarized Behavior Files list')
 catch
     cd('C:\Users\komiyama\Desktop\Giulia\All Behavioral Data')
 end

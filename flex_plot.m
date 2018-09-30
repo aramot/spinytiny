@@ -25,13 +25,11 @@ if strcmpi(stattype, 'parametric')
             line([x(i),x(i)], [nanmean(y{i})-SEM, nanmean(y{i})+SEM], 'linewidth', 0.5, 'color', colorS);
         end
     else
-        if size(y,1) == length(x) && size(y,2) ~= length(x)
+        if size(y,1) == length(x)
             repeatedmeasures_dim = 1;
             sample_dim = 2;
-        elseif size(y,2) == length(x) && size(y,1) ~= length(x)
+        elseif size(y,2) == length(x)
             repeatedmeasures_dim = 2;
-            sample_dim = 1;
-        else
             sample_dim = 1;
         end
         line_handle = plot(x,nanmean(y,sample_dim), 'color', colorS, 'Linewidth', linewidth);

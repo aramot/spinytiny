@@ -3,7 +3,7 @@ function [Mdl, PredictedMovement, PredictionAccuracy] = PredictMovementfromSpine
 datalength = length(SpineData); 
 numdatablocks = 10;
 windowlength = floor(datalength/numdatablocks);
-subdivisions = windowlength*ones(1,numdatablocks);
+subdivisions = [windowlength*ones(1,numdatablocks)];
 
 evenmovementtrace = MovementData(1:sum(subdivisions));
 movementtracepieces = mat2cell(evenmovementtrace', 1, subdivisions);

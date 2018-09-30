@@ -8,11 +8,11 @@ function [lever_active lever_force_resample lever_force_smooth ...
 %xsg_sample_rate = xsg_data.header.acquirer.acquirer.sampleRate;
 xsg_sample_rate = 10000;
 % resample lever trace to 1kHz
-[n,d] = rat(1000/xsg_sample_rate);
+[n d] = rat(1000/xsg_sample_rate);
 lever_force_resample = resample(xsg_lever.channels(:,2),n,d);
 
 butterworth_stop = 5/500; % fraction of nyquist (cutoff = 10 Hz)
-[b,a] = butter(4, butterworth_stop,'low');
+[b a] = butter(4, butterworth_stop,'low');
 lever_force_smooth = filtfilt(b,a,lever_force_resample);
 
 lever_velocity_resample = [0;diff(lever_force_smooth)];

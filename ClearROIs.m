@@ -34,7 +34,7 @@ if strcmpi(choice, 'Spines')
     
     glovar.NewSpineAnalysisInfo.SpineList = [];
     glovar.Spine_Number = 0;
-    ROIboxes = findobj(program.Children, 'Type', 'images.roi.ellipse', '-and', '-not', {'-regexp', 'Tag', 'Dendrite'});
+    ROIboxes = findobj(program.Children, 'Type', 'Rectangle', '-and', '-not', {'-regexp', 'Tag', 'Dendrite'});
     Textboxes = findobj(program.Children, 'Type', 'text');
     glovar.ROI = [];
     glovar.BackgroundROI = [];
@@ -53,7 +53,7 @@ elseif strcmpi(choice, 'Dendrites')
     glovar.Dendrite_ROIs = 0;
     glovar.SpineDendriteGrouping = [];
     
-    ROIboxes = findobj(program.Children, 'Type', 'images.roi.ellipse', '-and', '-regexp', 'Tag', 'Dendrite');
+    ROIboxes = findobj(program.Children, 'Type', 'Rectangle', '-and', '-regexp', 'Tag', 'Dendrite');
     Lineboxes = findobj(program.Children, 'Type', 'line');
     
     for i = 1:length(ROIboxes)
@@ -78,7 +78,7 @@ elseif strcmpi(choice, 'Both')
     glovar.Dendrite_Number = 0;
     glovar.Dendrite_ROIs = 0;
 
-    ROIboxes = findobj(program.Children, 'Type', 'images.roi.ellipse');
+    ROIboxes = findobj(program.Children, 'Type', 'Rectangle');
     Textboxes = findobj(program.Children, 'Type', 'text');
     Lineboxes = findobj(program.Children, 'Type', 'line');
 

@@ -22,7 +22,7 @@ function varargout = CaImageViewer(varargin)
 
 % Edit the above text to modify the response to help CaImageViewer
 
-% Last Modified by GUIDE v2.5 17-Sep-2018 16:47:17
+% Last Modified by GUIDE v2.5 14-Sep-2018 11:22:24
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -59,7 +59,7 @@ handles.output = hObject;
 
 gui_CaImageViewer.figure.handles = handles;
 
-Users = {'Nathan', 'Zhongmin', 'Assaf', 'Other'}; % Assaf was added as a user.
+Users = {'Nathan', 'Zhongmin', 'Giulia', 'Mingyuan', 'Assaf'}; % Assaf was added as a user.
 
 Scrsz = get(0, 'Screensize');
     dialogboxwidth = 315;
@@ -67,21 +67,15 @@ Scrsz = get(0, 'Screensize');
     d = dialog('Position', [(Scrsz(3)/2)-dialogboxwidth/2 Scrsz(4)/2-dialogboxheight/2 dialogboxwidth dialogboxheight ], 'Name', 'User');
     txt = uicontrol('Parent', d, 'Style', 'text', 'Position', [15 100 270 30], 'String', 'Select User:');
     
-    btnspacing = 0.5;
-    edgemargin = 15;
-    btnwidth = (dialogboxwidth-2*edgemargin-((length(Users)-1)*btnspacing))/length(Users);
+    btn1 = uicontrol('Parent', d, 'Style', 'pushbutton', 'Position', [15 30 50 25], 'String', Users{1}, 'Callback', @DlgChoice);
+    btn2 = uicontrol('Parent', d, 'Style', 'pushbutton', 'Position', [65.5 30 70 25], 'String', Users{2}, 'Callback', @DlgChoice);
+    btn3 = uicontrol('Parent', d, 'Style', 'pushbutton', 'Position', [136 30 50 25], 'String', Users{3}, 'Callback', @DlgChoice);
+    btn4 = uicontrol('Parent', d, 'Style', 'pushbutton', 'Position', [186.5 30 70 25], 'String', Users{4}, 'Callback', @DlgChoice);
+    btn5 = uicontrol('Parent', d, 'Style', 'pushbutton', 'Position', [257 30 50 25], 'String', Users{5}, 'Callback', @DlgChoice);
     
-    for i = 1:length(Users)
-        btn{i} = uicontrol('Parent', d, 'Style', 'pushbutton', 'Position', [edgemargin+((i-1)*btnwidth)+((i-1)*btnspacing) 30 btnwidth 25], 'String', Users{i}, 'Callback', @DlgChoice);
-    end    
     uiwait(d)
     choice = get(d, 'UserData');
-    if strcmpi(choice, 'Other')
-        id = inputdlg('Enter user name:', 'New User', 1);
-        set(handles.figure1, 'UserData', id{1})
-    else
-        set(gui_CaImageViewer.figure.handles.figure1, 'UserData', choice);
-    end
+    set(gui_CaImageViewer.figure.handles.figure1, 'UserData', choice);
     delete(d);
 
 
@@ -145,7 +139,7 @@ gui_CaImageViewer.GCaMP_Image = [];
 gui_CaImageViewer.Red_Image = [];
 gui_CaImageViewer.ch1image = [];
 gui_CaImageViewer.imageserieslength = [];
-gui_CaImageViewer.UsingSurroundBackground = 0; 
+gui_CaImageViewer.UsingSurroundBackground = 1; 
 gui_CaImageViewer.SurroundBackgroundBuffer = 5;
 gui_CaImageViewer.BackgroundROI = [];
 
@@ -215,7 +209,15 @@ end
 
 fname = [pathname, filename];
 
+load_type = listdlg('PromptString', 'Analyze compressed image (fast), or full series (slow)? (note that only compressed image will be displayed)', 'SelectionMode', 'single','ListString', {'Compressed', 'Full'});
+
 timecourse_image_number = [];
+
+if load_type == 1
+    gui_CaImageViewer.Load_Type = 'Compressed';
+elseif load_type == 2
+    gui_CaImageViewer.Load_Type = 'Full';
+end
 
 % fname = fname;
 CaImage_File_info = imfinfo(fname);
@@ -247,33 +249,51 @@ if twochannels
     [Rfilename, Rpathname] = uigetfile('.tif', 'Select image file for the red channel');
     Rfname = [Rpathname, Rfilename];
     RTifLink = Tiff(Rfname, 'r');
-    for i = 1:timecourse_image_number
-        TifLink.setDirectory(i);
-        gui_CaImageViewer.GCaMP_Image{1,Green_Frame} = TifLink.read();
-        Green_Frame = Green_Frame+1;
-        waitbar(Green_Frame/timecourse_image_number,h,['Loading Image ', num2str(Green_Frame)]);
-        RTifLink.setDirectory(i);
-        gui_CaImageViewer.Red_Image{1,Red_Frame} = RTifLink.read();
-        Red_Frame = Red_Frame+1;
+    if load_type == 1 %%% if loading compressed 
+        for i = 1:timecourse_image_number
+            TifLink.setDirectory(i);
+            gui_CaImageViewer.GCaMP_Image{1,Green_Frame} = TifLink.read();
+            Green_Frame = Green_Frame+1;
+            waitbar(Green_Frame/timecourse_image_number,h,['Loading Image ', num2str(Green_Frame)]);
+        end
+    elseif load_type == 2 %%% if loading full
+        for i = 1:timecourse_image_number
+            TifLink.setDirectory(i);
+            gui_CaImageViewer.GCaMP_Image{1,Green_Frame} = TifLink.read();
+            Green_Frame = Green_Frame+1;
+            waitbar(Green_Frame/timecourse_image_number,h,['Loading Image ', num2str(Green_Frame)]);
+            RTifLink.setDirectory(i);
+            gui_CaImageViewer.Red_Image{1,Red_Frame} = RTifLink.read();
+            Red_Frame = Red_Frame+1;
+        end
     end
-    set(handles.RedGraph, 'Visible', 'on')
-    set(handles.Channel2_StaticText, 'Visible', 'on')
-    set(handles.RedUpperLUT_EditableText, 'Visible', 'on')
-    set(handles.RedLowerLUT_EditableText, 'Visible', 'on')
-    set(handles.RedGamma_EditableText, 'Visible', 'on')
-    set(handles.RedGamma_StaticText, 'Visible', 'on')
-    set(handles.GreenGraph, 'Units', 'normalized')
-    set(handles.RedGraph, 'Units', 'normalized')
-    figure(gui_CaImageViewer.figure.handles.figure1)
-    axes(gui_CaImageViewer.figure.handles.GreenGraph);
-    set(handles.GreenGraph, 'Position', [Green_loc(1), Red_loc(2), Red_loc(3), Red_loc(4)]);      %%% If an image using only 1 channel is already loaded, the "green" graph overlays the red, but the size of the original axes is maintained in the "red" graph.
-    set(handles.RedGraph, 'Position', [Red_loc(1), Red_loc(2),  Red_loc(3), Red_loc(4)]);
+        set(handles.RedGraph, 'Visible', 'on')
+        set(handles.Channel2_StaticText, 'Visible', 'on')
+        set(handles.RedUpperLUT_EditableText, 'Visible', 'on')
+        set(handles.RedLowerLUT_EditableText, 'Visible', 'on')
+        set(handles.RedGamma_EditableText, 'Visible', 'on')
+        set(handles.RedGamma_StaticText, 'Visible', 'on')
+        set(handles.GreenGraph, 'Units', 'normalized')
+        set(handles.RedGraph, 'Units', 'normalized')
+        figure(gui_CaImageViewer.figure.handles.figure1)
+        axes(gui_CaImageViewer.figure.handles.GreenGraph);
+        set(handles.GreenGraph, 'Position', [Green_loc(1), Red_loc(2), Red_loc(3), Red_loc(4)]);      %%% If an image using only 1 channel is already loaded, the "green" graph overlays the red, but the size of the original axes is maintained in the "red" graph.
+        set(handles.RedGraph, 'Position', [Red_loc(1), Red_loc(2),  Red_loc(3), Red_loc(4)]);
 else
-    for i = 1:timecourse_image_number
-        TifLink.setDirectory(i);
-        gui_CaImageViewer.GCaMP_Image{1,Green_Frame} = TifLink.read();
-        Green_Frame = Green_Frame+1;
-        waitbar(Green_Frame/timecourse_image_number,h,['Loading Image ', num2str(Green_Frame)]);
+    if load_type == 1 %%% if loading compressed 
+        for i = 1:timecourse_image_number
+            TifLink.setDirectory(i);
+            gui_CaImageViewer.GCaMP_Image{1,Green_Frame} = TifLink.read();
+            Green_Frame = Green_Frame+1;
+            waitbar(Green_Frame/timecourse_image_number,h,['Loading Image ', num2str(Green_Frame)]);
+        end
+    elseif load_type == 2 %%% if loading full
+        for i = 1:timecourse_image_number
+            TifLink.setDirectory(i);
+            gui_CaImageViewer.GCaMP_Image{1,Green_Frame} = TifLink.read();
+            Green_Frame = Green_Frame+1;
+            waitbar(Green_Frame/timecourse_image_number,h,['Loading Image ', num2str(Green_Frame)]);
+        end
     end
     if ~gui_CaImageViewer.LoadedFile || Green_loc(3) == Red_loc(3)
         set(handles.RedGraph, 'Visible', 'off')
@@ -299,7 +319,7 @@ channel2 = gui_CaImageViewer.Red_Image;
 
 CommandSource = 'Loader';
 
-[~, ~] = PlaceImages(channel1, channel2, CommandSource);
+[ch1image, ch2image] = PlaceImages(channel1, channel2, CommandSource);
 
 imageserieslength = size(gui_CaImageViewer.GCaMP_Image, 2);
 gui_CaImageViewer.imageserieslength = imageserieslength;
@@ -311,7 +331,12 @@ set(handles.ImageSlider_Slider, 'SliderStep', [(1/(imageserieslength-1)) (32/(im
 set(handles.Frame_EditableText, 'String', 1);
 set(handles.SmoothingFactor_EditableText, 'String', '1');
 
-set(handles.SmoothingFactor_EditableText, 'String', 1);
+% 
+% Smoothing = str2num(get(handles.SmoothingFactor_EditableText, 'String'));
+% 
+% if Smoothing ~= 1
+%     Smoother(hObject, eventdata, ch1image,ch2image, CommandSource)
+% end
 
 set(gui_CaImageViewer.figure.handles.output, 'WindowButtonDownFcn', [])
 
@@ -329,7 +354,7 @@ function MaxProjection_CheckBox_Callback(hObject, eventdata, handles)
 global gui_CaImageViewer
 
 val = get(handles.MaxProjection_CheckBox, 'Value');
-set(handles.Frame_EditableText, 'String',1);
+frame = get(handles.Frame_EditableText, 'String');
 
 ImageNum = str2num(get(gui_CaImageViewer.figure.handles.Frame_EditableText, 'String'));
 twochannels = get(gui_CaImageViewer.figure.handles.TwoChannels_CheckBox, 'Value');
@@ -350,7 +375,7 @@ if val
     end
     
     
-    if filterwindow == 1
+    if filterwindow == 1;
     
         channel1 = immax;
         if twochannels && ~merged
@@ -633,11 +658,15 @@ NearbySpineROI = get(gui_CaImageViewer.figure.handles.NearbySpine_ToggleButton, 
 Dendrite_PolyLines = get(gui_CaImageViewer.figure.handles.DendritePolyLines_ToggleButton, 'Value');
 ROInum = gui_CaImageViewer.Spine_Number + 1;
 
-ROIs = findobj(gui_CaImageViewer.figure.handles.GreenGraph, 'Type', 'images.roi.ellipse', '-and', '-not', {'-regexp', 'Tag', 'Dendrite'});
-
-for i = 1:length(ROIs)
-    ROIs(i).InteractionsAllowed = 'none';
-end
+% if ~isempty(gui_CaImageViewer.ROI)
+%     for i = 1:ROInum-1
+%         set(gui_CaImageViewer.ROI(i), 'ButtonDownFcn', [])
+%     end
+% else
+%     ClearROIs
+%     set(gui_CaImageViewer.figure.handles.SpineROI_ToggleButton, 'Value', 0)
+%     error('Make sure to draw the background ROI first...')
+% end
 
 Router = 'Spine';
 
@@ -872,6 +901,7 @@ function RecoverROIs_PushButton_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 %%% Set general running variables %%%%%
+program = get(gcf);
 
 global gui_CaImageViewer
 glovar = gui_CaImageViewer;
@@ -960,7 +990,7 @@ if ~found || ForceManual
         roifile = [];
         if gui_CaImageViewer.NewSpineAnalysis
             for i = 1:length(folder)
-                match = regexp(folder(i).name, 'NewSpineAnalysisROIs', 'once');
+                match = regexp(folder(i).name, 'NewSpineAnalysisROIs');
                 if ~isempty(match)
                     roifile{count} = folder(i).name;
                     count = count+1;
@@ -968,7 +998,7 @@ if ~found || ForceManual
             end
         else
             for i = 1:length(folder)
-                match = regexp(folder(i).name, [experiment, '_SavedROIs'], 'once');
+                match = regexp(folder(i).name, [experiment, '_SavedROIs']);
                 if ~isempty(match)
                     roifile{count} = folder(i).name;
                     count = count+1;
@@ -1022,26 +1052,7 @@ end
 %%%%%%%% Draw loaded ROIs %%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-if isstruct(savedFile.ROIPosition{1})
-    drawtype = 'new';
-    for i = 1:length(savedFile.ROIPosition)
-        ROIs(i).Center = savedFile.ROIPosition{i}.Center;
-        ROIs(i).SemiAxes = savedFile.ROIPosition{i}.SemiAxes;
-        ROIs(i).RotationAngle = savedFile.ROIPosition{i}.RotationAngle;
-        ROIs(i).AspectRatio = savedFile.ROIPosition{i}.AspectRatio;
-    end
-else
-    drawtype = 'old';
-    oldROIs = savedFile.ROIPosition;
-    for i = 1:length(oldROIs)
-        ROIcenter = [oldROIs{i}(1)+oldROIs{i}(3)/2, oldROIs{i}(2)+oldROIs{i}(4)/2];
-        ROISemiAxes = [oldROIs{i}(3)/2, oldROIs{i}(4)/2];
-        ROIs(i).Center = ROIcenter;
-        ROIs(i).SemiAxes = ROISemiAxes;
-        ROIs(i).RotationAngle = 0;
-        ROIs(i).AspectRatio = oldROIs{i}(3)/oldROIs{i}(4);
-    end
-end
+ROIs = savedFile.ROIPosition; % how to categorize newly added spines?-ZL
 
 glovar.Spine_Number = length(ROIs)-1;
 
@@ -1056,53 +1067,51 @@ usesurroundBGchoice = get(d, 'UserData');
 delete(d);
 nonedrawn = 0;
 
-axes(axes1);
 for a = 1:length(ROIs)
-    ROInum = a-1;
-    c = uicontextmenu;
-%         glovar.ROI(a) = rectangle('Position', ROIs{a}, 'EdgeColor', [0.2 0.4 0.9], 'Curvature', [1 1],'Tag', ['ROI', num2str(ROInum)], 'ButtonDownFcn', {@DragROI, ROInum, 'HomeWindow'}, 'Linewidth', 1, 'UIContextMenu', c1); % Assaf changed [0.2 0.4 0.9] to the variable color_by_user, that is defined by the user choice of color (lines 681-602) 
-    glovar.ROI(a) = drawellipse('Center', ROIs(a).Center, 'SemiAxes', ROIs(a).SemiAxes, 'RotationAngle', ROIs(a).RotationAngle,...
-        'AspectRatio', ROIs(a).AspectRatio, 'Tag', ['ROI', num2str(ROInum)], 'Color', [0.2 0.4 0.9],...
-        'HandleVisibility', 'on', 'UIContextMenu', c, 'Label', '', 'Linewidth', 1, 'FaceAlpha', 0, 'InteractionsAllowed', 'none');
-    roiget = get(glovar.ROI(a));
-    c = roiget.UIContextMenu;
-    uimenu(c, 'Label', 'Add Surround Background', 'Callback', @ModifyROI);
-    uimenu(c, 'Label', 'Remove Surround Background', 'Callback', @ModifyROI);
-    uimenu(c, 'Label', 'Set as eliminated', 'Callback', @CategorizeSpines);
-    uimenu(c, 'Label', 'Set as active', 'Callback', @CategorizeSpines);
-    set(glovar.figure.handles.ShowLabels_ToggleButton, 'Value', 1)
-    switch usesurroundBGchoice
-        case 'Add to all'
-            if a == 1   %%% The first ROI (the general background ROI) doesn't need an additional background
-                glovar.BackgroundROI(a) = NaN;
-                continue
-            end
-            surroundoffset = glovar.SurroundBackgroundBuffer;
-            glovar.BackgroundROI(ROInum+1) = rectangle('Position', [ROIs{a}(1)-surroundoffset/2, ROIs{a}(2)-surroundoffset/2, ROIs{a}(3)+surroundoffset, ROIs{a}(4)+surroundoffset], 'EdgeColor', 'w', 'Curvature', [1 1], 'Tag', ['BackgroundROI', num2str(ROInum)], 'Linewidth', 0.75);
-            glovar.UsingSurroundBackground = 1;
-        case 'Recover previous'
-            if isfield(savedFile, 'BackgroundROIPosition')
-                if ~isempty(savedFile.BackgroundROIPosition{a})
-                    glovar.BackgroundROI(ROInum+1) = rectangle('Position', savedFile.BackgroundROIPosition{a}, 'EdgeColor', 'w', 'Curvature', [1 1], 'Tag', ['BackgroundROI', num2str(ROInum)], 'Linewidth', 0.75);
+    if ~isempty(ROIs{a})
+        ROInum = a-1;
+        axes(axes1);
+        c1 = uicontextmenu;
+        uimenu(c1, 'Label', 'Add Surround Background', 'Callback', @ModifyROI);
+        uimenu(c1, 'Label', 'Remove Surround Background', 'Callback', @ModifyROI);
+%         if glovar.NewSpineAnalysis
+            uimenu(c1, 'Label', 'Set as eliminated', 'Callback', @CategorizeSpines);
+            uimenu(c1, 'Label', 'Set as active', 'Callback', @CategorizeSpines);
+%         end
+        glovar.ROI(a) = rectangle('Position', ROIs{a}, 'EdgeColor', [0.2 0.4 0.9], 'Curvature', [1 1],'Tag', ['ROI', num2str(ROInum)], 'ButtonDownFcn', {@DragROI, ROInum, 'HomeWindow'}, 'Linewidth', 1, 'UIContextMenu', c1); % Assaf changed [0.2 0.4 0.9] to the variable color_by_user, that is defined by the user choice of color (lines 681-602) 
+        glovar.ROItext(a) = text(ROIs{a}(1)-6, ROIs{a}(2)-4, num2str(a-1), 'color', 'white', 'Tag', ['ROI', num2str(a-1), ' Text'],'ButtonDownFcn', 'DeleteROI', 'Fontsize', 6);
+        switch usesurroundBGchoice
+            case 'Add to all'
+                if a == 1   %%% The first ROI (the general background ROI) doesn't need an additional background
+                    glovar.BackgroundROI(a) = NaN;
+                    continue
+                end
+                surroundoffset = glovar.SurroundBackgroundBuffer;
+                glovar.BackgroundROI(ROInum+1) = rectangle('Position', [ROIs{a}(1)-surroundoffset/2, ROIs{a}(2)-surroundoffset/2, ROIs{a}(3)+surroundoffset, ROIs{a}(4)+surroundoffset], 'EdgeColor', 'w', 'Curvature', [1 1], 'Tag', ['BackgroundROI', num2str(ROInum)], 'Linewidth', 0.75);
+                glovar.UsingSurroundBackground = 1;
+            case 'Recover previous'
+                if isfield(savedFile, 'BackgroundROIPosition')
+                    if ~isempty(savedFile.BackgroundROIPosition{a})
+                        glovar.BackgroundROI(ROInum+1) = rectangle('Position', savedFile.BackgroundROIPosition{a}, 'EdgeColor', 'w', 'Curvature', [1 1], 'Tag', ['BackgroundROI', num2str(ROInum)], 'Linewidth', 0.75);
+                    else
+                        glovar.BackgroundROI(ROInum+1) = NaN;
+                    end
                 else
+                    usesurroundBGchoice = 'No';
+                    nonedrawn = 1;
+                    glovar.UsingSurroundBackground = 0;
                     glovar.BackgroundROI(ROInum+1) = NaN;
                 end
-            else
-                usesurroundBGchoice = 'No';
-                nonedrawn = 1;
+            case 'No'
                 glovar.UsingSurroundBackground = 0;
                 glovar.BackgroundROI(ROInum+1) = NaN;
-            end
-        case 'No'
-            glovar.UsingSurroundBackground = 0;
-            glovar.BackgroundROI(ROInum+1) = NaN;
-    end
-    if twochannels == 1
-        axes(axes2);
-        glovar.ROIred(a) = rectangle('Position', ROIs{a}, 'EdgeColor', 'red', 'Curvature', [1 1],'Tag', ['ROIred', num2str(ROInum)],'ButtonDownFcn', {@DragROI, ROInum, 'HomeWindow'});
-        glovar.ROIredtext(a) = text(ROIs{a}(1)-2, ROIs{a}(2)-2, num2str(a-1), 'color', 'white', 'Tag', ['ROI', num2str(a-1), ' Text'],'ButtonDownFcn', 'DeleteROI');
-        axes(axes1);
-    else
+        end
+        if twochannels == 1
+            axes(axes2);
+            glovar.ROIred(a) = rectangle('Position', ROIs{a}, 'EdgeColor', 'red', 'Curvature', [1 1],'Tag', ['ROIred', num2str(ROInum)],'ButtonDownFcn', {@DragROI, ROInum, 'HomeWindow'});
+            glovar.ROIredtext(a) = text(ROIs{a}(1)-2, ROIs{a}(2)-2, num2str(a-1), 'color', 'white', 'Tag', ['ROI', num2str(a-1), ' Text'],'ButtonDownFcn', 'DeleteROI');
+        else
+        end
     end
 end
 
@@ -1124,11 +1133,6 @@ if glovar.NewSpineAnalysis
     terminus = regexp(save_directory, animal, 'end');
     targ_folder = save_directory(1:terminus);
     currentfield = glovar.NewSpineAnalysisInfo.CurrentImagingField;
-    if isempty(currentfield)
-        cf = inputdlg('No field number found; Enter field number:', '1', 1);
-        currentfield = str2num(cf{1});
-        glovar.NewSpineAnalysisInfo.CurrentImagingField = currentfield; 
-    end
     load([targ_folder, filesep,userspecificpart,'Imaging Field ', num2str(currentfield), ' Spine Registry'])
     instanceofappearance = find(logical(strcmpi(SpineRegistry.DatesAcquired, gui_CaImageViewer.NewSpineAnalysisInfo.CurrentDate)));
     glovar.NewSpineAnalysisInfo.SpineList = ones(1,length(ROIs)-1); %%% Don't forget the first ROI is always the background ROI!
@@ -1161,73 +1165,72 @@ x_red = [];
 y = [];
 y_red = [];
 
-if isfield(glovar, 'PolyROI') && ~isempty(coordinates)
-    PPsperDend = savedFile.DendritePolyPointNumber;
-    if PPsperDend == 0
-        warning('Dendrite ROIs could not be returned and must be redrawn')
-        glovar.Dendrite_Number = 0;
-        gui_CaImageViewer = glovar;
-        return
-    else
-        glovar.DendritePolyPointNumber = PPsperDend;
-        Dendrite_ROIs = length(savedFile.PolyROI);
-    end
-    if ~isempty(coordinates{1})
-    axes(axes1);
-    currDend = 1;
-    polycount = 1;
-        for i = 1:length(coordinates)
-            switch drawtype
-                case 'old'
-                    glovar.PolyLinePos{i} = [coordinates{i}(1), coordinates{i}(2), radius, radius];
-                    glovar.PolyROI{i} = rectangle('Position', glovar.PolyLinePos{i}, 'EdgeColor', 'g', 'Tag', ['Dendrite ', num2str(currDend), ' PolyROI ', num2str(polycount)],...
-                        'Curvature', [1 1], 'ButtonDownFcn', 'Drag_Poly');
-                    x = [x,coordinates{i}(1)+radius];
-                    y = [y,coordinates{i}(2)+radius];
-                case 'new'
-                    glovar.PolyLinePos{i} = savedFile.PolyROI{i}.Center;
-                    glovar.PolyROI{i} = drawellipse('Center', savedFile.PolyROI{i}.Center,'RotationAngle', savedFile.PolyROI{i}.RotationAngle, 'SemiAxes', savedFile.PolyROI{i}.SemiAxes,...
-                        'AspectRatio', savedFile.PolyROI{i}.AspectRatio, 'Tag', ['Dendrite ', num2str(currDend), ' PolyROI ', num2str(polycount)], 'FaceAlpha', 0, 'Color', 'g', 'DrawingArea',...
-                        'unlimited', 'HandleVisibility', 'on','InteractionsAllowed', 'none', 'Linewidth', 1);
-                    x = [x,savedFile.PolyROI{i}.Center(1)];
-                    y = [y,savedFile.PolyROI{i}.Center(2)];
+try
+    if isfield(glovar, 'PolyROI') && ~isempty(coordinates)
+        PPsperDend = savedFile.DendritePolyPointNumber;
+        if PPsperDend == 0
+            warning('Dendrite ROIs could not be returned and must be redrawn')
+            glovar.Dendrite_Number = 0;
+            if ~isempty(regexp(running, 'CaImageViewer'))
+                gui_CaImageViewer = glovar;
+            elseif ~isempty(regexp(running, 'FluorescenceSuite'));
+                gui_FluorescenceSuite = glovar;
             end
-            if i < sum(PPsperDend(1:currDend))
-                polycount = polycount+1;
-            else
-                currDend = currDend+1;
-                polycount = 1;
-            end
+            return
+        else
+            glovar.DendritePolyPointNumber = PPsperDend;
+            Dendrite_ROIs = length(savedFile.PolyROI);
         end
-        if DendNum == 1
+        if ~isempty(coordinates{1})
+        axes(axes1);
+        currDend = 1;
+        polycount = 1;
+            for i = 1:length(coordinates)
+                glovar.PolyLinePos{i} = [coordinates{i}(1), coordinates{i}(2), radius*2, radius*2];
+                glovar.PolyROI{i} = rectangle('Position', glovar.PolyLinePos{i}, 'EdgeColor', 'g', 'Tag', ['Dendrite ', num2str(currDend), ' PolyROI ', num2str(polycount)], 'Curvature', [1 1], 'ButtonDownFcn', 'Drag_Poly');
+                x = [x,coordinates{i}(1)+radius];
+                y = [y,coordinates{i}(2)+radius];
+                if i < sum(PPsperDend(1:currDend))
+                    currDend = currDend;
+                    polycount = polycount+1;
+                else
+                    currDend = currDend+1;
+                    polycount = 1;
+                end
+            end
+            if DendNum == 1
 %                 for i = 1:2:length(glovar.PolyLinePos)
-                hold on;
-                plot(x,y, 'color', 'cyan', 'Tag', 'PolyLine 1');
+                    hold on;
+                    plot(x,y, 'color', 'cyan', 'Tag', ['PolyLine 1']);
 %                 end
-        else
-            counter = 1;
-            for i = 1:DendNum
-                hold on;
-                plot(x(counter:(counter+PPsperDend(i)-1)),y(counter:(counter+PPsperDend(i)-1)), 'color', 'cyan', 'Tag', ['PolyLine ', num2str(i)]);
-                counter = sum(PPsperDend(1:i))+1;
+            else
+                counter = 1;
+                for i = 1:DendNum
+                    hold on;
+                    plot(x(counter:(counter+PPsperDend(i)-1)),y(counter:(counter+PPsperDend(i)-1)), 'color', 'cyan', 'Tag', ['PolyLine ', num2str(i)]);
+                    counter = sum(PPsperDend(1:i))+1;
+                end
             end
-        end
-        if twochannels == 1
-            axes(axes2)
-            for i = 1:length(glovar.RedPolyLinePos)
-                glovar.RedPolyLinePos{i} = [coordinates{i}(1)-radius, coordinates{i}(2)-radius, radius*2, radius*2];
-                glovar.RedPolyROI{i} = rectangle('Position', glovar.RedPolyLinePos{i}, 'EdgeColor', 'cyan', 'Tag', ['Dendrite ', num2str(DendriteNum), ' RedPolyROI', num2str(i)], 'Curvature', [1 1], 'ButtonDownFcn', 'Drag_Poly');
-                x_red = [x_red,coordinates{i}(1)];
-                y_red = [y_red,coordinates{i}(2)];
+            if twochannels == 1
+                axes(axes2)
+                for i = 1:length(glovar.RedPolyLinePos)
+                    glovar.RedPolyLinePos{i} = [coordinates{i}(1)-radius, coordinates{i}(2)-radius, radius*2, radius*2];
+                    glovar.RedPolyROI{i} = rectangle('Position', glovar.RedPolyLinePos{i}, 'EdgeColor', 'cyan', 'Tag', ['Dendrite ', num2str(DendriteNum), ' RedPolyROI', num2str(i)], 'Curvature', [1 1], 'ButtonDownFcn', 'Drag_Poly');
+                    x_red = [x_red,coordinates{i}(1)];
+                    y_red = [y_red,coordinates{i}(2)];
+                end
+                for i = 1:2:length(glovar.RedPolyLinePos)
+                    hold on;
+                    plot(x_red,y_red, 'color', 'cyan', 'Tag', 'PolyLine');
+                end
+            else
             end
-            for i = 1:2:length(glovar.RedPolyLinePos)
-                hold on;
-                plot(x_red,y_red, 'color', 'cyan', 'Tag', 'PolyLine');
-            end
-        else
         end
     end
-end    
+catch
+    disp('Dendrite ROIs could not be extracted, and need to be redrawn')
+end
+    
 
  %%% Overwrite the previous existing global workspace with the newly imprinted one
  
@@ -1294,17 +1297,8 @@ if a.SpineROIs(1) == 0
     return
 end
 
-roiType = get(gui_CaImageViewer.ROI(1), 'Type');
-
-switch roiType  %%% ROI drawing method changed for release 2018 to use elliptical objects, native to MatLab software
-    case 'rectangle'
-        for i = 1:length(a.SpineROIs)
-            a.ROIPosition{i} = get(a.SpineROIs(i), 'Position');
-        end
-    case 'images.roi.ellipse'
-        for i = 1:length(a.SpineROIs)
-            a.ROIPosition{i} = get(a.SpineROIs(i));
-        end
+for i = 1:length(a.SpineROIs)
+    a.ROIPosition{i} = get(a.SpineROIs(i), 'Position');
 end
 
 for i = 1:length(a.BackgroundROIs)
@@ -1611,7 +1605,7 @@ if val
     end
     
     
-    if filterwindow
+    if filterwindow == 1;
     
         channel1 = immax;
         if twochannels && ~merged
@@ -1916,7 +1910,7 @@ if insertOpt
     lastspineondend = cumsum(cell2mat(cellfun(@length, gui_CaImageViewer.SpineDendriteGrouping, 'uni', false)));
 
     insertedspine = lastspineondend(targetdend)+1;
-    gui_CaImageViewer.InsertPoint = insertedspine;
+        gui_CaImageViewer.InsertPoint = insertedspine;
         
 end
 
@@ -2089,17 +2083,8 @@ global gui_CaImageViewer
 
 warpmatrix = gui_CaImageViewer.NewSpineAnalysisInfo.WarpMatrix;
 
-drawtype = get(gui_CaImageViewer.ROI(1), 'Type');
 
-switch drawtype
-    case 'rectangle'
-        ROIs_original = round(cell2mat(cellfun(@(x) x(1:4), get(gui_CaImageViewer.ROI),'uni', false)));
-    case 'images.roi.ellipse'
-        ROIs_original = round(cell2mat(cellfun(@(x) x.Center, arrayfun(@(x) get(x), gui_CaImageViewer.ROI, 'uni', false), 'uni', false)'));
-        OriginalSemiAxes = cell2mat(cellfun(@(x) x.SemiAxes, arrayfun(@(x) get(x), gui_CaImageViewer.ROI, 'uni', false), 'uni', false)');
-        OriginalRotationAngle = cell2mat(cellfun(@(x) x.RotationAngle, arrayfun(@(x) get(x), gui_CaImageViewer.ROI, 'uni', false), 'uni', false)');
-        OriginalAspectRatio = cell2mat(cellfun(@(x) x.AspectRatio, arrayfun(@(x) get(x), gui_CaImageViewer.ROI, 'uni', false), 'uni', false)');
-end
+ROIs_original = round(cell2mat(cellfun(@(x) x(1:4), get(gui_CaImageViewer.ROI, 'Position'),'uni', false)));
 
 ClearROIs('AssumeAll')
 
@@ -2111,7 +2096,6 @@ uimenu(c1, 'Label', 'Remove Surround Background', 'Callback', @ModifyROI);
 uimenu(c1, 'Label', 'Set as eliminated', 'Callback', @CategorizeSpines);
 uimenu(c1, 'Label', 'Set as active', 'Callback', @CategorizeSpines);
 
-
 for i = 1:length(ROIs_original)
     tempim = zeros(imsize,imsize);
     tempim(ROIs_original(i,1), ROIs_original(i,2)) = 1;
@@ -2119,19 +2103,8 @@ for i = 1:length(ROIs_original)
     stats = regionprops(logical(transpos));
     newpos(i,1:2) = stats.Centroid;
     ROInum = i-1;
-    switch drawtype
-        case 'rectangle'
-            gui_CaImageViewer.ROI(i) = rectangle('Position', [round(newpos(i,1)),round(newpos(i,2)),ROIs_original(i,3), ROIs_original(i,4)], 'EdgeColor', [0.2 0.4 0.9], 'Curvature', [1 1],'Tag', ['ROI', num2str(ROInum)], 'ButtonDownFcn', {@DragROI, ROInum, 'HomeWindow'}, 'Linewidth', 1, 'UIContextMenu', c1);
-        case 'images.roi.ellipse'
-            gui_CaImageViewer.ROI(i) = drawellipse('Center', newpos(i,:), 'SemiAxes', OriginalSemiAxes(i,:), 'RotationAngle', OriginalRotationAngle(i,:),...
-                'AspectRatio', OriginalAspectRatio(i,:), 'Tag', ['ROI', num2str(ROInum)], 'Color', [0.2 0.4 0.9], 'HandleVisibility', 'on', 'Label', '', 'Linewidth', 1, 'FaceAlpha', 0);
-            roiget = get(gui_CaImageViewer.ROI(ROInum+1));
-            c = roiget.UIContextMenu;
-            uimenu(c, 'Label', 'Add Surround Background', 'Callback', @ModifyROI);
-            uimenu(c, 'Label', 'Remove Surround Background', 'Callback', @ModifyROI);
-            uimenu(c, 'Label', 'Set as eliminated', 'Callback', @CategorizeSpines);
-            uimenu(c, 'Label', 'Set as active', 'Callback', @CategorizeSpines);
-    end
+    gui_CaImageViewer.ROI(i) = rectangle('Position', [round(newpos(i,1)),round(newpos(i,2)),ROIs_original(i,3), ROIs_original(i,4)], 'EdgeColor', [0.2 0.4 0.9], 'Curvature', [1 1],'Tag', ['ROI', num2str(ROInum)], 'ButtonDownFcn', {@DragROI, ROInum, 'HomeWindow'}, 'Linewidth', 1, 'UIContextMenu', c1);
+    gui_CaImageViewer.ROItext(i) = text(round(newpos(i,1))-6, round(newpos(i,2))-4, num2str(i-1), 'color', 'white', 'Tag', ['ROI', num2str(ROInum), ' Text'],'ButtonDownFcn', 'DeleteROI', 'Fontsize', 6);
 end
 
 
@@ -2164,10 +2137,10 @@ if strcmpi(NewColor, 'ROI Color')
     return
 end
 
-ROIs = findobj('Type', 'images.ROI.Ellipse', '-and', '-not', {'-regexp', 'Tag', 'Dendrite'}, '-and', '-not', {'-regexp', 'Tag', 'Background'});
+ROIs = findobj('Type', 'rectangle', '-and', '-not', {'-regexp', 'Tag', 'Dendrite'}, '-and', '-not', {'-regexp', 'Tag', 'Background'});
 
 for i = 1:length(ROIs)
-    set(ROIs(i), 'Color', NewColor)
+    set(ROIs(i), 'EdgeColor', NewColor)
 end
 
 
@@ -2203,11 +2176,11 @@ if strcmpi(NewColor, 'Poly Color')
     return
 end
 
-PolyROIs = findobj('Type', 'images.ROI.Ellipse', '-and', {'-regexp', 'Tag', 'Dendrite'}, '-and', '-not', {'-regexp', 'Tag', 'Background'});
+PolyROIs = findobj('Type', 'rectangle', '-and', {'-regexp', 'Tag', 'Dendrite'}, '-and', '-not', {'-regexp', 'Tag', 'Background'});
 PolyLine = findobj('Type', 'line', '-and', {'-regexp', 'Tag', 'Poly'});
 
 for i = 1:length(PolyROIs)
-    set(PolyROIs(i), 'Color', NewColor)
+    set(PolyROIs(i), 'EdgeColor', NewColor)
 end
 
 for i = 1:length(PolyLine)
@@ -2247,7 +2220,7 @@ if strcmpi(NewWidth, 'Poly Color')
     return
 end
 
-ROIs = findobj('Type', 'images.ROI.Ellipse', '-and', '-not', {'-regexp', 'Tag', 'Dendrite'}, '-and', '-not', {'-regexp', 'Tag', 'Background'});
+ROIs = findobj('Type', 'rectangle', '-and', '-not', {'-regexp', 'Tag', 'Dendrite'}, '-and', '-not', {'-regexp', 'Tag', 'Background'});
 
 for i = 1:length(ROIs)
     set(ROIs(i), 'LineWidth', str2num(NewWidth))
@@ -2266,76 +2239,24 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 
-% --- Executes on button press in ShowLabels_ToggleButton.
-function ShowLabels_ToggleButton_Callback(hObject, eventdata, handles)
-% hObject    handle to ShowLabels_ToggleButton (see GCBO)
+% --- Executes on button press in LaunchController_PushButton.
+function LaunchController_PushButton_Callback(hObject, eventdata, handles)
+% hObject    handle to LaunchController_PushButton (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
 global gui_CaImageViewer
 
-ROIs = findobj('Type', 'images.ROI.Ellipse', '-and', '-not', {'-regexp', 'Tag', 'Dendrite'}, '-and', '-not', {'-regexp', 'Tag', 'Background'});
+refpos = get(handles.figure1, 'Position');
 
-choice = get(handles.ShowLabels_ToggleButton, 'Value');
+figwidth = 0.2;
+figheight = 0.15;
 
-if choice 
-    for i = 1:length(ROIs)
-        roilabel = regexp(ROIs(i).Tag, '[0-9]*', 'match');
-        ROIs(i).Label = roilabel{1};
-    end
-else
-    for i = 1:length(ROIs)
-        ROIs(i).Label = '';
-    end
-end
+controllerposition = [refpos(1)+(refpos(3)/2)-(figwidth/2), refpos(2)+(refpos(4)/2)-(figheight/2), figwidth, figheight];
 
+gui_CaImageViewer.ROIController = figure('Name', 'ROI Controller','Units', 'Normalized', 'Position', controllerposition); %%% Create a figure and center it in the middle of the main GUI 
 
-% --- Executes on button press in EditSpines_ToggleButton.
-function EditSpines_ToggleButton_Callback(hObject, eventdata, handles)
-% hObject    handle to EditSpines_ToggleButton (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of EditSpines_ToggleButton
-
-global gui_CaImageViewer
-
-editopt = get(handles.EditSpines_ToggleButton, 'Value');
-
-ROIs = findobj(gui_CaImageViewer.figure.handles.GreenGraph, 'Type', 'images.roi.ellipse', '-and', '-not', {'-regexp', 'Tag', 'Dendrite'});
-
-if editopt
-    for i = 1:length(ROIs)
-        ROIs(i).InteractionsAllowed = 'all';
-    end
-else
-   for i = 1:length(ROIs)
-        ROIs(i).InteractionsAllowed = 'none';
-    end 
-end
-
-
-% --- Executes on button press in EditDendrites_ToggleButton.
-function EditDendrites_ToggleButton_Callback(hObject, eventdata, handles)
-% hObject    handle to EditDendrites_ToggleButton (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of EditDendrites_ToggleButton
-
-global gui_CaImageViewer
-
-editopt = get(handles.EditDendrites_ToggleButton, 'Value');
-
-ROIs = findobj(gui_CaImageViewer.figure.handles.GreenGraph, 'Type', 'images.roi.ellipse', '-and', {'-regexp', 'Tag', 'Dendrite'});
-
-if editopt
-    for i = 1:length(ROIs)
-        ROIs(i).InteractionsAllowed = 'all';
-    end
-else
-   for i = 1:length(ROIs)
-        ROIs(i).InteractionsAllowed = 'none';
-    end 
-end
-
+upbutton = uicontrol('Parent', gui_CaImageViewer.ROIController, 'Style', 'pushbutton','Units', 'normalized', 'Position', [.45,0.75,0.1,0.15]);
+downbutton = uicontrol('Parent', gui_CaImageViewer.ROIController, 'Style', 'pushbutton','Units', 'normalized', 'Position', [.45,0.2,0.1,0.15]);
+leftbutton = uicontrol('Parent', gui_CaImageViewer.ROIController, 'Style', 'pushbutton','Units', 'normalized', 'Position', [.2,0.45,0.1,0.15]);
+rightbutton = uicontrol('Parent', gui_CaImageViewer.ROIController, 'Style', 'pushbutton','Units', 'normalized', 'Position', [.7,0.45,0.1,0.15]);
