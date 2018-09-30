@@ -22,7 +22,7 @@ function varargout = KomiyamaLabHub(varargin)
 
 % Edit the above text to modify the response to help KomiyamaLabHub
 
-% Last Modified by GUIDE v2.5 07-May-2018 20:02:45
+% Last Modified by GUIDE v2.5 28-Sep-2018 16:21:03
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -956,79 +956,30 @@ function NewSpineAnalysis_PushButton_Callback(hObject, eventdata, handles)
 
 
 listpos = get(handles.AnimalName_ListBox, 'Value');
-list = get(handles.AnimalName_ListBox, 'String');
-h1 = waitbar(0, 'Initializing...');
-Activity = get(handles.AnalyzeActivity_ToggleButton, 'Value');
-Behavior = get(handles.AnalyzeBehavior_ToggleButton, 'Value');
-% datafolder = getappdata(KomiyamaLabHub, 'Folder');
-datafolder = 'E:\ActivitySummary';
-
-if Activity == 1 && Behavior == 1
-    numfiles = 0;
-    filestoanalyze = [];
-    if length(listpos) == 1
-        folder = dir(datafolder);
-        cd(datafolder);
-        animal = list{listpos};
-        for i = 1:length(folder)
-            ispart = strfind(folder(i).name, animal);
-            wrongfile = strfind(folder(i).name, 'Timecourse');
-            wrongfile2 = strfind(folder(i).name, 'Poly');
-            if ~isempty(ispart) && isempty(wrongfile) && isempty(wrongfile2)
-                load(folder(i).name)
-                eval(['filesesh = ', folder(i).name(1:end-4), '.Session;']);
-                currentanimal = regexp(folder(i).name, '[A-Z]{2,3}0+\d+', 'match');
-                currentanimal = currentanimal{1};
-                usesessions = blacklist(currentanimal);
-                if ~ismember(filesesh,usesessions)
-                    clear(folder(i).name)
-                    continue
-                end
-                numfiles = numfiles+1;
-                filestoanalyze = [filestoanalyze, ',', folder(i).name(1:end-4)];
-            end
-            waitbar(i/length(folder), h1, 'Looking for files')
-        end
-        folder = dir('C:\Users\Komiyama\Desktop\Output Data');
-        cd('C:\Users\Komiyama\Desktop\Output Data');
-        for i = 1:length(folder)
-            ismatchCorrelations = strfind(folder(i).name, [animal, '_Correlations']);
-            ismatchStats = strfind(folder(i).name, [animal, '_StatClassified']);
-            if ~isempty(ismatchCorrelations) || ~isempty(ismatchStats)
-                load(folder(i).name)
-%                 eval([inputlist{n}, 'file = folder(', num2str(i), ').name(1:end-4);']);
-                if ~isempty(ismatchCorrelations)
-                    Correlationsfile = folder(i).name(1:end-4);
-                elseif ~isempty(ismatchStats)
-                    StatClassifiedfile = folder(i).name(1:end-4);
-                end
-            end
-        end
-        filestoanalyze = filestoanalyze(2:end);
-        close(h1);
-        eval(['ClusterBehaviorCorrelations(', ...
-            Correlationsfile, ',', ...
-            StatClassifiedfile ',', ...
-            filestoanalyze, ');'])
-    else
-        folder = dir('C:\Users\Komiyama\Desktop\Output Data');
-        cd('C:\Users\Komiyama\Desktop\Output Data');
-        animals = list(listpos);
-        for i = 1:length(folder)
-            ismatch = strncmp(folder(i).name, animals, 5);
-            isfile = strfind(folder(i).name, 'SpineCorrelationTimecourse');
-            if sum(ismatch) ~=0 && ~isempty(isfile)
-                load(folder(i).name)
-%                 currentanimal = regexp(folder(i).name, '[A-Z]{2,3}0+\d+', 'match');
-%                 currentanimal = currentanimal{1};
-%                 [usesessions] = blacklist(currentanimal);
-%                 eval([folder(i).name(1:end-4), ' = structfun(@(x) x([', num2str(usesessions), ']), ', folder(i).name(1:end-4), ', ''uni'', false)'])
-                filestoanalyze = [filestoanalyze, ',', folder(i).name(1:end-4)];
-            end
-            waitbar(i/length(folder), h1, 'Looking for files')
-        end
-        filestoanalyze = filestoanalyze(2:end);
-        close(h1)
-        eval(['ClusterBehaviorCorrelations(', filestoanalyze, ');']);
-    end
+fulllist = get(handles.AnimalName_ListBox, 'String');
+animals = fulllist(listpos);
+filestoanalyze = [];
+for i = 1:length(animals)
+    filestoanalyze =[filestoanalyze, ',''',animals{i}, ''''];
 end
+filestoanalyze =  filestoanalyze(2:end);
+
+eval(['NewSpineAnalysis(', filestoanalyze, ')']);
+
+
+% --- Executes on button press in Prediction_PushButton.
+function Prediction_PushButton_Callback(hObject, eventdata, handles)
+% hObject    handle to Prediction_PushButton (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+listpos = get(handles.AnimalName_ListBox, 'Value');
+fulllist = get(handles.AnimalName_ListBox, 'String');
+animals = fulllist(listpos);
+filestoanalyze = [];
+for i = 1:length(animals)
+    filestoanalyze =[filestoanalyze, ',''',animals{i}, ''''];
+end
+filestoanalyze =  filestoanalyze(2:end);
+
+eval(['AveragePrediction(', filestoanalyze, ')']);

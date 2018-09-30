@@ -164,26 +164,32 @@ pks = findpeaks(processed_dFoF, 'MinPeakHeight', spread, 'MinPeakDistance', 200,
 %     [f, xi] = ksdensity(blsub);
 %     lowerlimit = prctile(xi,75);
 
+switch Options.ImagingSensor
+    case 'GCaMP'
+        spinethresh = 0.5;
+        dendthresh = 0.5;
+    case 'GluSnFR'
+        spinethresh = 0.25;
+        dendthresh = 0.25;
+end
+
 if isempty(pks)
     thresh = 1;
 else
     switch BeingAnalyzed
         case 'Spine'
-            spinethresh = 0.25;
             if spread < spinethresh
                 thresh = spinethresh;
             else
                 thresh = spread;
             end
         case 'Poly'
-            dendthresh = 0.25;
             if spread < dendthresh
                 thresh = dendthresh;
             else
                 thresh = spread;
             end
         case 'Dendrite'
-            dendthresh = 0.25;
             if spread < dendthresh
                 thresh = dendthresh;
             else

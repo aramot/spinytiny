@@ -4798,7 +4798,7 @@ else
         ylabel('Event Frequency', 'Fontsize', 14);
         xlabel('Session', 'Fontsize', 14)
         xlim([0 15])
-        legend([a b c d f g h],{'Dends with CueClusts','Dends with MovClusts', 'Dends with SucClusts', 'Dends with RewClusts', 'Dends w/o MovClusts'});
+        legend([a b c d f g h],{'Dends with CueClusts','Dends with MovClusts', 'Dends with MDC Clusts', 'Dends w/ presuc clusts', 'Dends with SucClusts', 'Dends with RewClusts', 'Dends w/o MovClusts'});
 
   
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -5191,8 +5191,8 @@ else
     ConDendDistanceUmbrellaDataChoice = AllDistancesBetweenAllSpines; 
     ConDendCorrelationUmbrellaDataChoice = CorrelationBetweenAllSpines; 
     
-    ConDendDistanceStatDataChoice = AllDistancesBetweenMovementSpines;
-    ConDendCorrelationStatDataChoice = CorrelationBetweenMovementSpines;
+    ConDendDistanceStatDataChoice = AllDistancesBetweenSuccessSpines;
+    ConDendCorrelationStatDataChoice = CorrelationBetweenSuccessSpines;
     
 %     AlloDendDistanceUmbrellaDataChoice = AllDistancesBetweenSameCellDiffBranchSpines; 
 %     AlloDendCorrelationUmbrellaDataChoice = CorrelationBetweenSameCellDiffBranchSpines; 
@@ -5200,8 +5200,8 @@ else
     AlloDendDistanceUmbrellaDataChoice = AllDistancesBetweenAlloDendriticSpines; 
     AlloDendCorrelationUmbrellaDataChoice = CorrelationBetweenAlloDendriticSpines; 
     
-    AlloDendDistanceStatDataChoice = AllDistancesBetweenSameCellDiffBranchMovementSpines; 
-    AlloDendCorrelationStatDataChoice = CorrelationBetweenSameCellDiffBranchMovementSpines; 
+    AlloDendDistanceStatDataChoice = AllDistancesBetweenSameCellDiffBranchSuccessSpines; 
+    AlloDendCorrelationStatDataChoice = CorrelationBetweenSameCellDiffBranchSuccessSpines; 
 
 %     AlloDendDistanceStatDataChoice = AllDistancesBetweenMovementSpines;
 %     AlloDendCorrelationStatDataChoice = CorrelationBetweenMovementSpinesStillPeriods;
@@ -5210,7 +5210,7 @@ else
         binstep = 5; maxdist = 100;
         bincount = 1;
         for b = 1:binstep:maxdist
-            corrdataatbin = cell2mat(cellfun(@(y,x) nanmedian(y(logical(x>=(b-1) & x<(b+binstep)))),varargin{i}.CorrelationBetweenMovementSpines, varargin{i}.DistanceBetweenMovementSpines, 'uni', false));
+            corrdataatbin = cell2mat(cellfun(@(y,x) nanmedian(y(logical(x>=(b-1) & x<(b+binstep)))),varargin{i}.CorrelationBetweenSuccessSpines, varargin{i}.DistanceBetweenSuccessSpines, 'uni', false));
             CorrelationBetweenMovementSpinesAtDistanceBin{bincount} = [CorrelationBetweenMovementSpinesAtDistanceBin{bincount}; corrdataatbin];
             bincount = bincount+1;
         end
@@ -5672,7 +5672,7 @@ else
         colormap(barmap)
         legend({'Nearest', 'Second', 'Third', 'Fourth'}, 'Location', 'SouthEast')
         title(['Sessions ' num2str(earlysessions(1)), '-', num2str(earlysessions(end))], 'Fontsize',14)
-        set(gca, 'XTick', 0:30, 'XTickLabel', mat2cell(num2str([0:5:150]')), 'Fontsize', 6)
+        set(gca, 'XTick', 0:30, 'XTickLabel', mat2cell(num2str([0:5:150]'),ones(31,1),3), 'Fontsize', 6)
         xlim([0 20])
         xlabel('Distance bins', 'Fontsize', 14)
         ylabel('Fraction', 'Fontsize', 14)
@@ -5715,7 +5715,7 @@ else
         bar(m-h(1:length(m)), 'FaceColor', blue);
         legend({'All spine pairs', 'MR spines', 'Diff'})
         title(['Sessions ' num2str(earlysessions(1)), '-', num2str(earlysessions(end))], 'Fontsize', 14)
-        set(gca, 'XTick', [0:30], 'XTickLabel', mat2cell(num2str([0:5:150]')), 'Fontsize', 6)
+        set(gca, 'XTick', [0:30], 'XTickLabel',mat2cell(num2str([0:5:150]'),ones(31,1),3), 'Fontsize', 6)
         xlabel('Distance bins')
         ylabel('Fraction of Distances Measured', 'Fontsize', 14)
         
@@ -5758,7 +5758,7 @@ else
         colormap(barmap)
         legend({'Nearest', 'Second', 'Third', 'Fourth'}, 'Location', 'SouthEast')
         title(['Sessions ', num2str(latesessions(1)), '-', num2str(latesessions(end))], 'Fontsize',14)
-        set(gca, 'XTick', 0:30, 'XTickLabel', mat2cell(num2str([0:5:150]')), 'Fontsize', 6)
+        set(gca, 'XTick', 0:30, 'XTickLabel', mat2cell(num2str([0:5:150]'),ones(31,1),3), 'Fontsize', 6)
         xlim([0 20])
         xlabel('Distance bins', 'Fontsize', 14)
         ylabel('Fraction', 'Fontsize', 14)
@@ -5807,7 +5807,7 @@ else
         bar(m-h(1:length(m)), 'FaceColor', blue)
         legend({'All spine pairs', 'MR spines', 'Diff'})
         title(['Sessions ', num2str(latesessions(1)), '-', num2str(latesessions(end))], 'Fontsize', 14)
-        set(gca, 'XTick', [0:30], 'XTickLabel', mat2cell(num2str([0:5:150]')), 'Fontsize', 6)
+        set(gca, 'XTick', [0:30], 'XTickLabel', mat2cell(num2str([0:5:150]'),ones(31,1),3), 'Fontsize', 6)
         xlabel('Distance bins')
         ylabel('Fraction of Distances Measured', 'Fontsize', 14)
         
@@ -5856,7 +5856,7 @@ else
         colormap(barmap)
         legend({'Nearest', 'Second', 'Third', 'Fourth'})
         title(['Distribution of all Movement Spines Sessions ', num2str(earlysessions(1)), '-', num2str(earlysessions(end))], 'Fontsize',12)
-        set(gca, 'XTick', 0:30, 'XTickLabel', mat2cell(num2str([0:5:150]')))
+        set(gca, 'XTick', 0:30, 'XTickLabel', mat2cell(num2str([0:5:150]'),ones(31,1),3))
         xlabel('Distance (\mum)', 'Fontsize', 14)
         ylabel('Fraction', 'Fontsize', 14)
         if usenorm
@@ -5898,7 +5898,7 @@ else
         colormap(barmap)
         legend({'Nearest', 'Second', 'Third', 'Fourth'})
         title(['Distribution of all Movement Spines Sessions ', num2str(latesessions(1)), '-', num2str(latesessions(end))], 'Fontsize',12)
-        set(gca, 'XTick', 0:30, 'XTickLabel', mat2cell(num2str([0:5:150]')))
+        set(gca, 'XTick', 0:30, 'XTickLabel', mat2cell(num2str([0:5:150]'),ones(31,1),3))
         xlabel('Distance (\mum)', 'Fontsize', 14)
         ylabel('Fraction', 'Fontsize', 14)
         if usenorm
@@ -5946,7 +5946,7 @@ else
         else
         end
         
-        set(gca, 'XTick', [0:30], 'XTickLabel', mat2cell(num2str([0:5:150]')))
+        set(gca, 'XTick', [0:30], 'XTickLabel', mat2cell(num2str([0:5:150]'),ones(31,1),3))
         xlim([0 10])
         
         pos = get(gca,'Position');
@@ -6014,7 +6014,7 @@ else
         else
         end
         
-        set(gca, 'XTick', [0:30], 'XTickLabel', mat2cell(num2str([0:5:150]')))
+        set(gca, 'XTick', [0:30], 'XTickLabel', mat2cell(num2str([0:5:150]'),ones(31,1),3))
         xlim([0 10])
         
         pos = get(gca,'Position');
@@ -6099,7 +6099,7 @@ else
             ylim([0 1])
         else
         end
-        set(gca, 'XTick', [0:30], 'XTickLabel', mat2cell(num2str([0:5:150]')))
+        set(gca, 'XTick', [0:30], 'XTickLabel', mat2cell(num2str([0:5:150]'),ones(31,1),3))
         xlim([0 10])
         
     subplot(2,4,7)
@@ -6140,7 +6140,7 @@ else
         else
         end
         
-        set(gca, 'XTick', [0:30], 'XTickLabel', mat2cell(num2str([0:5:150]')))
+        set(gca, 'XTick', [0:30], 'XTickLabel', mat2cell(num2str([0:5:150]'),ones(31,1),3))
         xlim([0 10])
 
     subplot(2,4,4)
@@ -6183,7 +6183,7 @@ else
         else
         end
         
-        set(gca, 'XTick', [0:30], 'XTickLabel', mat2cell(num2str([0:5:150]')))
+        set(gca, 'XTick', [0:30], 'XTickLabel', mat2cell(num2str([0:5:150]'),ones(31,1),3))
         xlim([0 10])
         
     subplot(2,4,8)
@@ -6226,7 +6226,7 @@ else
         else
         end
         
-        set(gca, 'XTick', [0:30], 'XTickLabel', mat2cell(num2str([0:5:150]')))
+        set(gca, 'XTick', [0:30], 'XTickLabel', mat2cell(num2str([0:5:150]'),ones(31,1),3))
         xlim([0 10])
 end
 
