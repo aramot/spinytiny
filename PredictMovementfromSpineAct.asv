@@ -12,8 +12,8 @@ evenactivitytraces = SpineData(:,1:sum(subdivisions));
 numspines = size(SpineData,1);
 activitytracepieces = mat2cell(evenactivitytraces, numspines, subdivisions);
 
-testset = randi(10,1,1);            %%% Pick a random block of 20% of the data for testing
-trainingset = setdiff(1:10,testset);%%% The other 80% being for training
+testset = randi(10,1,1);            %%% Pick a random block of 10% of the data for testing
+trainingset = setdiff(1:10,testset);%%% The other 90% being for training
 
 SelectedSpineData = cell2mat(activitytracepieces(trainingset));
 SelectedMovementData = cell2mat(movementtracepieces(trainingset));
@@ -34,14 +34,7 @@ if ~any(SpineData(:)>0 & SpineData(:)<1) && ~any(MovementData(:)>0 & MovementDat
     
     conmat = confusionmat(TestMovementData, PredictedMovement); %%% Confusion matrix, which displays accuracy of classification algorithm
     
-    TruePosRate = conmat(2,2)/sum(conmat(2,:)); %%% Finds true positive rate (confusion matrix for binary decisions: (1,1)=true neg; (1,2)= false neg; (2,1) = false pos
-    
-    predictioncorrelation = corrcoef(TestMovementData, PredictedMovement);
-
-    PredictionAccuracy = (predictioncorrelation(1,2)).^2;
-    if isnan(PredictionAccuracy)
-        PredictionAccuracy = 0;
-    end
+    T = conmat(2,2)/sum(conmat(2,:)); %%% Finds true positive rate (confusion matrix for binary decisions: (1,1)=true neg; (1,2)= false neg; (2,1) = false pos
 else
     [Mdl, FitInfo, HyperparameterOptimzationResults] = fitrlinear(SelectedSpineData', SelectedMovementData, 'OptimizeHyperParameters', 'auto', 'HyperparameterOptimizationOptions', hyperopts);
     TestActivityData = cell2mat(activitytracepieces(testset));
@@ -52,9 +45,6 @@ else
     predictioncorrelation = corrcoef(TestMovementData, PredictedMovement);
 
     PredictionAccuracy = (predictioncorrelation(1,2)).^2;
-    if isnan(PredictionAccuracy)
-        PredictionAccuracy = 0;
-    end
 end
 
 %%% Manual Hyperparameter Selection

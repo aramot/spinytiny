@@ -3450,7 +3450,7 @@ if isempty(strfind(inputname(1), 'SpineCorrelationTimecourse'))
     figure('Position', scrsz); 
     
     earlysessions = 1:3;
-    latesessions  = 11:14; 
+    latesessions  = 10:12; 
     
     ConDendDistanceUmbrellaDataChoice = DistanceBetweenAllSpines; 
     ConDendCorrelationUmbrellaDataChoice = CorrelationBetweenAllSpines; 
@@ -5186,7 +5186,7 @@ else
     %%%
     
     earlysessions = 1:3;
-    latesessions  = 11:14; 
+    latesessions  = 11:13; 
     
     ConDendDistanceUmbrellaDataChoice = AllDistancesBetweenAllSpines; 
     ConDendCorrelationUmbrellaDataChoice = CorrelationBetweenAllSpines; 
@@ -5242,8 +5242,8 @@ else
          hold on;
 %         plot(xdata(ydata<0.5), ydata(ydata<0.5), '.', 'Color', black);
           for ns = 1:length(varargin)
-            distset = cell2mat(varargin{ns}.DistanceBetweenMovementSpines(earlysessions));
-            corrset = cell2mat(varargin{ns}.CorrelationBetweenMovementSpines(earlysessions));
+            distset = cell2mat(varargin{ns}.DistanceBetweenSuccessSpines(earlysessions));
+            corrset = cell2mat(varargin{ns}.CorrelationBetweenSuccessSpines(earlysessions));
             col1 = mod(ns-1, length(rnbo))+1;
             plot(distset, corrset, '.k', 'Color', rnbo{col1})
             plot(5, nanmedian(corrset(distset>=0 & distset<5)), 'ok', 'MarkerEdgeColor', rnbo{col1}, 'MarkerFaceColor', rnbo{col1})
@@ -5337,11 +5337,11 @@ else
 
 %         plot(xdata(ydata>=0.5), ydata(ydata>=0.5), '.', 'Color', lgreen); 
             hold on;
-%         plot(xdata(ydata<0.5), ydata(ydata<0.5), '.', 'Color', black);
+        plot(xdata, ydata, '.', 'Color', black);
 
           for ns = 1:length(varargin)
-            distset = cell2mat(varargin{ns}.DistanceBetweenMovementSpines(latesessions));
-            corrset = cell2mat(varargin{ns}.CorrelationBetweenMovementSpines(latesessions));
+            distset = cell2mat(varargin{ns}.DistanceBetweenSuccessSpines(latesessions));
+            corrset = cell2mat(varargin{ns}.CorrelationBetweenSuccessSpines(latesessions));
             col1 = mod(ns-1, length(rnbo))+1;
             plot(distset, corrset, '.k', 'Color', rnbo{col1})
             plot(5, nanmedian(corrset(distset>=0 & distset<5)), 'ok', 'MarkerEdgeColor', rnbo{col1}, 'MarkerFaceColor', rnbo{col1})
@@ -6101,6 +6101,7 @@ else
         end
         set(gca, 'XTick', [0:30], 'XTickLabel', mat2cell(num2str([0:5:150]'),ones(31,1),3))
         xlim([0 10])
+        ylim([0 1])
         
     subplot(2,4,7)
 %                 axes('Position', [pos(1)+0.7*pos(3), pos(2)+0.3*pos(4), 0.25*pos(3), 0.25*pos(4)]);
@@ -6142,6 +6143,7 @@ else
         
         set(gca, 'XTick', [0:30], 'XTickLabel', mat2cell(num2str([0:5:150]'),ones(31,1),3))
         xlim([0 10])
+        ylim([0 1])
 
     subplot(2,4,4)
         neardist = cell2mat(NearestHighlyCorrelatedMovementRelatedSpine(earlysessions));

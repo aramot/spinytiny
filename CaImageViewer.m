@@ -96,6 +96,7 @@ set(handles.RedGraph, 'YTick', []);
 set(handles.RedGraph, 'XTick', []);
 set(handles.RedGraph, 'Box', 'on');
 
+
 %%% Initialize Key press functions for various editable text boxes
 set(gui_CaImageViewer.figure.handles.Frame_EditableText, 'KeyPressFcn', @frameset);
 set(gui_CaImageViewer.figure.handles.UpperLUT_EditableText, 'KeyPressFcn', @frameset);

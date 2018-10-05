@@ -5,7 +5,7 @@ clc, clear, close all
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%% Brain section number             %%%%%%%%%%%%%%%%%%%
-animal_num = 4;  %% For the second brain, change it to 2
+animal_num = 3;  %% For the second brain, change it to 2
 
 %%% Input folder name and output stack name    %%%%%%%%%
 cd('E:')
@@ -39,7 +39,6 @@ cd('G:\Projection Tracing')
 slicemap = fastdir(cd, ['Animal ', num2str(animal_num), ' Slice Mapping']);
 if isempty(slicemap)
     remapslices = 0;
-    ordered_layer = min_layer;
 else
     remapslices = 1;
     load(slicemap{1})
@@ -86,11 +85,7 @@ currentimage = ['Slide ', num2str(1), ' Slice ', num2str(min_layer+1), ' (Layer 
 for i = 1:max_collection
     figure('Position', [456 582 1035 401])
     max_layer = size(fastdir([folder_pre, num2str(i), folder_post], 'Layer'),1)-1;
-    if remapslices
-        current_slice_map = SliceMapping{i};
-    else
-        current_slices_map = [];
-    end
+    current_slice_map = SliceMapping{i};
     if isempty(fastdir([folder_pre, num2str(i), folder_post, filesep],'Overview_Downsampled.btf'))
         cd([folder_pre, num2str(i), folder_post, filesep])
         OV = imread([folder_pre, num2str(i), folder_post, filesep,'Overview.btf']);
@@ -111,11 +106,7 @@ for i = 1:max_collection
         if i == 0 && j == 0
             continue
         else
-            if remapslices
-                ordered_layer = find(current_slice_map == j+1)-1;
-            else
-                ordered_layer = j;
-            end
+            ordered_layer = find(current_slice_map == j+1)-1;
             f_dir = [folder_pre,num2str(i)  ...
                     ,folder_post,layer_name,num2str(ordered_layer),file_name];
             figure(sortfig)
