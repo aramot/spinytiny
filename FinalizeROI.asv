@@ -103,9 +103,8 @@ else
     %%%
     if twochannels
         if ~Merge
-            axes(axes2)
             gui_CaImageViewer.ROIred(ROInum+1) = drawellipse('Center', adjustedpos(1:2), 'SemiAxes', newROIsemiaxes, 'RotationAngle', newROIRotationAngle, 'AspectRatio', newROIAspectRatio,...
-            'Tag', ['ROI', num2str(ROInum)], 'Color', 'c', 'HandleVisibility', 'on', 'Label', labelopt, 'Linewidth', 1, 'FaceAlpha', 0, 'InteractionsAllowed', 'none');
+        'Tag', ['ROI', num2str(ROInum)], 'Color', linecolor, 'HandleVisibility', 'on', 'Label', labelopt, 'Linewidth', 1, 'FaceAlpha', 0, 'InteractionsAllowed', 'none');
         end
     else
     end
@@ -117,6 +116,7 @@ else
 %     end
 end
 
+% gui_CaImageViewer.ROItext(ROInum+1) = text(adjustedpos(1)-4, adjustedpos(2)-3, num2str(ROInum), 'color', 'white', 'Tag', ['ROI', num2str(ROInum), ' Text'],'ButtonDownFcn', 'DeleteROI', 'Fontsize', 6);
 set(gui_CaImageViewer.figure.handles.InsertSpine_ToggleButton, 'Value', 0);
 set(gui_CaImageViewer.figure.handles.InsertSpine_ToggleButton, 'Enable', 'off');
 

@@ -123,10 +123,10 @@ if length(experimentnames) == 1
     DistancesBetweenElimSpinesandShuffledMovementSpines = cell(1,NumFields);
     
     for f = 1:NumFields
-        FractionofMovementRelatedSpinesMaintained{f} = length(FieldData{f}.StatClass{1}.MovementSpLiberal(FieldData{f}.StatClass{2}.MovementSpLiberal))/sum(FieldData{1}.StatClass{1}.MovementSpLiberal);
-        FractionofMovementRelatedSpinesEliminated{f} = length(find(FieldChanges{f}(FieldData{f}.StatClass{1}.MovementSpLiberal)<0))/sum(FieldData{f}.StatClass{1}.MovementSpLiberal);
-        AllMovementSpinesOnSession1 = find(FieldData{f}.StatClass{1}.MovementSpLiberal);
-        AllMovementSpinesOnSession2 = find(FieldData{f}.StatClass{2}.MovementSpLiberal);
+        FractionofMovementRelatedSpinesMaintained{f} = length(FieldData{f}.StatClass{1}.DendSub_MovementSpLiberal(FieldData{f}.StatClass{2}.DendSub_MovementSpLiberal))/sum(FieldData{1}.StatClass{1}.DendSub_MovementSpLiberal);
+        FractionofMovementRelatedSpinesEliminated{f} = length(find(FieldChanges{f}(FieldData{f}.StatClass{1}.DendSub_MovementSpLiberal)<0))/sum(FieldData{f}.StatClass{1}.DendSub_MovementSpLiberal);
+        AllMovementSpinesOnSession1 = find(FieldData{f}.StatClass{1}.DendSub_MovementSpLiberal);
+        AllMovementSpinesOnSession2 = find(FieldData{f}.StatClass{2}.DendSub_MovementSpLiberal);
         NumberofEarlySpines = FieldData{f}.CalciumData{1}.NumberofSpines;
         NumberofLateSpines = FieldData{f}.CalciumData{2}.NumberofSpines;
         ShuffledEarlyMovementLabels = randi(NumberofEarlySpines,[length(AllMovementSpinesOnSession1),1]);
@@ -144,11 +144,15 @@ if length(experimentnames) == 1
             ShuffledLateMovementLabels = randi(NumberofLateSpines, [length(AllMovementSpinesOnSession2),1]);
         end
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        NewSpines = find(FieldChanges{f}>0);
+        if size(FieldChanges{f},2) >1
+            NewSpines = find(sum(FieldChanges{f},2));
+        else
+            NewSpines = find(FieldChanges{f}>0);
+        end
         NumberofNewSpines = NumberofNewSpines+length(NewSpines);
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         if ~isempty(NewSpines)    %%% If there are new spines, find out whether they are close to a nearby movement spine, have a highly correlated partner, etc.
-            NumberofNewSpinesThatAreMR = NumberofNewSpinesThatAreMR+sum(FieldData{f}.StatClass{2}.MovementSpLiberal(NewSpines));
+            NumberofNewSpinesThatAreMR = NumberofNewSpinesThatAreMR+sum(FieldData{f}.StatClass{2}.DendSub_MovementSpLiberal(NewSpines));
             OtherMovementSpinesThatArentNew = setdiff(AllMovementSpinesOnSession2,NewSpines);
             %%% Compare new spines to early session features
             if ~isempty(AllMovementSpinesOnSession1)
@@ -211,12 +215,16 @@ if length(experimentnames) == 1
             %%%%%%
         end
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        ElimSpines = find(FieldChanges{f}<0);
+        if size(FieldChanges{f},2)>1
+            ElimSpines = find(sum(FieldChanges{f},2));
+        else
+            ElimSpines = find(FieldChanges{f}<0);
+        end
         NumberofElimSpines = NumberofElimSpines+length(ElimSpines);
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         if ~isempty(ElimSpines)    %%% If there are new spines, find out whether they are close to a nearby movement spine
             NumberofSpines = FieldData{f}.CalciumData{2}.NumberofSpines;
-            NumberofElimSpinesThatWereMR = NumberofElimSpinesThatWereMR+sum(FieldData{f}.StatClass{1}.MovementSpLiberal(ElimSpines));
+            NumberofElimSpinesThatWereMR = NumberofElimSpinesThatWereMR+sum(FieldData{f}.StatClass{1}.DendSub_MovementSpLiberal(ElimSpines));
             OtherMovementSpinesThatArentElim = setdiff(AllMovementSpinesOnSession2,ElimSpines);
             %%% Compare new spines to early session features
             if ~isempty(AllMovementSpinesOnSession1)
@@ -318,10 +326,10 @@ if length(experimentnames) == 1
         for d = 1:length(DendriteDynamics{f})
             if DendriteFunctionChange{f}(d) >0
                 NumberofDendritesThatBecomeMR = NumberofDendritesThatBecomeMR+1;
-                if sum(FieldData{f}.StatClass{1}.MovementSpLiberal(FieldData{f}.CalciumData{1}.SpineDendriteGrouping{d}))
+                if sum(FieldData{f}.StatClass{1}.DendSub_MovementSpLiberal(FieldData{f}.CalciumData{1}.SpineDendriteGrouping{d}))
                     NumberofDendritesThatBecomeMRandHaveMRSpines = NumberofDendritesThatBecomeMRandHaveMRSpines+1;
                 end
-                if ~isempty(find((diff([FieldData{f}.StatClass{1}.MovementSpLiberal(FieldData{f}.CalciumData{1}.SpineDendriteGrouping{d}),FieldData{f}.StatClass{2}.MovementSpLiberal(FieldData{f}.CalciumData{2}.SpineDendriteGrouping{d})],1,2))>0,1))
+                if ~isempty(find((diff([FieldData{f}.StatClass{1}.DendSub_MovementSpLiberal(FieldData{f}.CalciumData{1}.SpineDendriteGrouping{d}),FieldData{f}.StatClass{2}.DendSub_MovementSpLiberal(FieldData{f}.CalciumData{2}.SpineDendriteGrouping{d})],1,2))>0,1))
                     NumberofDendritesThatBecomeMRandGainMRSpines = NumberofDendritesThatBecomeMRandGainMRSpines+1;
                 end
                 if sum(ismember(FieldData{f}.CalciumData{1}.SpineDendriteGrouping{d},NewSpines))
@@ -333,10 +341,10 @@ if length(experimentnames) == 1
             end
             if DendriteFunctionChange{f}(d)<0
                 NumberofDendritesThatLoseMR = NumberofDendritesThatLoseMR+1;
-                if sum(FieldData{f}.StatClass{1}.MovementSpLiberal(FieldData{f}.CalciumData{1}.SpineDendriteGrouping{d}))
+                if sum(FieldData{f}.StatClass{1}.DendSub_MovementSpLiberal(FieldData{f}.CalciumData{1}.SpineDendriteGrouping{d}))
                     NumberofDendritesThatLoseMRandHaveMRSpines = NumberofDendritesThatLoseMRandHaveMRSpines+1;
                 end
-                if ~isempty(find((diff([FieldData{f}.StatClass{1}.MovementSpLiberal(FieldData{f}.CalciumData{1}.SpineDendriteGrouping{d}),FieldData{f}.StatClass{2}.MovementSpLiberal(FieldData{f}.CalciumData{2}.SpineDendriteGrouping{d})],1,2))<0,1))
+                if ~isempty(find((diff([FieldData{f}.StatClass{1}.DendSub_MovementSpLiberal(FieldData{f}.CalciumData{1}.SpineDendriteGrouping{d}),FieldData{f}.StatClass{2}.DendSub_MovementSpLiberal(FieldData{f}.CalciumData{2}.SpineDendriteGrouping{d})],1,2))<0,1))
                     NumberofDendritesThatLoseMRandLoseMRSpines = NumberofDendritesThatLoseMRandLoseMRSpines+1;
                 end
                 if sum(ismember(FieldData{f}.CalciumData{1}.SpineDendriteGrouping{d},find(DendriteDynamics{f}{d}>0,1)))
@@ -353,14 +361,14 @@ if length(experimentnames) == 1
                     if IsDendriteUsed{f}(d)
                         NumberofAdditionDendritesUsedForMovement = NumberofAdditionDendritesUsedForMovement+1;
                     end
-                    NumberofMovementSpinesOnAdditionDendrites = [NumberofMovementSpinesOnAdditionDendrites;sum(FieldData{f}.StatClass{2}.MovementSpLiberal(FieldData{f}.CalciumData{2}.SpineDendriteGrouping{d}))];
+                    NumberofMovementSpinesOnAdditionDendrites = [NumberofMovementSpinesOnAdditionDendrites;sum(FieldData{f}.StatClass{2}.DendSub_MovementSpLiberal(FieldData{f}.CalciumData{2}.SpineDendriteGrouping{d}))];
                 end
                 if ~isempty(find(DendriteDynamics{f}{d}<0,1))
                     NumberofEliminationDendrites = NumberofEliminationDendrites + 1;
                     if IsDendriteUsed{f}(d)
                         NumberofEliminationDendritesUsedForMovement = NumberofEliminationDendritesUsedForMovement+1;
                     end
-                    NumberofMovementSpinesOnEliminationDendrites = [NumberofMovementSpinesOnEliminationDendrites;sum(FieldData{f}.StatClass{2}.MovementSpLiberal(FieldData{f}.CalciumData{2}.SpineDendriteGrouping{d}))];
+                    NumberofMovementSpinesOnEliminationDendrites = [NumberofMovementSpinesOnEliminationDendrites;sum(FieldData{f}.StatClass{2}.DendSub_MovementSpLiberal(FieldData{f}.CalciumData{2}.SpineDendriteGrouping{d}))];
                 end
                 if ~isempty(find(DendriteDynamics{f}{d}>0,1)) && ~isempty(find(DendriteDynamics{f}{d}<0,1))
                     NumberofAdditionandEliminationDendrites = NumberofAdditionandEliminationDendrites + 1;
@@ -376,7 +384,7 @@ if length(experimentnames) == 1
                 if IsDendriteUsed{f}(d)
                     NumberofStaticDendritesUsedForMovement = NumberofStaticDendritesUsedForMovement+1;
                 end
-                NumberofMovementSpinesOnStaticDendrites = [NumberofMovementSpinesOnStaticDendrites;sum(FieldData{f}.StatClass{2}.MovementSpLiberal(FieldData{f}.CalciumData{2}.SpineDendriteGrouping{d}))];
+                NumberofMovementSpinesOnStaticDendrites = [NumberofMovementSpinesOnStaticDendrites;sum(FieldData{f}.StatClass{2}.DendSub_MovementSpLiberal(FieldData{f}.CalciumData{2}.SpineDendriteGrouping{d}))];
             end
         end
     end

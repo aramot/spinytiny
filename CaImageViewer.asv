@@ -683,9 +683,6 @@ Dendrite_PolyLines = get(gui_CaImageViewer.figure.handles.DendritePolyLines_Togg
 ROInum = length(gui_CaImageViewer.ROIother);
 Router = 'Other';
 
-twochannels = gui_CaImageViewer.figure.handles.TwoChannels_CheckBox.Value;
-Merge = gui_CaImageViewer.figure.handles.Merge_ToggleButton.Value;
-
 if DrawOtherROI == 1
     set(handles.BackgroundROI_ToggleButton, 'Value', 0);
     set(handles.SpineROI_ToggleButton, 'Value', 0);

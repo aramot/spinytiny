@@ -8,8 +8,9 @@ clc, clear, close all
 animal_num = 4;  %% For the second brain, change it to 2
 
 %%% Input folder name and output stack name    %%%%%%%%%
-cd('E:')
-folder_pre = ['G:', filesep,'Projection Tracing', filesep, 'NHCAV',num2str(animal_num),'.'];
+chosen_directory = ['G:', filesep];
+cd(chosen_directory);
+folder_pre = [chosen_directory, filesep,'Projection Tracing', filesep, 'NHCAV',num2str(animal_num),'.'];
 folder_post = '.vsi.Collection';
 layer_name = [filesep,'Layer'];
 file_name = [filesep, 'Layer.btf'];
@@ -141,7 +142,7 @@ for i = 1:max_collection
             
             %%% Fetch user selection and assign choice to variable flip_lr
             flipchoice = get(gcf, 'UserData');
-            if strcmpi(flipchoice, 'Flip L/R');
+            if strcmpi(flipchoice, 'Flip L/R')
                 flip_lr = 1;
             else
                 flip_lr = 0;
@@ -151,7 +152,7 @@ for i = 1:max_collection
                 img_r = flipdim(img_r, 2);
             end
             cla; imagesc(img_r);set(gca, 'XTick', []); set(gca, 'YTick', [])
-            cd('E:\')
+            cd(chosen_directory)
             imwrite(img_r, [output_name,num2str(animal_num), ...
                 '.tif'], 'WriteMode', 'append', ...
                 'Compression','packbits');

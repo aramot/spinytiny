@@ -1,6 +1,6 @@
 function RedoAnalysis(varargin)
 
-usersearch = 'Nathan';  %%% Change this to search for analyzed files from a different user!
+usersearch = 'Zhongmin';  %%% Change this to search for analyzed files from a different user!
 imagedsensor = 'GluSnFR';
 
 if isempty(varargin)
