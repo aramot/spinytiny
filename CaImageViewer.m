@@ -279,21 +279,18 @@ else
         Green_Frame = Green_Frame+1;
         waitbar(Green_Frame/timecourse_image_number,h,['Loading Image ', num2str(Green_Frame)]);
     end
-    if ~gui_CaImageViewer.LoadedFile || Green_loc(3) == Red_loc(3)
-        set(handles.RedGraph, 'Visible', 'off')
-        set(handles.Channel2_StaticText, 'Visible', 'off')
-        set(handles.RedUpperLUT_EditableText, 'Visible', 'off')
-        set(handles.RedLowerLUT_EditableText, 'Visible', 'off')
-        set(handles.RedGamma_EditableText, 'Visible', 'off')
-        set(handles.RedGamma_StaticText, 'Visible', 'off')
-        gui_CaImageViewer.GraphPlacement = [Green_loc(1), Green_loc(2), Green_loc(3)+(Red_loc(1)-(Green_loc(1)+Green_loc(3))+Red_loc(3)), Green_loc(4)];
-        set(handles.GreenGraph, 'Units', 'normalized')
-        figure(gui_CaImageViewer.figure.handles.figure1)
-        axes(gui_CaImageViewer.figure.handles.GreenGraph);
-        intergraphdistance = Red_loc(1)-(Green_loc(1)+Green_loc(3));
-        set(handles.GreenGraph, 'Position', [Green_loc(1), Green_loc(2), Green_loc(3)+Red_loc(3)+intergraphdistance, Green_loc(4)])
-    else
-    end
+    set(handles.RedGraph, 'Visible', 'off')
+    set(handles.Channel2_StaticText, 'Visible', 'off')
+    set(handles.RedUpperLUT_EditableText, 'Visible', 'off')
+    set(handles.RedLowerLUT_EditableText, 'Visible', 'off')
+    set(handles.RedGamma_EditableText, 'Visible', 'off')
+    set(handles.RedGamma_StaticText, 'Visible', 'off')
+    gui_CaImageViewer.GraphPlacement = [Green_loc(1), Green_loc(2), Green_loc(3)+(Red_loc(1)-(Green_loc(1)+Green_loc(3))+Red_loc(3)), Green_loc(4)];
+    set(handles.GreenGraph, 'Units', 'normalized')
+    figure(gui_CaImageViewer.figure.handles.figure1)
+    axes(gui_CaImageViewer.figure.handles.GreenGraph);
+    intergraphdistance = Red_loc(1)-(Green_loc(1)+Green_loc(3));
+    set(handles.GreenGraph, 'Position', [Green_loc(1), Green_loc(2), Green_loc(3)+Red_loc(3)+intergraphdistance, Green_loc(4)])
 end
 
 close(h)
@@ -2118,12 +2115,10 @@ steps = timecourse_image_number*length(CaImage_File_info);
 
 %%% Set Image Properties %%%
 
-
 gui_CaImageViewer.GCaMP_Image = [];
 gui_CaImageViewer.Red_Image = [];
 
 h = waitbar(0, 'Loading Image ');
-
 
 Green_loc = gui_CaImageViewer.GreenGraph_loc;
 Red_loc = gui_CaImageViewer.RedGraph_loc;
@@ -2150,7 +2145,7 @@ channel2 = gui_CaImageViewer.Red_Image;
 
 CommandSource = 'Loader';
 
-[ch1image, ch2image] = PlaceImages(channel1, channel2, CommandSource);
+[~, ~] = PlaceImages(channel1, channel2, CommandSource);
 
 imageserieslength = size(gui_CaImageViewer.GCaMP_Image, 2);
 gui_CaImageViewer.imageserieslength = imageserieslength;
@@ -2161,13 +2156,6 @@ set(handles.ImageSlider_Slider, 'Max', imageserieslength);
 set(handles.ImageSlider_Slider, 'SliderStep', [(1/(GreenImageNumber-1)) (32/(GreenImageNumber-1))]);  %%% The Slider Step values indicate the minor and major transitions, which should be represented by the desired transition as the numerator and the length of the series as the denominator
 set(handles.Frame_EditableText, 'String', 1);
 set(handles.SmoothingFactor_EditableText, 'String', '1');
-
-% 
-% Smoothing = str2num(get(handles.SmoothingFactor_EditableText, 'String'));
-% 
-% if Smoothing ~= 1
-%     Smoother(hObject, eventdata, ch1image,ch2image, CommandSource)
-% end
 
 set(gui_CaImageViewer.figure.handles.output, 'WindowButtonDownFcn', [])
 
@@ -2473,7 +2461,7 @@ if editopt
 else
    for i = 1:length(ROIs)
         ROIs(i).InteractionsAllowed = 'none';
-    end 
+   end 
 end
 
 
