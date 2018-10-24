@@ -48,18 +48,6 @@ Green_loc = gui_CaImageViewer.GreenGraph_loc;
 Red_loc = gui_CaImageViewer.RedGraph_loc;
 
 if twochannels
-    [Rfilename, Rpathname] = uigetfile('.tif', 'Select image file for the red channel');
-    Rfname = [Rpathname, Rfilename];
-    RTifLink = Tiff(Rfname, 'r');
-    for i = 1:timecourse_image_number
-        TifLink.setDirectory(i);
-        gui_CaImageViewer.GCaMP_Image{1,Green_Frame} = TifLink.read();
-        Green_Frame = Green_Frame+1;
-        waitbar(Green_Frame/timecourse_image_number,h,['Loading Image ', num2str(Green_Frame)]);
-        RTifLink.setDirectory(i);
-        gui_CaImageViewer.Red_Image{1,Red_Frame} = RTifLink.read();
-        Red_Frame = Red_Frame+1;
-    end
     set(gui_CaImageViewer.figure.RedGraph, 'Visible', 'on')
     set(gui_CaImageViewer.figure.Channel2_StaticText, 'Visible', 'on')
     set(gui_CaImageViewer.figure.RedUpperLUT_EditableText, 'Visible', 'on')
@@ -72,6 +60,20 @@ if twochannels
     axes(gui_CaImageViewer.figure.gui_CaImageViewer.figure.GreenGraph);
     set(gui_CaImageViewer.figure.GreenGraph, 'Position', [Green_loc(1), Red_loc(2), Red_loc(3), Red_loc(4)]);      %%% If an image using only 1 channel is already loaded, the "green" graph overlays the red, but the size of the original axes is maintained in the "red" graph.
     set(gui_CaImageViewer.figure.RedGraph, 'Position', [Red_loc(1), Red_loc(2),  Red_loc(3), Red_loc(4)]);
+        SliceFocus = regexp(zStack_Interface.CurrentSliceEdit.String, '[0-9]+_*', 'match');
+    if zStack_Interface.LimittoSlice
+        numslices = str2num(zStack_Interface.SlicesEdit.String);
+        currentslice = str2double(SliceFocus{1});
+        allmults = [currentslice:numslices:length(gui_CaImageViewer.GCaMP_Image)];       
+    else
+    end
+    if length(SliceFocus)>1
+        z_diff = str2double(SliceFocus{2})-str2double(SliceFocus{1});
+    else
+        z_diff = 0;
+    end
+    channel1 = gui_CaImageViewer.GCaMP_Image(allmults);
+    channel2 = gui_CaImageViewer.Red_Image(allmults+z_diff);
 else
     for i = 1:timecourse_image_number
         TifLink.setDirectory(i);
@@ -94,12 +96,11 @@ else
         set(handles.GreenGraph, 'Position', [Green_loc(1), Green_loc(2), Green_loc(3)+Red_loc(3)+intergraphdistance, Green_loc(4)])
     else
     end
+    channel1 = gui_CaImageViewer.GCaMP_Image;
+    channel2 = [];
 end
 
 close(h)
-
-channel1 = gui_CaImageViewer.GCaMP_Image;
-channel2 = gui_CaImageViewer.Red_Image;
 
 CommandSource = 'Loader';
 

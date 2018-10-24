@@ -27,9 +27,10 @@ end
 
 if isfield (gui_CaImageViewer, 'ROI')
     if ~isempty(gui_CaImageViewer.ROI)
-        for i = 1:length(gui_CaImageViewer.ROI)
-            if ishandle(gui_CaImageViewer.ROI(i))
-                existing_ROI{i} = get(gui_CaImageViewer.ROI(i));
+        allROItypes = [gui_CaImageViewer.ROI,gui_CaImageViewer.ROIother];
+        for i = 1:length(allROItypes)
+            if ishandle(allROItypes)
+                existing_ROI{i} = get(allROItypes(i));
             else
                 error('No ROIs have been drawn, or they have been cleared. Redraw or recover');
             end
@@ -113,12 +114,13 @@ ysize = size(gui_CaImageViewer.ch1image,2);
 islong = gui_CaImageViewer.figure.handles.Longitudinal_CheckBox.Value;
 newspineanalysis = gui_CaImageViewer.NewSpineAnalysis;
 
-Fluorescence_Intensity = cell(length(gui_CaImageViewer.ROI)-1,1);
-Total_Intensity = cell(length(gui_CaImageViewer.ROI)-1,1);
-Pixel_Number = cell(length(gui_CaImageViewer.ROI)-1,1);
-Fluorescence_Measurement = cell(length(gui_CaImageViewer.ROI)-1,1);
-Surround_Measurement = cell(length(gui_CaImageViewer.ROI)-1,1);
-SpineList = ones(length(existing_ROI),1);
+
+Fluorescence_Intensity = cell(length(existing_ROI)-1,1);
+Total_Intensity = cell(length(existing_ROI)-1,1);
+Pixel_Number = cell(length(existing_ROI)-1,1);
+Fluorescence_Measurement = cell(length(existing_ROI)-1,1);
+Surround_Measurement = cell(length(existing_ROI)-1,1);
+SpineList = ones(length(existing_ROI)-1,1);
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -387,12 +389,14 @@ end
 try
     fullfname = fullfname(1:length(fullfname)-4);
     save_fname = [fullfname, analysis_tidbits , user];
+    save_fname(save_fname=='-') = '_';
     evalc([save_fname, '= a']);
     start_dir = cd;
     target_dir = save_directory;
     cd(target_dir);
     save(save_fname, save_fname);
 catch
+    altname = save_fname;
     fullfname = altname;
     save_fname = [fullfname, analysis_tidbits, user];
     evalc([save_fname, '= a']);
@@ -428,7 +432,9 @@ close(wb);
 timecourse_h = figure;
 hold on;
 
-
+for i = 1:length(Fluorescence_Measurement)
+    plot(Fluorescence_Measurement{i})
+end
 
 
 scrsz = get(0, 'ScreenSize');

@@ -75,4 +75,5 @@ else
     set(gui_CaImageViewer.figure.handles.ImageSlider_Slider, 'Min', 1);
     set(gui_CaImageViewer.figure.handles.ImageSlider_Slider, 'Max', imageserieslength);
     set(gui_CaImageViewer.figure.handles.ImageSlider_Slider, 'SliderStep', [(1/(imageserieslength-1)) (1*4/(imageserieslength-1))]);
+    setslicenum(hObject)
 end

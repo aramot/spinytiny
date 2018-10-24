@@ -21,7 +21,7 @@ for i = 1:length(files)
     eval(['allarray(i,[',sessionstr(1:end-1),']) = cell2mat(cellfun(@(x) x(:).PredictionAccuracy,',files{i}(1:end-4), '(~cell2mat(cellfun(@isempty,',files{i}(1:end-4),', ''uni'', false))), ''uni'', false));'])
 end
 
-plot(allarray'); flex_plot(1:14, allarray, 'parametric', 'k', 2);
+plot(allarray'); flex_plot(1:14, allarray, 'nonparametric', 'k', 2);
 ylabel('Prediction Accuray (R^2)')
 xlabel('Session')
 

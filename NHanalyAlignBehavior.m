@@ -458,44 +458,44 @@ Classified.MovementSpineReliability = MovementSpineReliability;
 %%%% preserved, floored traces withOUT differentiating pushes and pulls,
 %%%% binarized data
 
-activitydataformodel = DendSubspinedatatouse;
+activitydataformodel = spinedatatouse;
 movementdataformodel = binary_behavior;
 
-animal = regexp(Fluor.Filename, '[A-Z]{2,3}\d+', 'match'); animal = animal{1};
-
-if isfolder(['C:/Users/Komiyama/Desktop/Output Data/', animal, ' New Spine Analysis'])
-    persistent longitudinalModel
-    fieldsource = fastdir(['C:/Users/Komiyama/Desktop/Output Data/', animal, ' New Spine Analysis'], 'Field');
-    filecount = 1;
-    for f = 1:length(fieldsource)
-        load(['C:/Users/Komiyama/Desktop/Output Data/', animal, ' New Spine Analysis/', fieldsource{f}])
-        fieldnumber = regexp(fieldsource{f}, '\d+.Spine');
-        eval(['FieldData{', num2str(filecount), '} = SpineRegistry;']);
-        clear SpineRegistry
-        filecount = filecount+1;
-    end
-    currentdate = regexp(Fluor.Filename, '[0-9]{4,6}', 'match');
-    for i = 1:length(FieldData)
-        if sum(cell2mat(cellfun(@(x) strfind(x,currentdate), FieldData{i}.DatesAcquired, 'uni', false)))   %%% if the current file date is found within the current field data
-            datesused = sortrows(FieldData{i}.DatesAcquired);
-            instance = find(cell2mat(cellfun(@(x) ~isempty(logical(strfind(x,currentdate))), datesused, 'uni', false)));
-            if instance >1   %%% If the current file is the second instance of longitudinal data, USE THE FIRST INSTANCE'S MODEL!
-                Model = longitudinalModel{i}{1};
-                PredictedMovement = predict(Model, activitydataformodel');
-                predictioncorrelation = corrcoef(movementdataformodel, PredictedMovement);
-                PredictionAccuracy = (predictioncorrelation(1,2)).^2;
-                if isnan(PredictionAccuracy)
-                    PredictionAccuracy = 0;
-                end
-            else
-               [Model,~, PredictionAccuracy] = PredictMovementfromSpineAct(activitydataformodel, movementdataformodel); 
-               longitudinalModel{i}{instance} = Model;
-            end
-        end
-    end
-else
+% animal = regexp(Fluor.Filename, '[A-Z]{2,3}\d+', 'match'); animal = animal{1};
+% 
+% if isfolder(['C:/Users/Komiyama/Desktop/Output Data/', animal, ' New Spine Analysis'])
+%     persistent longitudinalModel
+%     fieldsource = fastdir(['C:/Users/Komiyama/Desktop/Output Data/', animal, ' New Spine Analysis'], 'Field');
+%     filecount = 1;
+%     for f = 1:length(fieldsource)
+%         load(['C:/Users/Komiyama/Desktop/Output Data/', animal, ' New Spine Analysis/', fieldsource{f}])
+%         fieldnumber = regexp(fieldsource{f}, '\d+.Spine');
+%         eval(['FieldData{', num2str(filecount), '} = SpineRegistry;']);
+%         clear SpineRegistry
+%         filecount = filecount+1;
+%     end
+%     currentdate = regexp(Fluor.Filename, '[0-9]{4,6}', 'match');
+%     for i = 1:length(FieldData)
+%         if sum(cell2mat(cellfun(@(x) strfind(x,currentdate), FieldData{i}.DatesAcquired, 'uni', false)))   %%% if the current file date is found within the current field data
+%             datesused = sortrows(FieldData{i}.DatesAcquired);
+%             instance = find(cell2mat(cellfun(@(x) ~isempty(logical(strfind(x,currentdate))), datesused, 'uni', false)));
+%             if instance >1   %%% If the current file is the second instance of longitudinal data, USE THE FIRST INSTANCE'S MODEL!
+%                 Model = longitudinalModel{i}{1};
+%                 PredictedMovement = predict(Model, activitydataformodel');
+%                 predictioncorrelation = corrcoef(movementdataformodel, PredictedMovement);
+%                 PredictionAccuracy = (predictioncorrelation(1,2)).^2;
+%                 if isnan(PredictionAccuracy)
+%                     PredictionAccuracy = 0;
+%                 end
+%             else
+%                [Model,~, PredictionAccuracy] = PredictMovementfromSpineAct(activitydataformodel, movementdataformodel); 
+%                longitudinalModel{i}{instance} = Model;
+%             end
+%         end
+%     end
+% else
     [Model,~, PredictionAccuracy] = PredictMovementfromSpineAct(activitydataformodel, movementdataformodel);
-end
+% end
 
 PredictionModel.Model = Model;
 PredictionModel.PredictionAccuracy = PredictionAccuracy;

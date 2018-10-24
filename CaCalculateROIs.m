@@ -77,7 +77,11 @@ animal = regexp(fullfname, '[A-Z]{2,3}0*[0-9]*', 'match');
 animal = animal{1};
 fullfname = [pname,filegeneral];
 numberofzerosusedinnaming = length(regexp(fname{1}(feat_sep(end):end), '0'));
-CaImage_File_info = imfinfo([pname,firstimfile,'_',repmat('0', 1,numberofzerosusedinnaming),'1_corrected.tif']);
+if isfile([pname,firstimfile,'_',repmat('0', 1,numberofzerosusedinnaming),'1_corrected.tif'])
+    CaImage_File_info = imfinfo([pname,firstimfile,'_',repmat('0', 1,numberofzerosusedinnaming),'1_corrected.tif']);
+else
+    CaImage_File_info = imfinfo([save_directory, gui_CaImageViewer.filename]);
+end
 
 D = dir(pname);
 if isempty(D)
@@ -91,11 +95,15 @@ timecourse_image_number = 0;
 acquisition_step = [];
 frame_bin_count = [];
 for i = 1:length(D)
-    if ~isempty(strfind(D(i).name, 'corrected.tif'))
+    if ~isempty(strfind(D(i).name, '.tif'))
         timecourse_image_number = timecourse_image_number + 1;
-        feat_step = regexp(D(i).name, '_');
-        acquisition_step = [acquisition_step; D(i).name(feat_step(2)+1:feat_step(3)-1)];
-        frame_bin_count = [frame_bin_count; D(i).name(feat_step(3)+1:feat_step(4)-1)];
+        feat_sep = regexp(D(i).name, '_');
+        acquisition_step = [acquisition_step; D(i).name(feat_sep(2)+1:feat_sep(3)-1)];
+        if length(feat_sep)>3
+            frame_bin_count = [frame_bin_count; D(i).name(feat_sep(3)+1:feat_sep(4)-1)];
+        else
+            frame_bin_count = [frame_bin_count; D(i).name(feat_sep(3)+1:end)];
+        end
     else
     end
 end
@@ -353,7 +361,11 @@ end
                 break
             end
             imnum = frame_bin_count(j,:);
-            filepattern = [fullfname, '_',acquisition_step(j,:),'_',imnum, '_corrected.tif'];
+            if timecourse_image_number>1
+                filepattern = [fullfname, '_',acquisition_step(j,:),'_',imnum, '_corrected.tif'];
+            else
+                filepattern = [save_directory, gui_CaImageViewer.filename];
+            end
             if j == 1 || j ==2 || j == timecourse_image_number || ismember(j,find(diff(acquisition_step(:,end)))) %%% Length of each file assumed to be constant UNLESS it's the start of a new acquisition (or in some cases the second image, since the first one is sometimes overwritten)
                 CaImage_File_info = imfinfo(filepattern);
             else
@@ -390,11 +402,11 @@ end
                 Background_Pixel_num = Total_Background_Intensity/nanmean(Background_Intensity(:));
                 Background_Mean_Int = nanmean(Background_Intensity(:));
 
-                if twochannels == 1
-                    Background_Red = current_image(ROIreg{1},2);
-                    Total_Background_Red = sum(Background_Red(:));
-                    Background_Mean_Red = nanmean(Background_Red(:));
-                end
+%                 if twochannels == 1
+%                     Background_Red = current_image(ROIreg{1},2);
+%                     Total_Background_Red = sum(Background_Red(:));
+%                     Background_Mean_Red = nanmean(Background_Red(:));
+%                 end
 
                 %%% 
 
@@ -419,11 +431,11 @@ end
                     else
                         Fluorescence_Measurement{i-1}(1,actual_image_counter) = (tmp_mean_intensity-Background_Mean_Int)*Pixel_Number{i-1};
                     end
-                    if twochannels == 1
-                        Red_Intensity{i-1} = current_image(ROIreg{i},2);
-                        Total_Red_Intensity{i-1} = sum(Red_Intensity{i-1}(:));
-                        Red_Measurement{i-1}(1,actual_image_counter) = (nanmean(Red_Intensity{i-1}(:))-Background_Mean_Red)*Pixel_Number{i-1};
-                    end
+%                     if twochannels == 1
+%                         Red_Intensity{i-1} = current_image(ROIreg{i},2);
+%                         Total_Red_Intensity{i-1} = sum(Red_Intensity{i-1}(:));
+%                         Red_Measurement{i-1}(1,actual_image_counter) = (nanmean(Red_Intensity{i-1}(:))-Background_Mean_Red)*Pixel_Number{i-1};
+%                     end
                 end
 
                 if isfield(gui_CaImageViewer, 'PolyROI')
@@ -436,11 +448,11 @@ end
                         Poly_Pixel_Number{i} = Poly_Total_Intensity{i}/tmp_mean_intensity;
                         Poly_Fluorescence_Measurement{i}(1,actual_image_counter) = (tmp_mean_intensity-Background_Mean_Int)*Poly_Pixel_Number{i};
                         PolyFMat(i,actual_image_counter) = Poly_Fluorescence_Measurement{i}(1,actual_image_counter);
-                        if twochannels == 1
-                            Poly_Red_Intensity{i} = current_image(PolyROIreg{i},2);
-                            Poly_Red_Measurement{i}(1,actual_image_counter) = (nanmean(Poly_Red_Intensity{i}(:))-Background_Mean_Red)*Poly_Pixel_Number{i};
-                            Poly_Total_Red_Intensity{i} = sum(Poly_Red_Intensity{i}(:));
-                        end
+%                         if twochannels == 1
+%                             Poly_Red_Intensity{i} = current_image(PolyROIreg{i},2);
+%                             Poly_Red_Measurement{i}(1,actual_image_counter) = (nanmean(Poly_Red_Intensity{i}(:))-Background_Mean_Red)*Poly_Pixel_Number{i};
+%                             Poly_Total_Red_Intensity{i} = sum(Poly_Red_Intensity{i}(:));
+%                         end
                     end
                 end
                 for i = 1:DendNum
@@ -483,16 +495,14 @@ end
 
 bl = 'All';     %%% If you want a different baseline, indicate here
 
-if twochannels == 1
-    baselineFrames = [];
+
+if strcmpi(bl, 'All')
+    bl = 1:actual_image_counter -1;
 else
-    if strcmpi(bl, 'All')
-        bl = 1:actual_image_counter -1;
-    else
-        bl = str2num(bl);
-    end
-    baselineFrames = bl;
+    bl = str2num(bl);
 end
+baselineFrames = bl;
+
 
 a.BaselineFrames = bl;
 
@@ -548,12 +558,12 @@ for i = 1:length(existing_ROI)-1
     for j = 1:DendNum
         deltaDend(j,:) = (Mean_Dend(j,:)-dend_baseline(1,j))/dend_baseline(1,j);
     end
-    if twochannels == 1
-        deltaR{i} = Red_Measurement{i} / nanmean(Red_Measurement{i}(baselineFrames));
-        dF_over_F{i} = (deltaF{i}./deltaR{i})/(nanmean(Fluorescence_Measurement{i}(baselineFrames))./nanmean(Red_Measurement{i}(baselineFrames)));
-    else
+%     if twochannels == 1
+%         deltaR{i} = Red_Measurement{i} / nanmean(Red_Measurement{i}(baselineFrames));
+%         dF_over_F{i} = (deltaF{i}./deltaR{i})/(nanmean(Fluorescence_Measurement{i}(baselineFrames))./nanmean(Red_Measurement{i}(baselineFrames)));
+%     else
         dF_over_F{i} = deltaF{i}/spine_baseline(1,i);
-    end
+%     end
 end
 
 if ~isfield(gui_CaImageViewer, 'PolyLine')
@@ -611,14 +621,14 @@ catch
     disp(['Could not save all ROIs during analysis. Make sure you''ve saved them before you clear them!'])
 end
 
-if twochannels == 1
-    a.Red_Intensity = Red_Intensity;
-    a.Total_Red_Intensity = Total_Red_Intensity;
-    a.Red_Measurement = Red_Measurement;
-    a.Poly_Red_Intensity = Poly_Red_Intensity;
-    a.Poly_Total_Red_Intensity = Poly_Total_Red_Intensity;
-    a.Poly_Red_Measurement = Poly_Red_Measurement;
-end
+% if twochannels == 1
+%     a.Red_Intensity = Red_Intensity;
+%     a.Total_Red_Intensity = Total_Red_Intensity;
+%     a.Red_Measurement = Red_Measurement;
+%     a.Poly_Red_Intensity = Poly_Red_Intensity;
+%     a.Poly_Total_Red_Intensity = Poly_Total_Red_Intensity;
+%     a.Poly_Red_Measurement = Poly_Red_Measurement;
+% end
 
 user = get(gui_CaImageViewer.figure.handles.figure1, 'UserData');
 
@@ -681,7 +691,7 @@ for i = 1:length(existing_ROI)-1
     subplot(sub1,sub2,i)
     onDend = 1;
     for j = 1:DendNum
-        if ~isempty(find(DendSpines{j} == i))   
+        if ~isempty(find(DendSpines{j} == i),1)   
             plot(Time, deltaDend(j,:), 'k', 'LineWidth', 2); hold on;
             onDend = j;
         else
@@ -701,15 +711,6 @@ end
 scrsz = get(0, 'ScreenSize');
 set(timecourse_h, 'Position', [0, scrsz(2), scrsz(3)/2, scrsz(4)]);
 
-if twochannels == 1
-    uncaging_times = [0:2:58];
-    Pulse_mark_max = max(get(trace_fig, 'YData'));
-    Pulse_mark_min = min(get(trace_fig, 'Ydata'));
-
-    for i = 1:length(uncaging_times)
-        line([uncaging_times(i), uncaging_times(i)], [Pulse_mark_min, Pulse_mark_max], 'linewidth', 0.5, 'Color', 'black')
-    end
-end
 
 function y = sloppy_mean(x,dim)
 

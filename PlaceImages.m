@@ -122,7 +122,7 @@ if strcmpi(CommandSource, 'Loader')
             caxis manual
         end
     end
-    %%%% Channel 2 (Red) Image %%%%
+    %%%% Channel 2 Image %%%%
     if twochannels
         channel2 = channel2{1};
         dubconv_im = double(gui_CaImageViewer.Red_Image{1});
@@ -451,6 +451,50 @@ elseif strcmpi(CommandSource, 'Adjuster')
         caxis auto
         maps = caxis;
         caxis([GreenLower*maps(2), GreenUpper*maps(2)]);
+    end
+    
+    if twochannels && ~Merge
+        axes(Red_Figure);
+        if size(channel2,3)>1
+            channel2 = channel2(:,:,1);
+        else
+        end
+        dubconv_im = double(channel2);
+        if ishandle(zStack_Interface.figure)
+            gui_CaImageViewer.ch2image = channel2;
+            channel2 = filter2(ones(filterwindow, filterwindow)/filterwindow^2, channel2);
+            ch2image = channel2;
+            gui_CaImageViewer.ch2image = ch2image;
+        else
+            gui_CaImageViewer.ch2image = repmat(dubconv_im/max(max(dubconv_im)),[1 1 3]);
+            gui_CaImageViewer.ch2image(:,:,2) = zeros(size(channel2,1), size(channel2,2));
+            gui_CaImageViewer.ch2image(:,:,3) = zeros(size(channel2,1), size(channel2,2));
+            ch2image = gui_CaImageViewer.ch2image;
+            if scale
+                ch2image = imadjust(ch2image, [RedLower 0 0; RedUpper 0.001 0.001],[],red_gamma);
+            end
+            channel2 = ch2image;
+            gui_CaImageViewer.ch2image = ch2image;
+        end
+        if isempty(RedChild)
+            axes(Red_Figure);
+            set(Red_Figure, 'XLim', [0.5, size(gui_CaImageViewer.GCaMP_Image{1},1)+0.5]);
+            set(Red_Figure, 'YLim', [0.5, size(gui_CaImageViewer.GCaMP_Image{1},2)+0.5]);
+            image(ch2image, 'CDataMapping', 'scaled');
+            set(Red_Figure, 'XTick', [])
+            set(Red_Figure, 'YTick', [])
+            pause(0.1)
+            caxis manual
+            maps = caxis;
+            caxis([GreenLower*maps(2), GreenUpper*maps(2)]);
+        else
+            set(RedChild, 'CData', channel2)
+            pause(0.1)
+            caxis manual
+            maps = caxis;
+            caxis([GreenLower*maps(2), GreenUpper*maps(2)]);
+        end
+    else
     end
 end
    

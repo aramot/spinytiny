@@ -41,7 +41,12 @@ if gui_CaImageViewer.NewSpineAnalysis
     experimenter = experimenter(strfind(experimenter, '\')+1:end);
     if ~isempty(gui_CaImageViewer.NewSpineAnalysisInfo.MultipleDates)
         dates = gui_CaImageViewer.NewSpineAnalysisInfo.MultipleDates;
-        gui_CaImageViewer.save_directory = ['Z:\People\',experimenter,'\Data\', animal, '\', dates(ImageNum,:), '\summed\'];
+        switch experimenter
+            case 'Assaf'
+                gui_CaImageViewer.save_directory = ['Z:\People\',experimenter,'\Data\', animal, '\', dates(ImageNum,:),'\motion_corrected_tiffs\GFP\summed\'];
+            otherwise
+                gui_CaImageViewer.save_directory = ['Z:\People\',experimenter,'\Data\', animal, '\', dates(ImageNum,:), '\summed\'];
+        end
         mostlikelyfile = fastdir(gui_CaImageViewer.save_directory, 'summed_50.tif');
         gui_CaImageViewer.filename = mostlikelyfile{1};
         gui_CaImageViewer.NewSpineAnalysisInfo.CurrentDate = dates(ImageNum,:);
@@ -75,57 +80,58 @@ end
 merged = get(gui_CaImageViewer.figure.handles.Merge_ToggleButton, 'Value');
 
 if filterwindow == 1
-    
     channel1 = double(gui_CaImageViewer.GCaMP_Image{ImageNum});
-    if twochannels && ~merged
-        if ishandle(zStack_Interface.figure)
-            channel2 = double(gui_CaImageViewer.GCaMP_Image{ImageNum+z_diff});
-        else
-            channel2 = double(gui_CaImageViewer.Red_Image{ImageNum});
-        end
-    elseif twochannels && merged
-        channel1 = repmat(channel1/max(max(channel1)),[1 1 3]);
-        channel1(:,:,1) = zeros(size(channel1,1), size(channel1,2));
-        channel1(:,:,3) = zeros(size(channel1,1), size(channel1,2));
-        channel1(:,:,1) = double(gui_CaImageViewer.Red_Image{ImageNum})/max(max(double(gui_CaImageViewer.Red_Image{ImageNum})));
-        channel2 = [];
-    else
-        channel2 = [];
-    end
-    
-    CommandSource = 'Slider';
-    
-    %%%%%%%%%
-    PlaceImages(channel1,channel2, CommandSource);
-    %%%%%%%%%
-    
 else
     smoothing_green = filter2(ones(filterwindow, filterwindow)/filterwindow^2, gui_CaImageViewer.GCaMP_Image{ImageNum});
     channel1 = smoothing_green;
-    if twochannels && ~merged
-        if ishandle(zStack_Interface.figure)
-            smoothing_red = filter2(ones(filterwindow, filterwindow)/filterwindow^2, gui_CaImageViewer.GCaMP_Image{ImageNum+z_diff});
-        else
-            smoothing_red = filter2(ones(filterwindow, filterwindow)/filterwindow^2, gui_CaImageViewer.Red_Image{ImageNum});
-        end
-        channel2 = smoothing_red;
-    elseif twochannels && merged
-        redim = double(gui_CaImageViewer.Red_Image{ImageNum})/max(max(double(gui_CaImageViewer.Red_Image{ImageNum})));
-        channel1 = repmat(smoothing_green/max(max(smoothing_green)),[1 1 3]);
-        channel1(:,:,1) = zeros(size(channel1,1), size(channel1,2));
-        channel1(:,:,3) = zeros(size(channel1,1), size(channel1,2));
-        channel1(:,:,1) = filter2(ones(filterwindow,filterwindow)/filterwindow^2, redim);
-        channel2 = [];
-    else
-        channel2 = [];
-    end
-
-    CommandSource = 'Slider';
-
-    %%%%%%%%%
-    PlaceImages(channel1,channel2, CommandSource);
-    %%%%%%%%%
 end
+
+if twochannels && ~merged
+    if ishandle(zStack_Interface.figure)
+        channel2 = double(gui_CaImageViewer.GCaMP_Image{ImageNum+z_diff});
+    else
+        channel2 = double(gui_CaImageViewer.Red_Image{ImageNum});
+    end
+elseif twochannels && merged
+    channel1 = repmat(channel1/max(max(channel1)),[1 1 3]);
+    channel1(:,:,1) = zeros(size(channel1,1), size(channel1,2));
+    channel1(:,:,3) = zeros(size(channel1,1), size(channel1,2));
+    channel1(:,:,1) = double(gui_CaImageViewer.Red_Image{ImageNum})/max(max(double(gui_CaImageViewer.Red_Image{ImageNum})));
+    channel2 = [];
+else
+    channel2 = [];
+end
+
+CommandSource = 'Slider';
+
+%%%%%%%%%
+PlaceImages(channel1,channel2, CommandSource);
+%%%%%%%%%
+%     
+%     if twochannels && ~merged
+%         if ishandle(zStack_Interface.figure)
+%             smoothing_red = filter2(ones(filterwindow, filterwindow)/filterwindow^2, gui_CaImageViewer.GCaMP_Image{ImageNum+z_diff});
+%         else
+%             smoothing_red = filter2(ones(filterwindow, filterwindow)/filterwindow^2, gui_CaImageViewer.Red_Image{ImageNum});
+%         end
+%         channel2 = smoothing_red;
+%     elseif twochannels && merged
+%         redim = double(gui_CaImageViewer.Red_Image{ImageNum})/max(max(double(gui_CaImageViewer.Red_Image{ImageNum})));
+%         channel1 = repmat(smoothing_green/max(max(smoothing_green)),[1 1 3]);
+%         channel1(:,:,1) = zeros(size(channel1,1), size(channel1,2));
+%         channel1(:,:,3) = zeros(size(channel1,1), size(channel1,2));
+%         channel1(:,:,1) = filter2(ones(filterwindow,filterwindow)/filterwindow^2, redim);
+%         channel2 = [];
+%     else
+%         channel2 = [];
+%     end
+% 
+%     CommandSource = 'Slider';
+% 
+%     %%%%%%%%%
+%     PlaceImages(channel1,channel2, CommandSource);
+%     %%%%%%%%%
+% end
 
 
 %%% Place all existing ROIs on the new frame %%%

@@ -104,7 +104,7 @@ elseif strcmpi(Router, 'Other')
         axes(axes1)
     end
     set(gui_CaImageViewer.figure.handles.output, 'WindowButtonDownFcn', []);
-    glovar.ROIother(ROInum+1) = drawfreehand('Tag', ['ROIother', num2str(ROInum+1)], 'FaceAlpha', 0, 'Color', linecolor, 'HandleVisibility', 'on', 'Label', num2str(ROInum+1));
+    glovar.ROIother(ROInum+1) = drawfreehand('Tag', ['ROIother', num2str(ROInum+1)], 'FaceAlpha', 0, 'Color', 'm', 'HandleVisibility', 'on', 'Label', num2str(ROInum+1));
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

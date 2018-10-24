@@ -106,7 +106,7 @@ end
 
 scrsz = get(0, 'ScreenSize');
 
-dendwindow = figure('Position', scrsz); imagesc(immax(ymin:ymax, xmin:xmax)); colormap(cmap)
+dendwindow = figure('Position', scrsz); imagesc(immax(ymin:ymax, xmin:xmax)); colormap('Fire')
 set(gca, 'XTick', [], 'YTick', []);
 
 
@@ -210,11 +210,11 @@ if twochannels == 1
     axes(axes2)
     glovar.RedPolyLine = line(x,y, 'Tag', 'PolyLine', 'color', 'cyan');
 
-    for i = 1:length(x)
-        glovar.RedPolyLinePos{i} = [x(i)-radius, y(i)-radius, radius*2, radius*2];
-        ROInum = i;
-        glovar.RedPolyROI{i} = rectangle('Position', glovar.RedPolyLinePos{i}, 'EdgeColor', 'cyan', 'Tag', ['Dendrite ', num2str(DendriteNum), ' RedPolyROI', num2str(i)], 'Curvature', [1 1],'ButtonDownFcn', {@Drag_Poly, ROInum});
-    end
+%     for i = 1:length(x)
+%         glovar.RedPolyLinePos{i} = [x(i)-radius, y(i)-radius, radius*2, radius*2];
+%         ROInum = i;
+%         glovar.RedPolyROI{i} = rectangle('Position', glovar.RedPolyLinePos{i}, 'EdgeColor', 'cyan', 'Tag', ['Dendrite ', num2str(DendriteNum), ' RedPolyROI', num2str(i)], 'Curvature', [1 1],'ButtonDownFcn', {@Drag_Poly, ROInum});
+%     end
 
 end
 

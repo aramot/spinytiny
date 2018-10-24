@@ -76,7 +76,7 @@ else
     experimenter_initials = experimenter_initials{1};
     folder = regexp(File, [experimenter_initials, '\d+[^_]'], 'match');
     folder = folder{1};
-    Date = regexp(File, '\d{6}', 'match');
+    Date = regexp(File, '\d{4,6}', 'match');
     Date = Date{1};
     if ispc
         filestart = ['Z:', filesep, 'People'];
@@ -85,16 +85,19 @@ else
     else
         error('Operating system not recognized as PC or Unix; terminating');
     end
-    targetdir = [filestart, filesep, Experimenter, filesep, 'Data', filesep, folder, filesep, Date, filesep, 'summed'];
+    switch Experimenter
+        case 'Assaf'
+            targetdir = [filestart, filesep, Experimenter, filesep, 'Data', filesep, folder, filesep, Date, filesep, 'motion_corrected_tiffs', filesep, 'GFP', filesep, 'summed'];
+        otherwise
+            targetdir = [filestart, filesep, Experimenter, filesep, 'Data', filesep, folder, filesep, Date, filesep, 'summed'];
+    end
     if isfolder(targetdir)
         cd(targetdir)
         files = fastdir(targetdir, 'Analyzed');
-        check = 0;
-        
+        check = 0;    
         if isempty(files)
             return
-        end
-        
+        end    
         if length(files)>1
             for i = 1:length(files)
                 if ~isempty(regexp(files(i),['_summed_50_Analyzed_By', Analyzer], 'once')) || ~isempty(regexp(files(i),['_summed_50Analyzed_By', Analyzer], 'once'))
@@ -322,7 +325,6 @@ end
 % %% Describe the basic shape of each calcium trace
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
 truebaseline = zeros(length(File.deltaF),length(File.deltaF{1}));
 spinedriftbaseline = zeros(length(File.deltaF),length(File.deltaF{1}));
 processed_dFoF = zeros(length(File.deltaF),length(File.deltaF{1}));
@@ -436,7 +438,7 @@ if showFig == 1
     k = zeros(1,length(File.Time));
     k(1:end) = thresh(SpineNo,1);
     m = ones(1,length(File.Time))*med(SpineNo,1);
-    fig1 = figure('Position', [10, Scrsz(4)/2.5,Scrsz(3)/2,Scrsz(4)/2]); 
+    figure('Position', [10, Scrsz(4)/2.5,Scrsz(3)/2,Scrsz(4)/2]); 
     rawplot = subplot(2,2,1:2);
     plot(File.Time, spinedatatouse{SpineNo}, 'Color', [0.2 0.2 0.2]); hold on;
     axpos = get(rawplot, 'Position');
@@ -865,7 +867,7 @@ for i = 1:numberofSpines
             %%% This is the last decision variable on whether to use
             %%% dendrite-corrected or dendrite-removed data!!!
             %%%
-            synapticEvents(i,:) = square(i,:)-Dglobal(onDend,:);
+            synapticEvents(i,:) = analyzed.SynapseOnlyBinarized_DendriteSubtracted(i,:)-Dglobal(onDend,:);
 %             synapticEvents(i,:) = square_Ds(i,:);
             %%%
             %%%
@@ -986,7 +988,7 @@ switch method
                 dirc = dir(targetdir);
                 dirc = dirc(~cellfun(@isdir,{dirc(:).name}));
                 dirc = dirc(cell2mat(cellfun(@(x) ~isempty(regexp(x, 'DrawnBy')), {dirc(:).name}, 'uni', false)));
-                [A,I] = max([dirc(:).datenum]);
+                [~,I] = max([dirc(:).datenum]);
                 if ~isempty(I)
                     latestfile = dirc(I).name;
                 end
@@ -1108,7 +1110,6 @@ analyzed.CausalPValues = CausalPValues;
 %%%%%%%% Analysis of individual clusters %%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
 Clustnum = 1;
 
 %%% Find all values that are greater than the cluster threshold
@@ -1132,14 +1133,13 @@ fullDist = tempC;
 %%% 'Synapse only' clusters
 for i = 1:length(row)
     for j = 1:DendNum
-        if ~isempty(find(File.SpineDendriteGrouping{j} == row(i)))
+        if ~isempty(find(File.SpineDendriteGrouping{j} == row(i),1))
             Dendind = [Dendind; j];
             addresses{j} = [addresses{j}; row(i), col(i)];
         end
     end
 end
 usedDend = unique(Dendind);
-
 for i = 1:length(addresses)
     if ~isempty(addresses{i})
         if size(addresses{i},1)>1

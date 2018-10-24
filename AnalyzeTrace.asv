@@ -87,17 +87,22 @@ end
 
 %%% Kernel Density Estimation (Aki's method) %%%
 switch BeingAnalyzed
-    case 'Soma'
-        [~,lo] = envelope(padded_data, 300, 'peak');
-        truebaseline = lo;
-        truebaseline = truebaseline(padlength+1:end-padlength)';
-        DriftBaseline = truebaseline;
-    otherwise
+    case 'Spine'
         windowsize = 30;
-        truebaseline = baseline_kde(padded_data',20,windowsize,20);    %%% inputs = downsample ratio, window size, step
-        truebaseline = truebaseline(padlength+1:end-padlength);
-        DriftBaseline = truebaseline;
+    case 'Poly'
+        windowsize = 30;
+    case 'Dendrite'
+        windowsize = 30;
+    case 'Soma'
+        windowsize = 90;
+        [~,lo] = envelope(padded_data, 300, 'peak');
+        padded_data = padded_data-lo;
 end
+truebaseline = baseline_kde(padded_data',20,windowsize,20);    %%% inputs = downsample ratio, window size, step
+truebaseline = truebaseline(padlength+1:end-padlength);
+DriftBaseline = truebaseline;
+
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -136,7 +141,7 @@ if traceoption == 1
     %%% Final variable
 
     filterorder = 3;        %%% Polynomial order with which to filter the final signal. This will depend on the imaging frequency as well as the noise of the signal. 
-    filterwindow = smoothwindow;
+    filterwindow = filterorder+2;
     
     if ~mod(filterwindow,2)
         filterwindow = filterwindow+1;
