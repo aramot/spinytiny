@@ -1113,10 +1113,9 @@ nonedrawn = 0;
 axes(axes1);
 for a = 1:length(ROIs)
     ROInum = a-1;
-    c = uicontextmenu;
     glovar.ROI(a) = drawellipse('Center', ROIs(a).Center, 'SemiAxes', ROIs(a).SemiAxes, 'RotationAngle', ROIs(a).RotationAngle,...
         'AspectRatio', ROIs(a).AspectRatio, 'Tag', ['ROI', num2str(ROInum)], 'Color', [0.2 0.4 0.9],...
-        'HandleVisibility', 'on', 'UIContextMenu', c, 'Label', '', 'Linewidth', 1, 'FaceAlpha', 0, 'InteractionsAllowed', 'none');
+        'HandleVisibility', 'on', 'Label', '', 'Linewidth', 1, 'FaceAlpha', 0, 'InteractionsAllowed', 'none');
     roiget = get(glovar.ROI(a));
     c = roiget.UIContextMenu;
     uimenu(c, 'Label', 'Add Surround Background', 'Callback', @ModifyROI);
@@ -1124,6 +1123,8 @@ for a = 1:length(ROIs)
     uimenu(c, 'Label', 'Set as eliminated', 'Callback', @CategorizeSpines);
     uimenu(c, 'Label', 'Set as active', 'Callback', @CategorizeSpines);
     set(glovar.figure.handles.ShowLabels_ToggleButton, 'Value', 1)
+    glovar.ROIlistener{ROInum+1} = listener(findobj(glovar.ROI(a)), 'DeletingROI', @DeleteROI);
+    addlistener(findobj(glovar.ROI(a)), 'ROIClicked', @DeclareROI);
     switch usesurroundBGchoice
         case 'Add to all'
             if a == 1   %%% The first ROI (the general background ROI) doesn't need an additional background
@@ -1190,7 +1191,13 @@ if glovar.NewSpineAnalysis
         currentfield = str2num(cf{1});
         glovar.NewSpineAnalysisInfo.CurrentImagingField = currentfield; 
     end
-    load([targ_folder, filesep,userspecificpart,'Imaging Field ', num2str(currentfield), ' Spine Registry'])
+    try
+        load([targ_folder, filesep,userspecificpart,'Imaging Field ', num2str(currentfield), ' Spine Registry'])
+    catch
+        warning('No Spine Registry file found... make sure to make a new one or check if it was saved somewhere else!')
+        [fname, pname] = uigetfile();
+        load(pname, fname)
+    end
     instanceofappearance = find(logical(strcmpi(SpineRegistry.DatesAcquired, gui_CaImageViewer.NewSpineAnalysisInfo.CurrentDate)));
     glovar.NewSpineAnalysisInfo.SpineList = ones(1,length(ROIs)-1); %%% Don't forget the first ROI is always the background ROI!
 %     if size(SpineRegistry.Data,2)>=find(instanceofappearance) %% && find(instanceofappearance)~=1 %%% ZL commentm, it is possible need to set another category of spines specifying the "true new spines"
@@ -1289,6 +1296,8 @@ else
 end
 
  %%% Overwrite the previous existing global workspace with the newly imprinted one
+ 
+set(glovar.figure.handles.EditSpines_ToggleButton, 'Value', 0)
  
 gui_CaImageViewer = glovar;
 
@@ -1436,7 +1445,7 @@ if gui_CaImageViewer.NewSpineAnalysis
         %%%%% Move to parent folder
         fullpath = gui_CaImageViewer.save_directory;
         allseps = strfind(fullpath, '\');
-        stepsup = 2;
+        stepsup = 4;
         newpath = fullpath(1:allseps(end-stepsup)-1); %%% move two steps up in the path directory to get bath to the main animal folder (e.g. Z:/People/Nathan/Data/NH004 instead of Z:/People/Nathan/Data/NH004/160316/summed)
         cd(newpath)
         

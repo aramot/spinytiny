@@ -29,6 +29,11 @@ end
 experimenter = experimenter{1};
 experimenter = experimenter(strfind(experimenter, '\')+1:end);
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%% Set values for ease of use %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+set(gui_CaImageViewer.figure.handles.TwoChannels_CheckBox, 'Value', 0)
+gui_CaImageViewer.CurrentCMap = 'Fire';
     
 %%%% Project either 1 or multiple images to the CaImageViewer window. If a
 %%%% single image is projected, the slider will be disabled. If multiple
@@ -38,7 +43,12 @@ experimenter = experimenter(strfind(experimenter, '\')+1:end);
 if length(selectedaxes)==1
 
     date = get(get(selectedaxes, 'Title'), 'String');
-    gui_CaImageViewer.save_directory = ['Z:\People\',experimenter,'\Data\', animal, '\', date, '\summed\'];
+    switch experimenter
+        case 'Assaf'
+            gui_CaImageViewer.save_directory = ['Z:\People\', experimenter, '\Data\', animal, '\', sorteddates(1,:), '\motion_corrected_tiffs\GFP\summed\'];
+        otherwise
+            gui_CaImageViewer.save_directory = ['Z:\People\',experimenter,'\Data\', animal, '\', sorteddates(1,:), '\summed\'];
+    end
     
     mostlikelyfile = fastdir(gui_CaImageViewer.save_directory, 'summed_50.tif');
     gui_CaImageViewer.filename = mostlikelyfile{1};
@@ -73,7 +83,12 @@ else
     end
     [sorteddates, sort_index] = sortrows(date);
    
-    gui_CaImageViewer.save_directory = ['Z:\People\',experimenter,'\Data\', animal, '\', sorteddates(1,:), '\summed\'];
+    switch experimenter
+        case 'Assaf'
+            gui_CaImageViewer.save_directory = ['Z:\People\', experimenter, '\Data\', animal, '\', sorteddates(1,:), '\motion_corrected_tiffs\GFP\summed\'];
+        otherwise
+            gui_CaImageViewer.save_directory = ['Z:\People\',experimenter,'\Data\', animal, '\', sorteddates(1,:), '\summed\'];
+    end
     
     mostlikelyfile = fastdir(gui_CaImageViewer.save_directory, 'summed_50.tif');
     gui_CaImageViewer.filename = mostlikelyfile{1};

@@ -3,7 +3,8 @@ function CategorizeSpine(source, callbackdata)
 global gui_CaImageViewer
 
 source = get(source);
-ROInum = regexp(get(gco, 'Tag'), '[0-9]*', 'match'); ROInum = str2num(ROInum{1});
+% ROInum = regexp(get(gco, 'Tag'), '[0-9]*', 'match'); ROInum = str2num(ROInum{1});
+ROInum = gui_CaImageViewer.ClickedROI;
 
 if isfield(source, 'Label')
     switchitem = source.Label;

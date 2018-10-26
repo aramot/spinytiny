@@ -42,7 +42,7 @@ end
 for i = 1:length(selectedaxes)
     date(i,1:6) = get(get(selectedaxes(i), 'Title'), 'String');
 end
-[val, ind] = sortrows(date); %% Sort images according to date
+[~, ind] = sortrows(date); %% Sort images according to date
 im = im(ind);
 %%%%%%%%%%%%%%%%%%%%%%%
 centeredimage = im{1};      %%% When initially drawing the ROIs, it makes sense to start with session 1 being the comparator. However...
@@ -55,7 +55,7 @@ if alignchoice
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %[RESULTS, WARP, WARPEDiMAGE] = ECC(IMAGE, TEMPLATE, LEVELS, NOI, TRANSFORM, DELTA_P_INIT)
-    levels = 3;
+    levels = 1;
     iterations = 25;
     delta_p_init = zeros(2,3); delta_p_init(1,1) = 1; delta_p_init(2,2) = 1;
     [~, ~, shiftedimage] = ecc(mobileimage, centeredimage,levels,iterations, 'affine', delta_p_init);

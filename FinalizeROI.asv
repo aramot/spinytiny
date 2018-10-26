@@ -90,6 +90,7 @@ if gui_CaImageViewer.NewSpineAnalysis
     uimenu(c, 'Label', 'Set as active', 'Callback', @CategorizeSpines);
 
     gui_CaImageViewer.NewSpineAnalysisInfo.SpineList = [gui_CaImageViewer.NewSpineAnalysisInfo.SpineList, 1];
+    gui_CaImageViewer.ROIlistener{ROInum+1} = listener(findobj(gui_CaImageViewer.ROI(ROInum+1)), 'DeletingROI', @DeleteROI, 'ROIClicked', @C);      
 else
     %%%
     gui_CaImageViewer.ROI(ROInum+1) = drawellipse('Center', adjustedpos(1:2), 'SemiAxes', newROIsemiaxes, 'RotationAngle', newROIRotationAngle, 'AspectRatio', newROIAspectRatio,...
@@ -103,11 +104,13 @@ else
     %%%
     if twochannels
         if ~Merge
+            axes(axes2)
             gui_CaImageViewer.ROIred(ROInum+1) = drawellipse('Center', adjustedpos(1:2), 'SemiAxes', newROIsemiaxes, 'RotationAngle', newROIRotationAngle, 'AspectRatio', newROIAspectRatio,...
-        'Tag', ['ROI', num2str(ROInum)], 'Color', linecolor, 'HandleVisibility', 'on', 'Label', labelopt, 'Linewidth', 1, 'FaceAlpha', 0, 'InteractionsAllowed', 'none');
+            'Tag', ['ROI', num2str(ROInum)], 'Color', 'c', 'HandleVisibility', 'on', 'Label', labelopt, 'Linewidth', 1, 'FaceAlpha', 0, 'InteractionsAllowed', 'none');
         end
     else
     end
+    gui_CaImageViewer.ROIlistener{ROInum+1} = listener(findobj(gui_CaImageViewer.ROI(ROInum+1)), 'DeletingROI', @DeleteROI);      
 %     if gui_CaImageViewer.UsingSurroundBackground
 %         surroundoffset = gui_CaImageViewer.SurroundBackgroundBuffer;
 %         gui_CaImageViewer.BackgroundROI(ROInum+1) = rectangle('Position', [adjustedpos(1)-surroundoffset/2, adjustedpos(2)-surroundoffset/2, adjustedpos(3)+surroundoffset, adjustedpos(4)+surroundoffset], 'EdgeColor', 'w', 'Curvature', [1 1], 'Tag', ['BackgroundROI', num2str(ROInum)], 'Linewidth', 0.75);
@@ -116,9 +119,9 @@ else
 %     end
 end
 
-% gui_CaImageViewer.ROItext(ROInum+1) = text(adjustedpos(1)-4, adjustedpos(2)-3, num2str(ROInum), 'color', 'white', 'Tag', ['ROI', num2str(ROInum), ' Text'],'ButtonDownFcn', 'DeleteROI', 'Fontsize', 6);
 set(gui_CaImageViewer.figure.handles.InsertSpine_ToggleButton, 'Value', 0);
 set(gui_CaImageViewer.figure.handles.InsertSpine_ToggleButton, 'Enable', 'off');
+set(gui_CaImageViewer.figure.handles.EditSpines_ToggleButton, 'Value', 0)
 
 if InsertOpt %%% Redraw the deleted ROIs, now with the numbers increased by 1
     c1 = uicontextmenu;
@@ -132,4 +135,5 @@ if InsertOpt %%% Redraw the deleted ROIs, now with the numbers increased by 1
 %             gui_CaImageViewer.BackgroundROI(a+2) = NaN;
 %         end
     end
-end    
+end  
+

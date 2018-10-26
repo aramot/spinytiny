@@ -10,6 +10,7 @@ program = get(gcf);
 
 global gui_CaImageViewer
 glovar = gui_CaImageViewer;
+
 axes1 = glovar.figure.handles.GreenGraph;
 axes2 = glovar.figure.handles.RedGraph;
 twochannels = get(glovar.figure.handles.TwoChannels_CheckBox, 'Value');
@@ -90,6 +91,8 @@ if gui_CaImageViewer.NewSpineAnalysis
     uimenu(c, 'Label', 'Set as active', 'Callback', @CategorizeSpines);
 
     gui_CaImageViewer.NewSpineAnalysisInfo.SpineList = [gui_CaImageViewer.NewSpineAnalysisInfo.SpineList, 1];
+    gui_CaImageViewer.ROIlistener{ROInum+1} = listener(findobj(gui_CaImageViewer.ROI(ROInum+1)), 'DeletingROI', @DeleteROI);
+    addlistener(findobj(gui_CaImageViewer.ROI(ROInum+1)), 'ROIClicked', @DeclareROI)
 else
     %%%
     gui_CaImageViewer.ROI(ROInum+1) = drawellipse('Center', adjustedpos(1:2), 'SemiAxes', newROIsemiaxes, 'RotationAngle', newROIRotationAngle, 'AspectRatio', newROIAspectRatio,...
@@ -109,6 +112,8 @@ else
         end
     else
     end
+    gui_CaImageViewer.ROIlistener{ROInum+1} = listener(findobj(gui_CaImageViewer.ROI(ROInum+1)), 'DeletingROI', @DeleteROI);
+    addlistener(findobj(gui_CaImageViewer.ROI(ROInum+1)), 'ROIClicked', @DeclareROI)
 %     if gui_CaImageViewer.UsingSurroundBackground
 %         surroundoffset = gui_CaImageViewer.SurroundBackgroundBuffer;
 %         gui_CaImageViewer.BackgroundROI(ROInum+1) = rectangle('Position', [adjustedpos(1)-surroundoffset/2, adjustedpos(2)-surroundoffset/2, adjustedpos(3)+surroundoffset, adjustedpos(4)+surroundoffset], 'EdgeColor', 'w', 'Curvature', [1 1], 'Tag', ['BackgroundROI', num2str(ROInum)], 'Linewidth', 0.75);
@@ -119,6 +124,7 @@ end
 
 set(gui_CaImageViewer.figure.handles.InsertSpine_ToggleButton, 'Value', 0);
 set(gui_CaImageViewer.figure.handles.InsertSpine_ToggleButton, 'Enable', 'off');
+set(gui_CaImageViewer.figure.handles.EditSpines_ToggleButton, 'Value', 0)
 
 if InsertOpt %%% Redraw the deleted ROIs, now with the numbers increased by 1
     c1 = uicontextmenu;
@@ -132,4 +138,4 @@ if InsertOpt %%% Redraw the deleted ROIs, now with the numbers increased by 1
 %             gui_CaImageViewer.BackgroundROI(a+2) = NaN;
 %         end
     end
-end    
+end  
