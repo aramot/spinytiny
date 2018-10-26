@@ -405,7 +405,11 @@ if length(experimentnames) == 1
     FractionofAdditionDendritesUsedForMovement = NumberofAdditionDendritesUsedForMovement/NumberofAdditionDendrites;
     FractionofEliminationDendritesUsedForMovement = NumberofEliminationDendritesUsedForMovement/NumberofEliminationDendrites;
     FractionofStaticDendritesUsedForMovement = NumberofStaticDendritesUsedForMovement/NumberofStaticDendrites;
-
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%% Set Final Structure and Save 
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
     a.SpineDynamics = FieldChanges;
     a.DendriteDynamics = DendriteDynamics;
     a.FractionofDendritesThatAreDynamic = FractionofDendritesThatAreDynamic;
@@ -468,6 +472,8 @@ if length(experimentnames) == 1
     eval([experimentnames, '_SpineDynamicsSummary = a'])
     fname = [experimentnames, '_SpineDynamicsSummary'];
     save(fname, fname)
+    
+    disp(['Analysis of ', experimentnames, ' complete'])
 else
     if strcmpi(getenv('computername'), 'Nathan-Lab-PC')
         cd('C:\Users\Komiyama\Desktop\Output Data')

@@ -365,8 +365,7 @@ elseif Activity == 1 && Behavior == 1
             ispart = strfind(folder(i).name, animal);
             wrongfile = strfind(folder(i).name, 'Timecourse');
             wrongfile2 = strfind(folder(i).name, 'Poly');
-            wrongfile3 = strfind(folder(i).name, 'ZSeries');
-            if ~isempty(ispart) && isempty(wrongfile) && isempty(wrongfile2) && isempty(wrongfile3)
+            if ~isempty(ispart) && isempty(wrongfile) && isempty(wrongfile2)
                 load(folder(i).name)
                 eval(['filesesh = ', folder(i).name(1:end-4), '.Session;']);
                 currentanimal = regexp(folder(i).name, '[A-Z]{2,3}0+\d+', 'match');

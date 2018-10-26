@@ -17,17 +17,11 @@ else
     end
     animal = animal{1};
 end
-if isfield(gui_CaImageViewer, 'save_directory')
-    if ~isempty(gui_CaImageViewer.save_directory)
-        experimenter = regexp(gui_CaImageViewer.save_directory, ['People.\w+'], 'match');
-    else
-    end
-else
-    a = get(gcf);
-    experimenter = regexp(a.FileName, ['People.\w+'], 'match');
-end
-experimenter = experimenter{1};
-experimenter = experimenter(strfind(experimenter, '\')+1:end);
+    if isfield(gui_CaImageViewer, 'save_directory')
+        
+    experimenter = regexp(gui_CaImageViewer.save_directory, ['People.\w+'], 'match');
+    experimenter = experimenter{1};
+    experimenter = experimenter(strfind(experimenter, '\')+1:end);
 
     
 %%%% Project either 1 or multiple images to the CaImageViewer window. If a

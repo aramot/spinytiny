@@ -1087,6 +1087,14 @@ else
         ROIs(i).RotationAngle = 0;
         ROIs(i).AspectRatio = oldROIs{i}(3)/oldROIs{i}(4);
     end
+    if isfield(savedFile, 'OtherROIs')
+        OtherROIsExist = 1;
+        for i = 1:length(savedFile.OtherROIs)
+            OtherROIs(i).Position = savedFile.OtherROIsPosition{i}.Position;
+        end
+    else
+        OtherROIsExist = 0;
+    end
 end
 
 glovar.Spine_Number = length(ROIs)-1;

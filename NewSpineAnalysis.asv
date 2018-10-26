@@ -405,7 +405,9 @@ if length(experimentnames) == 1
     FractionofAdditionDendritesUsedForMovement = NumberofAdditionDendritesUsedForMovement/NumberofAdditionDendrites;
     FractionofEliminationDendritesUsedForMovement = NumberofEliminationDendritesUsedForMovement/NumberofEliminationDendrites;
     FractionofStaticDendritesUsedForMovement = NumberofStaticDendritesUsedForMovement/NumberofStaticDendrites;
-
+    
+    
+    %%% Set sSave varaibles 
     a.SpineDynamics = FieldChanges;
     a.DendriteDynamics = DendriteDynamics;
     a.FractionofDendritesThatAreDynamic = FractionofDendritesThatAreDynamic;
@@ -724,9 +726,21 @@ else
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
     figure; newspplot = subplot(1,2,1); hold on;
-    bar(nanmedian(cell2mat(NewSpinesBehaviorCorrelation'),1))
+    tempnewspmat = cell2mat(NewSpinesBehaviorCorrelation');
+%     tempnewspmat(tempnewspmat>=0) = nan;
+    bar(nanmedian(tempnewspmat,1))
+    for i = 1:9
+        Y = bootci(bootstrpnum, {@median, tempnewspmat(~isnan(tempnewspmat(:,i)),i)}, 'alpha', 0.05);
+        line([i,i], [Y(1), Y(2)], 'linewidth', 0.5, 'color', 'k');
+    end
     otherspplot = subplot(1,2,2); hold on;
-    bar(nanmedian(cell2mat(OtherSpinesBehaviorCorrelation'),1))
-    linkaxes(
+    tempotherspmat = cell2mat(OtherSpinesBehaviorCorrelation');
+%     tempotherspmat(tempotherspmat>=0) = nan;
+    bar(nanmedian(tempotherspmat,1))
+    linkaxes([newspplot,otherspplot],'y')
+    for i = 1:9
+        Y = bootci(bootstrpnum, {@median, tempotherspmat(~isnan(tempotherspmat(:,i)),i)}, 'alpha', 0.05);
+        line([i,i], [Y(1), Y(2)], 'linewidth', 0.5, 'color', 'k');
+    end
 end
 end

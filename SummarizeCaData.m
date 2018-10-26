@@ -100,7 +100,9 @@ else
         end    
         if length(files)>1
             for i = 1:length(files)
-                if ~isempty(regexp(files(i),['_summed_50_Analyzed_By', Analyzer], 'once')) || ~isempty(regexp(files(i),['_summed_50Analyzed_By', Analyzer], 'once'))
+                searchpattern1 = regexp(files(i),['_summed_50_Analyzed_By', Analyzer], 'once');
+                searchpattern2 = regexp(files(i),['_summed_50Analyzed_By', Analyzer], 'once');
+                if ~isempty(searchpattern1{1}) || ~isempty(searchpattern2{1})
                     load(files{i})
                     check = 1;
                 end
