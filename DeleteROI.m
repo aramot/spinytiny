@@ -58,7 +58,7 @@ elseif ROI_num == length(oldspines)-1
     gui_CaImageViewer.ROItext = oldspinetext(1:ROI_num);
     gui_CaImageViewer.Spine_Number = gui_CaImageViewer.Spine_Number-1;
     delete(AllROIs(length(AllROIs)));
-    if ~isempty(oldsurrounds)
+    if any(~isnan(oldsurrounds))
         gui_CaImageViewer.BackgroundROI = oldsurrounds(1:ROI_num);
         if ~isnan(oldsurrounds(ROI_num))
             delete(AllBackgrounds(length(AllBackgrounds)))

@@ -366,7 +366,10 @@ end
             else
                 filepattern = [save_directory, gui_CaImageViewer.filename];
             end
-            CaImage_File_info = imfinfo(filepattern);
+            if j == 1 || j ==2 || j == timecourse_image_number || ismember(j,find(diff(acquisition_step(:,end)))) %%% Length of each file assumed to be constant UNLESS it's the start of a new acquisition (or in some cases the second image, since the first one is sometimes overwritten)
+                CaImage_File_info = imfinfo(filepattern);
+            else
+            end
             all_images = read_tiff(filepattern,CaImage_File_info);
 
             for k = 1:length(CaImage_File_info)
@@ -525,9 +528,9 @@ for i = 1:length(Fluorescence_Measurement)
     spine_baseline(1,i) = median(trace);
 end
 
-dend_baseline = zeros(1,DendNum);
-
+  
 for i = 1:DendNum
+    dend_baseline(1,i) = zeros(1,DendNum);
     roundstodo = 10;
     thisround = 1;
     trace = Mean_Dend(i,:);
@@ -688,7 +691,7 @@ for i = 1:length(existing_ROI)-1
     subplot(sub1,sub2,i)
     onDend = 1;
     for j = 1:DendNum
-        if ~isempty(find(DendSpines{j} == i,1))   
+        if ~isempty(find(DendSpines{j} == i),1)   
             plot(Time, deltaDend(j,:), 'k', 'LineWidth', 2); hold on;
             onDend = j;
         else

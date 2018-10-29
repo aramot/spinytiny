@@ -942,6 +942,7 @@ try
     folder = dir(save_directory);
 catch
     disp('Could not connect to saved directory... will need to select manually');
+    folder = [];
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1196,7 +1197,7 @@ if glovar.NewSpineAnalysis
     catch
         warning('No Spine Registry file found... make sure to make a new one or check if it was saved somewhere else!')
         [fname, pname] = uigetfile();
-        load(pname, fname)
+        load([pname, fname])
     end
     instanceofappearance = find(logical(strcmpi(SpineRegistry.DatesAcquired, gui_CaImageViewer.NewSpineAnalysisInfo.CurrentDate)));
     glovar.NewSpineAnalysisInfo.SpineList = ones(1,length(ROIs)-1); %%% Don't forget the first ROI is always the background ROI!
@@ -1208,9 +1209,6 @@ if glovar.NewSpineAnalysis
             end
             glovar.NewSpineAnalysisInfo.SpineList(r) = 0;
         end
-%     else
-%         
-%     end
 end
 
 
@@ -2037,12 +2035,12 @@ insertOpt = get(gui_CaImageViewer.figure.handles.InsertSpine_ToggleButton, 'Valu
 
 if insertOpt
 
-    targetdend = str2num(cell2mat(inputdlg('Insert spine on which dendrite?', 'Select Dendrite', 1, {'1'})));
-
-    lastspineondend = cumsum(cell2mat(cellfun(@length, gui_CaImageViewer.SpineDendriteGrouping, 'uni', false)));
-
-    insertedspine = lastspineondend(targetdend)+1;
-    gui_CaImageViewer.InsertPoint = insertedspine;
+%     targetdend = str2num(cell2mat(inputdlg('Insert spine on which dendrite?', 'Select Dendrite', 1, {'1'})));
+% 
+%     lastspineondend = cumsum(cell2mat(cellfun(@length, gui_CaImageViewer.SpineDendriteGrouping, 'uni', false)));
+% 
+%     insertedspine = lastspineondend(targetdend)+1;
+%     gui_CaImageViewer.InsertPoint = insertedspine;
         
 end
 
@@ -2243,8 +2241,22 @@ for i = 1:length(ROIs_original)
     tempim(ROIs_original(i,1), ROIs_original(i,2)) = 1;
     transpos = spatial_interp(double(tempim'), warpmatrix, 'linear', 'affine', [1:imsize], [1:imsize]);
     stats = regionprops(logical(transpos));
-    newpos(i,1:2) = stats.Centroid;
     ROInum = i-1;
+    if isempty(stats)
+        disp(['Could not auto shift ROI ', num2str(i)])
+        gui_CaImageViewer.ROI(i) = drawellipse('Center', ROIs_original(i,:), 'SemiAxes', OriginalSemiAxes(i,:), 'RotationAngle', OriginalRotationAngle(i,:),...
+            'AspectRatio', OriginalAspectRatio(i,:), 'Tag', ['ROI', num2str(ROInum)], 'Color', [0.2 0.4 0.9], 'HandleVisibility', 'on', 'Label', '', 'Linewidth', 1, 'FaceAlpha', 0);
+        roiget = get(gui_CaImageViewer.ROI(ROInum+1));
+        c = roiget.UIContextMenu;
+        uimenu(c, 'Label', 'Add Surround Background', 'Callback', @ModifyROI);
+        uimenu(c, 'Label', 'Remove Surround Background', 'Callback', @ModifyROI);
+        uimenu(c, 'Label', 'Set as eliminated', 'Callback', @CategorizeSpines);
+        uimenu(c, 'Label', 'Set as active', 'Callback', @CategorizeSpines);
+        gui_CaImageViewer.ROIlistener{ROInum+1} = listener(findobj(gui_CaImageViewer.ROI(ROInum+1)), 'DeletingROI', @DeleteROI);
+        addlistener(findobj(gui_CaImageViewer.ROI(ROInum+1)), 'ROIClicked', @DeclareROI)
+        continue
+    end
+    newpos(i,1:2) = stats.Centroid;
     switch drawtype
         case 'rectangle'
             gui_CaImageViewer.ROI(i) = rectangle('Position', [round(newpos(i,1)),round(newpos(i,2)),ROIs_original(i,3), ROIs_original(i,4)], 'EdgeColor', [0.2 0.4 0.9], 'Curvature', [1 1],'Tag', ['ROI', num2str(ROInum)], 'ButtonDownFcn', {@DragROI, ROInum, 'HomeWindow'}, 'Linewidth', 1, 'UIContextMenu', c1);
@@ -2257,6 +2269,9 @@ for i = 1:length(ROIs_original)
             uimenu(c, 'Label', 'Remove Surround Background', 'Callback', @ModifyROI);
             uimenu(c, 'Label', 'Set as eliminated', 'Callback', @CategorizeSpines);
             uimenu(c, 'Label', 'Set as active', 'Callback', @CategorizeSpines);
+            gui_CaImageViewer.ROIlistener{ROInum+1} = listener(findobj(gui_CaImageViewer.ROI(ROInum+1)), 'DeletingROI', @DeleteROI);
+            addlistener(findobj(gui_CaImageViewer.ROI(ROInum+1)), 'ROIClicked', @DeclareROI)
+
     end
 end
 

@@ -90,7 +90,10 @@ elseif strcmpi(Router, 'Spine') %%% First round drawing, just temporary while th
     axes(axes1)
     InsertOpt = get(glovar.figure.handles.InsertSpine_ToggleButton,'Value');
     if InsertOpt
-        ROInum = glovar.InsertPoint;
+        allROIPos = get(gui_CaImageViewer.ROI, 'Position');
+        [~, ind] = min(sum(abs(cell2mat(cellfun(@(x) x(1:2)-Fl_ROI(1:2), allROIPos, 'uni', false))),2));
+        ROInum = ind;
+%         ROInum = glovar.InsertPoint;
     end
     glovar.ROI(ROInum+1) = rectangle('Position', Fl_ROI, 'EdgeColor', linecolor, 'Curvature', [0 0], 'Tag', ['ROI', num2str(ROInum), ' Starter'], 'Linewidth', edgewidth);
     glovar.ROItext(ROInum+1) = text(Fl_ROI(1)-2, Fl_ROI(2)-2, num2str(ROInum), 'color', 'white', 'Tag', ['ROI', num2str(ROInum), ' Text Starter'], 'ButtonDownFcn', 'DeleteROI', 'FontSize', textsize);    
@@ -127,7 +130,7 @@ elseif strcmpi(Router, 'Spine')
         immax = max(im, [], 3);
     else
         if size(gui_CaImageViewer.ch1image,3)>1
-            immax = gui_CaImageViewer.ch1image(:,:,1);
+            immax = gui_CaImageViewer.ch1image(:,:,2);
         else
             immax = gui_CaImageViewer.ch1image;
         end

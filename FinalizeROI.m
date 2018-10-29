@@ -34,28 +34,33 @@ catch
 end
 axes(gui_CaImageViewer.figure.handles.GreenGraph)
 
-%%% Delete any ROI features with the same tag
-delete(findobj('Type', 'rectangle', '-and', 'Tag', ['ROI', num2str(ROInum), ' Starter']))
-%         delete(findobj('Type', 'rectangle', '-and', 'Tag', ['BackgroundROI', num2str(ROInum)]))
-delete(findobj('Type', 'text', '-and', 'Tag', ['ROI', num2str(ROInum), ' Text Starter']))
 
 InsertOpt = get(glovar.figure.handles.InsertSpine_ToggleButton,'Value');
-if InsertOpt
-    ROInum = glovar.InsertPoint;
-    AllROIs = flipud(findobj('Type', 'images.roi.ellipse', '-and', '-not', {'-regexp', 'Tag', 'Dendrite'}, '-and', '-not', {'-regexp', 'Tag', 'Background'},'-and', '-not', 'Tag', ['ROI0']));
-    AllROItexts = flipud(findobj('Type', 'text', '-and', {'-regexp', 'Tag', 'ROI'}));
-    AllROItexts = AllROItexts(2:end);
+if InsertOpt 
+%     ROInum = glovar.InsertPoint;
+    AllROIs = flipud(findobj(gui_CaImageViewer.figure.handles.GreenGraph, 'Type', 'images.roi.ellipse', '-and', '-not', {'-regexp', 'Tag', 'Dendrite'}, '-and', '-not', {'-regexp', 'Tag', 'Background'},'-and', '-not', 'Tag', ['ROI0']));
     AllBackgrounds = nan(1,length(gui_CaImageViewer.BackgroundROI));
     AllBackgrounds(logical(~isnan(gui_CaImageViewer.BackgroundROI))) = flipud(findobj('Type', 'rectangle', '-and', {'-regexp', 'Tag', 'Background'}));    
     AllBackgrounds = AllBackgrounds(2:end); %%% ignore "background ROI/ROI0;
     oldpositions = get(AllROIs, 'Position');
+    oldsemiaxes = get(AllROIs, 'SemiAxes');
+    oldrotations = get(AllROIs, 'Rotation');
+    oldAR = get(AllROIs, 'AspectRatio');
     oldBGpositions = cell(1,length(gui_CaImageViewer.BackgroundROI));
     oldBGpositions(logical(~isnan(AllBackgrounds))) = get(AllBackgrounds(logical(~isnan(AllBackgrounds))), 'Position');
     delete(AllROIs(ROInum:end))
-    delete(AllROItexts(ROInum:end))
+    if twochannels
+        AllCh2ROIs = flipud(findobj(gui_CaImageViewer.figure.handles.RedGraph, 'Type', 'images.roi.ellipse', '-and', '-not', {'-regexp', 'Tag', 'Dendrite'}, '-and', '-not', {'-regexp', 'Tag', 'Background'},'-and', '-not', 'Tag', ['ROIred0']));
+        delete(AllCh2ROIs(ROInum:end))
+    end
     Backgroundstodelete = AllBackgrounds(ROInum:end);
     delete(Backgroundstodelete(logical(~isnan(Backgroundstodelete))))
 end
+
+%%% Delete any ROI features with the same tag
+delete(findobj('Type', 'rectangle', '-and', 'Tag', ['ROI', num2str(ROInum), ' Starter']))
+%         delete(findobj('Type', 'rectangle', '-and', 'Tag', ['BackgroundROI', num2str(ROInum)]))
+delete(findobj('Type', 'text', '-and', 'Tag', ['ROI', num2str(ROInum), ' Text Starter']))
 
 %%%%%%%%%%%%%%%%%%%%
 %%% Draw final ROI
@@ -92,7 +97,7 @@ if gui_CaImageViewer.NewSpineAnalysis
 
     gui_CaImageViewer.NewSpineAnalysisInfo.SpineList = [gui_CaImageViewer.NewSpineAnalysisInfo.SpineList, 1];
     gui_CaImageViewer.ROIlistener{ROInum+1} = listener(findobj(gui_CaImageViewer.ROI(ROInum+1)), 'DeletingROI', @DeleteROI);
-    addlistener(findobj(gui_CaImageViewer.ROI(ROInum+1)), 'ROIClicked', @DeclareROI)
+    addlistener(findobj(gui_CaImageViewer.ROI(ROInum+1)), 'ROIClicked', @DeclareROI);
 else
     %%%
     gui_CaImageViewer.ROI(ROInum+1) = drawellipse('Center', adjustedpos(1:2), 'SemiAxes', newROIsemiaxes, 'RotationAngle', newROIRotationAngle, 'AspectRatio', newROIAspectRatio,...
@@ -108,7 +113,7 @@ else
         if ~Merge
             axes(axes2)
             gui_CaImageViewer.ROIred(ROInum+1) = drawellipse('Center', adjustedpos(1:2), 'SemiAxes', newROIsemiaxes, 'RotationAngle', newROIRotationAngle, 'AspectRatio', newROIAspectRatio,...
-            'Tag', ['ROI', num2str(ROInum)], 'Color', 'c', 'HandleVisibility', 'on', 'Label', labelopt, 'Linewidth', 1, 'FaceAlpha', 0, 'InteractionsAllowed', 'none');
+            'Tag', ['ROIred', num2str(ROInum)], 'Color', 'c', 'HandleVisibility', 'on', 'Label', labelopt, 'Linewidth', 1, 'FaceAlpha', 0, 'InteractionsAllowed', 'none');
         end
     else
     end
@@ -127,15 +132,24 @@ set(gui_CaImageViewer.figure.handles.InsertSpine_ToggleButton, 'Enable', 'off');
 set(gui_CaImageViewer.figure.handles.EditSpines_ToggleButton, 'Value', 0)
 
 if InsertOpt %%% Redraw the deleted ROIs, now with the numbers increased by 1
-    c1 = uicontextmenu;
-    uimenu(c1, 'Label', 'Add Surround Background', 'Callback', @ModifyROI);
-    uimenu(c1, 'Label', 'Remove Surround Background', 'Callback', @ModifyROI);
     for a = ROInum:length(oldpositions)
-        gui_CaImageViewer.ROI(a+2) = drawellipse('Center', adjustedpos(1:2), 'SemiAxes', newROIsemiaxes, 'RotationAngle', newROIRotationAngle, 'AspectRatio', newROIAspectRatio, 'Tag', ['ROI', num2str(a+1)], 'UIContextMenu', c, 'Color', linecolor, 'HandleVisibility', 'on', 'Label', labelopt, 'Linewidth', 1, 'FaceAlpha', 0);
-%         if ~isempty(oldBGpositions{a})
-%             gui_CaImageViewer.BackgroundROI(a+2) = rectangle('Position', oldBGpositions{a}, 'EdgeColor', 'w', 'Curvature', [1 1], 'Tag', ['BackgroundROI', num2str(a+1)], 'Linewidth', 0.75);
-%         else
-%             gui_CaImageViewer.BackgroundROI(a+2) = NaN;
-%         end
+        gui_CaImageViewer.ROI(a+2) = drawellipse('Center', oldpositions{a}(1:2), 'SemiAxes', oldsemiaxes{a}, 'RotationAngle', oldrotations{a}, 'AspectRatio', oldAR{a}, 'Tag', ['ROI', num2str(a+1)], 'UIContextMenu', c, 'Color', linecolor, 'HandleVisibility', 'on', 'Label', num2str(a+1), 'Linewidth', 1, 'FaceAlpha', 0, 'InteractionsAllowed', 'none');
+        roiget = get(gui_CaImageViewer.ROI(a+2));
+        c = roiget.UIContextMenu;
+        uimenu(c, 'Label', 'Add Surround Background', 'Callback', @ModifyROI);
+        uimenu(c, 'Label', 'Remove Surround Background', 'Callback', @ModifyROI);
+        uimenu(c, 'Label', 'Set as eliminated', 'Callback', @CategorizeSpines);
+        uimenu(c, 'Label', 'Set as active', 'Callback', @CategorizeSpines);
+        if twochannels
+            axes(axes2)
+            gui_CaImageViewer.ROIred(a+2) = drawellipse('Center', oldpositions{a}(1:2), 'SemiAxes', oldsemiaxes{a}, 'RotationAngle', oldrotations{a}, 'AspectRatio', oldAR{a}, 'Tag', ['ROIred', num2str(a+1)], 'UIContextMenu', c, 'Color', 'c', 'HandleVisibility', 'on', 'Label', num2str(a+1), 'Linewidth', 1, 'FaceAlpha', 0, 'InteractionsAllowed', 'none');
+            roiget = get(gui_CaImageViewer.ROI(a+2));
+            c = roiget.UIContextMenu;
+            uimenu(c, 'Label', 'Add Surround Background', 'Callback', @ModifyROI);
+            uimenu(c, 'Label', 'Remove Surround Background', 'Callback', @ModifyROI);
+            uimenu(c, 'Label', 'Set as eliminated', 'Callback', @CategorizeSpines);
+            uimenu(c, 'Label', 'Set as active', 'Callback', @CategorizeSpines);
+            axes(axes1)
+        end
     end
 end  

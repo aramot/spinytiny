@@ -22,8 +22,7 @@ switch switchitem
         gui_CaImageViewer.NewSpineAnalysisInfo.SpineList(ROInum) = 0;
     case 'Set as active'
         ROIobject.FaceAlpha = 0;
-        ROIobject.Color = 'w';
-        ROIobject.StripeColor = 'none';
+        ROIobject.Color = 
         gui_CaImageViewer.NewSpineAnalysisInfo.SpineList(ROInum) = 1;
 end
 

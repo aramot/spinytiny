@@ -84,7 +84,11 @@ ymin = floor(min(y)-10);
 ymax = ceil(max(y)+10);
 
 if glovar.NewSpineAnalysis
-    immax = glovar.ch1image;
+    if size(glovar.ch1image,3)>1
+        immax = glovar.ch1image(:,:,2);
+    else
+        immax = glovar.ch1image;
+    end
 else
     im = glovar.GCaMP_Image;
     im = cat(3, im{:});
@@ -208,7 +212,7 @@ end
 if twochannels == 1
 
     axes(axes2)
-    glovar.RedPolyLine = line(x,y, 'Tag', 'PolyLine', 'color', 'cyan');
+%     glovar.RedPolyLine = line(x,y, 'Tag', 'PolyLine', 'color', 'cyan');
 
 %     for i = 1:length(x)
 %         glovar.RedPolyLinePos{i} = [x(i)-radius, y(i)-radius, radius*2, radius*2];

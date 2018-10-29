@@ -43,11 +43,12 @@ gui_CaImageViewer.CurrentCMap = 'Fire';
 if length(selectedaxes)==1
 
     date = get(get(selectedaxes, 'Title'), 'String');
+    
     switch experimenter
         case 'Assaf'
-            gui_CaImageViewer.save_directory = ['Z:\People\', experimenter, '\Data\', animal, '\', sorteddates(1,:), '\motion_corrected_tiffs\GFP\summed\'];
+            gui_CaImageViewer.save_directory = ['Z:\People\', experimenter, '\Data\', animal, '\', date, '\motion_corrected_tiffs\GFP\summed\'];
         otherwise
-            gui_CaImageViewer.save_directory = ['Z:\People\',experimenter,'\Data\', animal, '\', sorteddates(1,:), '\summed\'];
+            gui_CaImageViewer.save_directory = ['Z:\People\',experimenter,'\Data\', animal, '\', date, '\summed\'];
     end
     
     mostlikelyfile = fastdir(gui_CaImageViewer.save_directory, 'summed_50.tif');

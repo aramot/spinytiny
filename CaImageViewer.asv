@@ -279,21 +279,18 @@ else
         Green_Frame = Green_Frame+1;
         waitbar(Green_Frame/timecourse_image_number,h,['Loading Image ', num2str(Green_Frame)]);
     end
-    if ~gui_CaImageViewer.LoadedFile || Green_loc(3) == Red_loc(3)
-        set(handles.RedGraph, 'Visible', 'off')
-        set(handles.Channel2_StaticText, 'Visible', 'off')
-        set(handles.RedUpperLUT_EditableText, 'Visible', 'off')
-        set(handles.RedLowerLUT_EditableText, 'Visible', 'off')
-        set(handles.RedGamma_EditableText, 'Visible', 'off')
-        set(handles.RedGamma_StaticText, 'Visible', 'off')
-        gui_CaImageViewer.GraphPlacement = [Green_loc(1), Green_loc(2), Green_loc(3)+(Red_loc(1)-(Green_loc(1)+Green_loc(3))+Red_loc(3)), Green_loc(4)];
-        set(handles.GreenGraph, 'Units', 'normalized')
-        figure(gui_CaImageViewer.figure.handles.figure1)
-        axes(gui_CaImageViewer.figure.handles.GreenGraph);
-        intergraphdistance = Red_loc(1)-(Green_loc(1)+Green_loc(3));
-        set(handles.GreenGraph, 'Position', [Green_loc(1), Green_loc(2), Green_loc(3)+Red_loc(3)+intergraphdistance, Green_loc(4)])
-    else
-    end
+    set(handles.RedGraph, 'Visible', 'off')
+    set(handles.Channel2_StaticText, 'Visible', 'off')
+    set(handles.RedUpperLUT_EditableText, 'Visible', 'off')
+    set(handles.RedLowerLUT_EditableText, 'Visible', 'off')
+    set(handles.RedGamma_EditableText, 'Visible', 'off')
+    set(handles.RedGamma_StaticText, 'Visible', 'off')
+    gui_CaImageViewer.GraphPlacement = [Green_loc(1), Green_loc(2), Green_loc(3)+(Red_loc(1)-(Green_loc(1)+Green_loc(3))+Red_loc(3)), Green_loc(4)];
+    set(handles.GreenGraph, 'Units', 'normalized')
+    figure(gui_CaImageViewer.figure.handles.figure1)
+    axes(gui_CaImageViewer.figure.handles.GreenGraph);
+    intergraphdistance = Red_loc(1)-(Green_loc(1)+Green_loc(3));
+    set(handles.GreenGraph, 'Position', [Green_loc(1), Green_loc(2), Green_loc(3)+Red_loc(3)+intergraphdistance, Green_loc(4)])
 end
 
 close(h)
@@ -1090,6 +1087,14 @@ else
         ROIs(i).RotationAngle = 0;
         ROIs(i).AspectRatio = oldROIs{i}(3)/oldROIs{i}(4);
     end
+    if isfield(savedFile, 'OtherROIs')
+        OtherROIsExist = 1;
+        for i = 1:length(savedFile.OtherROIs)
+            OtherROIs(i).Position = savedFile.OtherROIsPosition{i}.Position;
+        end
+    else
+        OtherROIsExist = 0;
+    end
 end
 
 glovar.Spine_Number = length(ROIs)-1;
@@ -1108,10 +1113,9 @@ nonedrawn = 0;
 axes(axes1);
 for a = 1:length(ROIs)
     ROInum = a-1;
-    c = uicontextmenu;
     glovar.ROI(a) = drawellipse('Center', ROIs(a).Center, 'SemiAxes', ROIs(a).SemiAxes, 'RotationAngle', ROIs(a).RotationAngle,...
         'AspectRatio', ROIs(a).AspectRatio, 'Tag', ['ROI', num2str(ROInum)], 'Color', [0.2 0.4 0.9],...
-        'HandleVisibility', 'on', 'UIContextMenu', c, 'Label', '', 'Linewidth', 1, 'FaceAlpha', 0, 'InteractionsAllowed', 'none');
+        'HandleVisibility', 'on', 'Label', '', 'Linewidth', 1, 'FaceAlpha', 0, 'InteractionsAllowed', 'none');
     roiget = get(glovar.ROI(a));
     c = roiget.UIContextMenu;
     uimenu(c, 'Label', 'Add Surround Background', 'Callback', @ModifyROI);
@@ -1119,6 +1123,8 @@ for a = 1:length(ROIs)
     uimenu(c, 'Label', 'Set as eliminated', 'Callback', @CategorizeSpines);
     uimenu(c, 'Label', 'Set as active', 'Callback', @CategorizeSpines);
     set(glovar.figure.handles.ShowLabels_ToggleButton, 'Value', 1)
+    glovar.ROIlistener{ROInum+1} = listener(findobj(glovar.ROI(a)), 'DeletingROI', @DeleteROI);
+    addlistener(findobj(glovar.ROI(a)), 'ROIClicked', @DeclareROI);
     switch usesurroundBGchoice
         case 'Add to all'
             if a == 1   %%% The first ROI (the general background ROI) doesn't need an additional background
@@ -1185,7 +1191,13 @@ if glovar.NewSpineAnalysis
         currentfield = str2num(cf{1});
         glovar.NewSpineAnalysisInfo.CurrentImagingField = currentfield; 
     end
-    load([targ_folder, filesep,userspecificpart,'Imaging Field ', num2str(currentfield), ' Spine Registry'])
+    try
+        load([targ_folder, filesep,userspecificpart,'Imaging Field ', num2str(currentfield), ' Spine Registry'])
+    catch
+        warning('No Spine Registry file found... make sure to make a new one or check if it was saved somewhere else!')
+        [fname, pname] = uigetfile();
+        load(pname, fname)
+    end
     instanceofappearance = find(logical(strcmpi(SpineRegistry.DatesAcquired, gui_CaImageViewer.NewSpineAnalysisInfo.CurrentDate)));
     glovar.NewSpineAnalysisInfo.SpineList = ones(1,length(ROIs)-1); %%% Don't forget the first ROI is always the background ROI!
 %     if size(SpineRegistry.Data,2)>=find(instanceofappearance) %% && find(instanceofappearance)~=1 %%% ZL commentm, it is possible need to set another category of spines specifying the "true new spines"
@@ -1284,6 +1296,8 @@ else
 end
 
  %%% Overwrite the previous existing global workspace with the newly imprinted one
+ 
+set(glovar.figure.handles.EditSpines_ToggleButton, 'Value', 0)
  
 gui_CaImageViewer = glovar;
 
@@ -1431,7 +1445,7 @@ if gui_CaImageViewer.NewSpineAnalysis
         %%%%% Move to parent folder
         fullpath = gui_CaImageViewer.save_directory;
         allseps = strfind(fullpath, '\');
-        stepsup = 2;
+        stepsup = 4;
         newpath = fullpath(1:allseps(end-stepsup)-1); %%% move two steps up in the path directory to get bath to the main animal folder (e.g. Z:/People/Nathan/Data/NH004 instead of Z:/People/Nathan/Data/NH004/160316/summed)
         cd(newpath)
         
@@ -2118,12 +2132,10 @@ steps = timecourse_image_number*length(CaImage_File_info);
 
 %%% Set Image Properties %%%
 
-
 gui_CaImageViewer.GCaMP_Image = [];
 gui_CaImageViewer.Red_Image = [];
 
 h = waitbar(0, 'Loading Image ');
-
 
 Green_loc = gui_CaImageViewer.GreenGraph_loc;
 Red_loc = gui_CaImageViewer.RedGraph_loc;
@@ -2150,7 +2162,7 @@ channel2 = gui_CaImageViewer.Red_Image;
 
 CommandSource = 'Loader';
 
-[ch1image, ch2image] = PlaceImages(channel1, channel2, CommandSource);
+[~, ~] = PlaceImages(channel1, channel2, CommandSource);
 
 imageserieslength = size(gui_CaImageViewer.GCaMP_Image, 2);
 gui_CaImageViewer.imageserieslength = imageserieslength;
@@ -2161,13 +2173,6 @@ set(handles.ImageSlider_Slider, 'Max', imageserieslength);
 set(handles.ImageSlider_Slider, 'SliderStep', [(1/(GreenImageNumber-1)) (32/(GreenImageNumber-1))]);  %%% The Slider Step values indicate the minor and major transitions, which should be represented by the desired transition as the numerator and the length of the series as the denominator
 set(handles.Frame_EditableText, 'String', 1);
 set(handles.SmoothingFactor_EditableText, 'String', '1');
-
-% 
-% Smoothing = str2num(get(handles.SmoothingFactor_EditableText, 'String'));
-% 
-% if Smoothing ~= 1
-%     Smoother(hObject, eventdata, ch1image,ch2image, CommandSource)
-% end
 
 set(gui_CaImageViewer.figure.handles.output, 'WindowButtonDownFcn', [])
 
@@ -2216,7 +2221,10 @@ switch drawtype
 end
 
 if isfield(gui_CaImageViewer, 'ROIother')
-    OtherROIs_original = round(cell2mat(cellfun(@(x) mean(x.Position), arrayfun(@(x) get(x), gui_CaImageViewer.ROIother, 'uni', false), 'uni', false)'));
+    for i = 1:length(gui_CaImageViewer.ROIother)
+        OtherROIs_original{i} = round(cell2mat(cellfun(@(x) x.Position, arrayfun(@(x) get(x), gui_CaImageViewer.ROIother(i), 'uni', false), 'uni', false)'));
+    end
+    OtherROIs_original_center = round(cell2mat(cellfun(@(x) mean(x.Position), arrayfun(@(x) get(x), gui_CaImageViewer.ROIother, 'uni', false), 'uni', false)'));
 end
 
 ClearROIs('AssumeAll')
@@ -2235,8 +2243,20 @@ for i = 1:length(ROIs_original)
     tempim(ROIs_original(i,1), ROIs_original(i,2)) = 1;
     transpos = spatial_interp(double(tempim'), warpmatrix, 'linear', 'affine', [1:imsize], [1:imsize]);
     stats = regionprops(logical(transpos));
-    newpos(i,1:2) = stats.Centroid;
     ROInum = i-1;
+    if isempty(stats)
+        disp(['Could not auto shift ROI ', num2str(i)])
+        gui_CaImageViewer.ROI(i) = drawellipse('Center', ROIs_original(i,:), 'SemiAxes', OriginalSemiAxes(i,:), 'RotationAngle', OriginalRotationAngle(i,:),...
+            'AspectRatio', OriginalAspectRatio(i,:), 'Tag', ['ROI', num2str(ROInum)], 'Color', [0.2 0.4 0.9], 'HandleVisibility', 'on', 'Label', '', 'Linewidth', 1, 'FaceAlpha', 0);
+        roiget = get(gui_CaImageViewer.ROI(ROInum+1));
+        c = roiget.UIContextMenu;
+        uimenu(c, 'Label', 'Add Surround Background', 'Callback', @ModifyROI);
+        uimenu(c, 'Label', 'Remove Surround Background', 'Callback', @ModifyROI);
+        uimenu(c, 'Label', 'Set as eliminated', 'Callback', @CategorizeSpines);
+        uimenu(c, 'Label', 'Set as active', 'Callback', @CategorizeSpines);
+        continue
+    end
+    newpos(i,1:2) = stats.Centroid;
     switch drawtype
         case 'rectangle'
             gui_CaImageViewer.ROI(i) = rectangle('Position', [round(newpos(i,1)),round(newpos(i,2)),ROIs_original(i,3), ROIs_original(i,4)], 'EdgeColor', [0.2 0.4 0.9], 'Curvature', [1 1],'Tag', ['ROI', num2str(ROInum)], 'ButtonDownFcn', {@DragROI, ROInum, 'HomeWindow'}, 'Linewidth', 1, 'UIContextMenu', c1);
@@ -2253,16 +2273,19 @@ for i = 1:length(ROIs_original)
 end
 
 if isfield(gui_CaImageViewer, 'ROIother')
+    axes(gui_CaImageViewer.figure.handles.RedGraph);
     for i = 1:length(OtherROIs_original)
         tempim = zeros(imsize,imsize);
-        tempim(OtherROIs_original(i,1), OtherROIs_original(i,2)) = 1;
+        tempim(OtherROIs_original_center(i,1), OtherROIs_original_center(i,2)) = 1;
         transpos = spatial_interp(double(tempim'), warpmatrix, 'linear', 'affine', [1:imsize], [1:imsize]);
         stats = regionprops(logical(transpos));
-        othernewpos(i,1:2) = stats.Centroid;
-        gui_CaImageViewer.ROIother(i) = drawfreehand('Position', [gui_CaImageViewer.ROIother(i).Position(:,1)+othernewpos(i,1),gui_CaImageViewer.ROIother(i).Position(:,2)+othernewpos(i,2)], 'Tag', ['ROIother', num2str(i)], 'FaceAlpha', 0, 'Color', 'm', 'HandleVisibility', 'on', 'Label', num2str(i), 'InteractionsAllowed', 'all', 'Label', '');
+        othernewpos(i,1:2) = stats.Centroid-OtherROIs_original_center(i,:);
+        gui_CaImageViewer.ROIother(i) = drawfreehand('Position', [OtherROIs_original{i}(:,1)+othernewpos(i,1),OtherROIs_original{i}(:,2)+othernewpos(i,2)], 'Tag', ['ROIother', num2str(i)], 'FaceAlpha', 0, 'Color', 'm', 'HandleVisibility', 'on', 'Label', num2str(i), 'InteractionsAllowed', 'all', 'Label', '');
 %         roiget = get(gui_CaImageViewer.ROIother(ROInum+1));
     end
 end
+
+set(gui_CaImageViewer.figure.handles.EditSpines_ToggleButton, 'Value', 1);
 
 
 
@@ -2467,7 +2490,7 @@ if editopt
 else
    for i = 1:length(ROIs)
         ROIs(i).InteractionsAllowed = 'none';
-    end 
+   end 
 end
 
 
