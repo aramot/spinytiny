@@ -14,7 +14,7 @@ if(~exist('Experimenter','var'))
     Experimenter = 'Nathan'; % User defaults to 'Nathan' if not defined
 end
 
-if(~exist('ImagingType','var'))
+if(~exist('ImagingSensor','var'))
     ImagingSensor = 'GCaMP'; % default to show figure
 end
 
@@ -220,7 +220,7 @@ else
         spinesmoothwindow = 60;
     elseif strcmpi(ImagingSensor, 'GluSnFR')
         ImagingFrequency = 60;
-        spinesmoothwindow = 15;
+        spinesmoothwindow = 60;
     end 
     polythreshmultiplier = 2*ones(1,length(File.Poly_Fluorescence_Measurement));
     Dendthreshmultiplier = 2*ones(1,File.NumberofDendrites);
@@ -327,15 +327,15 @@ end
 % %% Describe the basic shape of each calcium trace
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-truebaseline = zeros(length(File.deltaF),length(File.deltaF{1}));
-spinedriftbaseline = zeros(length(File.deltaF),length(File.deltaF{1}));
-processed_dFoF = zeros(length(File.deltaF),length(File.deltaF{1}));
-all = zeros(length(File.deltaF),length(File.deltaF{1}));
-med = zeros(length(File.deltaF),1);
-spread = zeros(length(File.deltaF),1);
-binarized = zeros(length(File.deltaF),length(File.deltaF{1}));
-amp = zeros(1,length(File.deltaF));
-freq = zeros(1,length(File.deltaF),1);
+truebaseline = zeros(length(File.Fluorescence_Measurement),length(File.Fluorescence_Measurement{1}));
+spinedriftbaseline = zeros(length(File.Fluorescence_Measurement),length(File.Fluorescence_Measurement{1}));
+processed_dFoF = zeros(length(File.Fluorescence_Measurement),length(File.Fluorescence_Measurement{1}));
+all = zeros(length(File.Fluorescence_Measurement),length(File.Fluorescence_Measurement{1}));
+med = zeros(length(File.Fluorescence_Measurement),1);
+spread = zeros(length(File.Fluorescence_Measurement),1);
+binarized = zeros(length(File.Fluorescence_Measurement),length(File.Fluorescence_Measurement{1}));
+amp = zeros(1,length(File.Fluorescence_Measurement));
+freq = zeros(1,length(File.Fluorescence_Measurement),1);
 
 numberofSpines = size(binarized,1);
 

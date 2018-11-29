@@ -464,6 +464,7 @@ if isempty(strfind(inputname(1), 'SpineCorrelationTimecourse'))
     SpatioTemporalFiedler = cell(1,14);
     SpatioTemporalPartition = cell(1,14);
     SpatioTemporal_FirstEigenvector = cell(1,14);
+    AllSpineReliability = nan(1,14);
     MovementSpineReliability = nan(1,14);
     
     for i = 1:length(StatClass)
@@ -749,6 +750,7 @@ if isempty(strfind(inputname(1), 'SpineCorrelationTimecourse'))
             %%
             
             MovementSpineReliability(1,session) = nanmean(StatClass{session}.MovementSpineReliability);
+            AllSpineReliability(1,session) = nanmean(StatClass{session}.AllSpineReliability);
             
                 
             %%
@@ -3234,8 +3236,10 @@ if isempty(strfind(inputname(1), 'SpineCorrelationTimecourse'))
     title([{'Fraction of (function) spines'},{'that are clustered'}], 'Fontsize', 14)
     legend({'Cue Clust', 'Mov Clust', 'PreSuc Clust', 'Suc Clust', 'MovDuringCue Clust', 'Rew Clust'})
     
-    subplot(sub1,sub2, 9)
-    plot(MovementSpineReliability, 'ok', 'MarkerFaceColor', 'k')
+    subplot(sub1,sub2, 9); hold on;
+    plot(AllSpineReliability, 'ok', 'MarkerFaceColor', 'k')
+    plot(MovementSpineReliability, 'ok', 'MarkerFaceColor', 'g')
+    
 
     
     %%
@@ -3852,6 +3856,7 @@ if isempty(strfind(inputname(1), 'SpineCorrelationTimecourse'))
     a.PercentofRewardRelatedDendrites = PercentRewRelDends;
     
     a.MovementSpineReliability = MovementSpineReliability;
+    a.AllSpineReliability = AllSpineReliability;
     
     fname = inputname(1);
     fname = fname(1:5);
@@ -3952,6 +3957,7 @@ else
     FourthClosestHighlyCorrelatedMovementRelatedSpine = cell(1,14);
     MovementClusters = cell(length(varargin), 14);
     MovementSpineReliability = nan(1,14);
+    AllSpineReliability = nan(1,14);
         
     for i = 1:length(varargin)
         AllClustersCorrwithCue(i,1:14) = varargin{i}.ClustCorrwithCue;
@@ -4123,6 +4129,7 @@ else
         NumCausalCueSpines(i,1:14) = varargin{i}.NumberofCausalCueSpines;
         
         MovementSpineReliability(i,1:14) = varargin{i}.MovementSpineReliability;
+        AllSpineReliability(i,1:14) = varargin{i}.AllSpineReliability;
         
         NumClustSpines(i,1:14) = varargin{i}.NumberofClusteredSpines;
         NumClustCueSpines(i,1:14) = varargin{i}.NumberofClusteredCueSpines;
@@ -4926,9 +4933,23 @@ else
         legend([a b c d f g],{'Cue related','Movement related', 'Pre Success', 'Success related', 'MovDuringCue', 'Reward related'})
         
     subplot(sub1,sub2,9)
-        a = flex_plot(1:14, MovementSpineReliability, stattype, 'k', 2);
+        allspinesessions = find(any(~isnan(AllSpineReliability),1));
+        movementspinesessions = find(any(~isnan(MovementSpineReliability),1));
+        allspinenormmat = AllSpineReliability;
+        for i = 1:length(allspinesessions)
+            allspinenormmat(:,allspinesessions(i)) = AllSpineReliability(:,i)./nanmean(nanmean(AllSpineReliability(:,1:4)));
+        end
+        movespinenormmat = MovementSpineReliability;
+        for i = 1:length(movementspinesessions)
+            movespinenormmat(:,movementspinesessions(i)) = MovementSpineReliability(:,i)./nanmean(nanmean(MovementSpineReliability(:,1:4)));
+        end
+        
+        
+        a = flex_plot(1:14, MovementSpineReliability, stattype, green, 2);
+        b = flex_plot(1:14, AllSpineReliability, stattype, black, 2);
         xlabel('Session', 'Fontsize', 14)
         ylabel('Fraction of movements MRS are active', 'Fontsize', 12)
+        legend([a,b], {'Movement Spines', 'All Spines'})
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%% Figure 4: Spatial extent of clusters

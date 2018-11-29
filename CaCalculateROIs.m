@@ -197,7 +197,7 @@ if newspineanalysis || islong
     else
         date = gui_CaImageViewer.NewSpineAnalysisInfo.CurrentDate;
     end
-    instanceofappearance = logical(strcmpi(SpineRegistry.DatesAcquired, date));
+    instanceofappearance = logical(strcmpi(sortrows(SpineRegistry.DatesAcquired), date));
     SpineList = SpineRegistry.Data(:,instanceofappearance); %%% Note: Although the first ROI is always ROI0 (background), this is excluded (wrt indexing) for the final variables, so a direct translation of spine number is possible here
     nullspines = find(SpineList==0);
         Fluorescence_Intensity = cell(length(SpineList),1);

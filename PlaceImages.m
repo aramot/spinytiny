@@ -78,12 +78,14 @@ if strcmpi(CommandSource, 'Loader')
         else
         end
         if filterwindow > 1
-            ch1image = filter2(ones(filterwindow, filterwindow)/filterwindow^2, ch1image);
+            ch1image = filter2(ones(filterwindow, filterwindow)/filterwindow^2, channel1);
         else
         end
     elseif strcmpi(mapchoice, 'Jet')
         gui_CaImageViewer.ch1image = channel1;
-        channel1 = filter2(ones(filterwindow, filterwindow)/filterwindow^2, channel1);
+        if filterwindow>1
+            channel1 = filter2(ones(filterwindow, filterwindow)/filterwindow^2, channel1);
+        end
         ch1image = channel1;
         set(Green_Figure, 'XTick', [])
         set(Green_Figure, 'YTick', [])
@@ -96,7 +98,9 @@ if strcmpi(CommandSource, 'Loader')
         end
     elseif strcmpi(mapchoice, 'Hot')
         gui_CaImageViewer.ch1image = channel1;
-        channel1 = filter2(ones(filterwindow, filterwindow)/filterwindow^2, channel1);
+        if filterwindow>1
+            channel1 = filter2(ones(filterwindow, filterwindow)/filterwindow^2, channel1);
+        end
         ch1image = channel1;
         set(Green_Figure, 'XTick', [])
         set(Green_Figure, 'YTick', [])
@@ -109,7 +113,9 @@ if strcmpi(CommandSource, 'Loader')
         end
     elseif strcmpi(mapchoice, 'Fire')
         gui_CaImageViewer.ch1image = channel1;
-        channel1 = filter2(ones(filterwindow, filterwindow)/filterwindow^2, channel1);
+        if filterwindow>1
+            channel1 = filter2(ones(filterwindow, filterwindow)/filterwindow^2, channel1);
+        end
         ch1image = channel1;
         set(Green_Figure, 'XTick', []);
         set(Green_Figure, 'YTick', []);
@@ -189,7 +195,9 @@ elseif strcmpi(CommandSource, 'Smoother')
         caxis([GreenLower, GreenUpper])
     elseif strcmpi(mapchoice, 'Jet')
         gui_CaImageViewer.ch1image = channel1;
-        channel1 = filter2(ones(filterwindow, filterwindow)/filterwindow^2, channel1);
+        if filterwindow>1
+            channel1 = filter2(ones(filterwindow, filterwindow)/filterwindow^2, channel1);
+        end
         set(GreenChild, 'CData', channel1)
         set(Green_Figure, 'XTick', [])
         set(Green_Figure, 'YTick', [])
@@ -202,7 +210,9 @@ elseif strcmpi(CommandSource, 'Smoother')
         end
     elseif strcmpi(mapchoice, 'Hot')
         gui_CaImageViewer.ch1image = channel1;
-        channel1 = filter2(ones(filterwindow, filterwindow)/filterwindow^2, channel1);
+        if filterwindow>1
+            channel1 = filter2(ones(filterwindow, filterwindow)/filterwindow^2, channel1);
+        end
         set(GreenChild, 'CData', channel1)
         set(Green_Figure, 'XTick', [])
         set(Green_Figure, 'YTick', [])
@@ -215,7 +225,9 @@ elseif strcmpi(CommandSource, 'Smoother')
         end
     elseif strcmpi(mapchoice, 'Fire')
         gui_CaImageViewer.ch1image = channel1;
-        channel1 = filter2(ones(filterwindow, filterwindow)/filterwindow^2, channel1);
+        if filterwindow>1
+            channel1 = filter2(ones(filterwindow, filterwindow)/filterwindow^2, channel1);
+        end
         set(GreenChild, 'CData', channel1);
         set(Green_Figure, 'XTick', []);
         set(Green_Figure, 'YTick', []);
@@ -286,7 +298,9 @@ elseif strcmpi(CommandSource, 'Slider')
         end
     elseif strcmpi(mapchoice, 'Jet')
         gui_CaImageViewer.ch1image = channel1;
-        channel1 = filter2(ones(filterwindow, filterwindow)/filterwindow^2, channel1);
+        if filterwindow>1
+            channel1 = filter2(ones(filterwindow, filterwindow)/filterwindow^2, channel1);
+        end
         set(GreenChild, 'CData', channel1)
         set(Green_Figure, 'XTick', [])
         set(Green_Figure, 'YTick', [])
@@ -299,7 +313,9 @@ elseif strcmpi(CommandSource, 'Slider')
         end
     elseif strcmpi(mapchoice, 'Hot')
         gui_CaImageViewer.ch1image = channel1;
-        channel1 = filter2(ones(filterwindow, filterwindow)/filterwindow^2, channel1);
+        if filterwindow>1
+            channel1 = filter2(ones(filterwindow, filterwindow)/filterwindow^2, channel1);
+        end
         set(GreenChild, 'CData', channel1)
         set(Green_Figure, 'XTick', [])
         set(Green_Figure, 'YTick', [])
@@ -312,7 +328,9 @@ elseif strcmpi(CommandSource, 'Slider')
         end
     elseif strcmpi(mapchoice, 'Fire')
         gui_CaImageViewer.ch1image = channel1;
-        channel1 = filter2(ones(filterwindow, filterwindow)/filterwindow^2, channel1);
+        if filterwindow>1
+            channel1 = filter2(ones(filterwindow, filterwindow)/filterwindow^2, channel1);
+        end
         set(GreenChild, 'CData', channel1)
         set(Green_Figure, 'XTick', [])
         set(Green_Figure, 'YTick', [])
@@ -423,7 +441,9 @@ elseif strcmpi(CommandSource, 'Adjuster')
         end
     elseif strcmpi(mapchoice, 'Jet')
         gui_CaImageViewer.ch1image = channel1;
-        channel1 = filter2(ones(filterwindow, filterwindow)/filterwindow^2, channel1);
+        if filterwindow>1
+            channel1 = filter2(ones(filterwindow, filterwindow)/filterwindow^2, channel1);
+        end
         set(GreenChild, 'CData', channel1)
         set(Green_Figure, 'XTick', [])
         set(Green_Figure, 'YTick', [])
@@ -433,7 +453,9 @@ elseif strcmpi(CommandSource, 'Adjuster')
         caxis([GreenLower*maps(2), GreenUpper*maps(2)]);
     elseif strcmpi(mapchoice, 'Hot')
         gui_CaImageViewer.ch1image = channel1;
-        channel1 = filter2(ones(filterwindow, filterwindow)/filterwindow^2, channel1);
+        if filterwindow>1
+            channel1 = filter2(ones(filterwindow, filterwindow)/filterwindow^2, channel1);
+        end
         set(GreenChild, 'CData', channel1)
         set(Green_Figure, 'XTick', [])
         set(Green_Figure, 'YTick', [])
@@ -443,7 +465,9 @@ elseif strcmpi(CommandSource, 'Adjuster')
         caxis([GreenLower*maps(2), GreenUpper*maps(2)]);
     elseif strcmpi(mapchoice, 'Fire')
         gui_CaImageViewer.ch1image = channel1;
-        channel1 = filter2(ones(filterwindow, filterwindow)/filterwindow^2, channel1);
+        if filterwindow>1
+            channel1 = filter2(ones(filterwindow, filterwindow)/filterwindow^2, channel1);
+        end
         set(GreenChild, 'CData', channel1)
         set(Green_Figure, 'XTick', [])
         set(Green_Figure, 'YTick', [])

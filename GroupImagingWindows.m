@@ -11,6 +11,8 @@ for i = 1:length(selectedaxes)
     xlabel(['Imaging field ', imagingfieldlabel], 'Color', 'k');
 end
 
+dates = sortrows(dates);
+
 figtitle = regexp(get(gcf, 'Name'), '[A-Z]{2,3}0+\d+', 'match');
 if ~isempty(figtitle)
     experiment = figtitle{1};

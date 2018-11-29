@@ -33,7 +33,7 @@ end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-if gui_CaImageViewer.NewSpineAnalysis
+if gui_CaImageViewer.NewSpineAnalysis && ~(ImageNum>3)
     animal = regexp(gui_CaImageViewer.filename, '[A-Z]{2,3}[0-9]*', 'match');
     animal = animal{1};
     experimenter = regexp(gui_CaImageViewer.save_directory, ['People.\w+'], 'match');

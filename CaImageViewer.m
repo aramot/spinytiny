@@ -207,7 +207,11 @@ set(gui_CaImageViewer.figure.handles.MaxProjection_CheckBox, 'Value', 0);
 set(gui_CaImageViewer.figure.handles.AveProjection_CheckBox, 'Value', 0);
 set(gui_CaImageViewer.figure.handles.ImageSlider_Slider, 'Enable', 'on');
 set(gui_CaImageViewer.figure.handles.Merge_ToggleButton, 'Value', 0)
-gui_CaImageViewer.NewSpineAnalysis = 0;
+if isempty(findobj('Type', 'figure', '-and', {'-regexp', 'Name', 'Multiple Sessions'}))
+    gui_CaImageViewer.NewSpineAnalysis = 0;
+else
+    gui_CaImageViewer.NewSpineAnalysis = 1;
+end
 gui_CaImageViewer.SelectedStopFrame = [];
 gui_CaImageViewer.IgnoreFrames = [];
 
@@ -1437,6 +1441,9 @@ if gui_CaImageViewer.NewSpineAnalysis
     animal = regexp(gui_CaImageViewer.filename, '[A-Z]{2,3}[0-9]*', 'match');
     animal = animal{1};
     date = regexp(gui_CaImageViewer.save_directory, '[0-9]{5,7}', 'match');
+    if isempty(date)
+        date = inputdlg('No date found; enter here:', 'Exp. Date', 1, {'YYMMDD'});
+    end
     experiment = [animal, '_', date{1}];
     fname = [experiment, '_NewSpineAnalysisROIs', '_DrawnBy', drawer];
     
@@ -2276,15 +2283,17 @@ for i = 1:length(ROIs_original)
 end
 
 if isfield(gui_CaImageViewer, 'ROIother')
-    axes(gui_CaImageViewer.figure.handles.RedGraph);
-    for i = 1:length(OtherROIs_original)
-        tempim = zeros(imsize,imsize);
-        tempim(OtherROIs_original_center(i,1), OtherROIs_original_center(i,2)) = 1;
-        transpos = spatial_interp(double(tempim'), warpmatrix, 'linear', 'affine', [1:imsize], [1:imsize]);
-        stats = regionprops(logical(transpos));
-        othernewpos(i,1:2) = stats.Centroid-OtherROIs_original_center(i,:);
-        gui_CaImageViewer.ROIother(i) = drawfreehand('Position', [OtherROIs_original{i}(:,1)+othernewpos(i,1),OtherROIs_original{i}(:,2)+othernewpos(i,2)], 'Tag', ['ROIother', num2str(i)], 'FaceAlpha', 0, 'Color', 'm', 'HandleVisibility', 'on', 'Label', num2str(i), 'InteractionsAllowed', 'all', 'Label', '');
-%         roiget = get(gui_CaImageViewer.ROIother(ROInum+1));
+    if ~isempty(gui_CaImageViewer.ROIother)
+        axes(gui_CaImageViewer.figure.handles.RedGraph);
+        for i = 1:length(OtherROIs_original)
+            tempim = zeros(imsize,imsize);
+            tempim(OtherROIs_original_center(i,1), OtherROIs_original_center(i,2)) = 1;
+            transpos = spatial_interp(double(tempim'), warpmatrix, 'linear', 'affine', [1:imsize], [1:imsize]);
+            stats = regionprops(logical(transpos));
+            othernewpos(i,1:2) = stats.Centroid-OtherROIs_original_center(i,:);
+            gui_CaImageViewer.ROIother(i) = drawfreehand('Position', [OtherROIs_original{i}(:,1)+othernewpos(i,1),OtherROIs_original{i}(:,2)+othernewpos(i,2)], 'Tag', ['ROIother', num2str(i)], 'FaceAlpha', 0, 'Color', 'm', 'HandleVisibility', 'on', 'Label', num2str(i), 'InteractionsAllowed', 'all', 'Label', '');
+    %         roiget = get(gui_CaImageViewer.ROIother(ROInum+1));
+        end
     end
 end
 

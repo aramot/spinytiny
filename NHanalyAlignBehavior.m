@@ -436,12 +436,25 @@ allperiods = mat2cell(binary_behavior, diff(bound));
 moveperiods = allperiods(cell2mat(cellfun(@(x) ~isempty(find(x,1)), allperiods, 'uni', false)));
 movespines = find(Classified.MovementSpines);
 counter = 1;
-MovementSpineReliability = [];
-for i = 1:length(movespines)
-    spineactivity_separated = mat2cell(spinedatatouse(i,:)', diff(bound));
-    spineactivity_moveperiods = spineactivity_separated(cell2mat(cellfun(@(x) ~isempty(find(x,1)), allperiods, 'uni', false)));
+AllSpineReliability = nan(numberofSpines,1);
+MovementSpineReliability = nan(length(movespines),1);
+
+
+for i = 1:numberofSpines
+    allspineactivity_separated = mat2cell(spinedatatouse(i,:)', diff(bound));
+    spineactivity_moveperiods = allspineactivity_separated(cell2mat(cellfun(@(x) ~isempty(find(x,1)), allperiods, 'uni', false)));
     numberofmovementswithspineactivity = length(find(logical(cell2mat(cellfun(@(x,y) sum((x+y)>1), moveperiods, spineactivity_moveperiods, 'uni', false)))));   %%% Find the number of movements during which there is also activity for this spine
-    MovementSpineReliability(counter, 1) = numberofmovementswithspineactivity/length(moveperiods);
+    AllSpineReliability(counter, 1) = numberofmovementswithspineactivity/length(moveperiods);
+    counter = counter+1;
+end
+
+Classified.AllSpineReliability = AllSpineReliability;
+
+for i = 1:length(movespines)
+    movespineactivity_separated = mat2cell(spinedatatouse(movespines(i),:)', diff(bound));
+    movespineactivity_moveperiods = movespineactivity_separated(cell2mat(cellfun(@(x) ~isempty(find(x,1)), allperiods, 'uni', false)));
+    numberofmovementswithmovespineactivity = length(find(logical(cell2mat(cellfun(@(x,y) sum((x+y)>1), moveperiods, movespineactivity_moveperiods, 'uni', false)))));   %%% Find the number of movements during which there is also activity for this spine
+    MovementSpineReliability(counter, 1) = numberofmovementswithmovespineactivity/length(moveperiods);
     counter = counter+1;
 end
    
