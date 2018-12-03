@@ -3,8 +3,11 @@ function AveragePrediction(varargin)
 animalnames = varargin;
 lookforfiles = cellfun(@(x) strcat(x, '_PredictionModel'), animalnames, 'uni', false);
 
+pathchoice = 'C:\Users\Komiyama\Desktop\Output Data';
+cd(pathchoice)
+
 for i = 1:length(lookforfiles)
-    files(i) = fastdir('C:\Users\Komiyama\Desktop\Output Data',lookforfiles{i});
+    files(i) = fastdir(pathchoice,lookforfiles{i});
 end
 
 for i = 1:length(files)

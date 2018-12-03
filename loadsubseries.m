@@ -48,18 +48,18 @@ Green_loc = gui_CaImageViewer.GreenGraph_loc;
 Red_loc = gui_CaImageViewer.RedGraph_loc;
 
 if twochannels
-    set(gui_CaImageViewer.figure.RedGraph, 'Visible', 'on')
-    set(gui_CaImageViewer.figure.Channel2_StaticText, 'Visible', 'on')
-    set(gui_CaImageViewer.figure.RedUpperLUT_EditableText, 'Visible', 'on')
-    set(gui_CaImageViewer.figure.RedLowerLUT_EditableText, 'Visible', 'on')
-    set(gui_CaImageViewer.figure.RedGamma_EditableText, 'Visible', 'on')
-    set(gui_CaImageViewer.figure.RedGamma_StaticText, 'Visible', 'on')
-    set(gui_CaImageViewer.figure.GreenGraph, 'Units', 'normalized')
-    set(gui_CaImageViewer.figure.RedGraph, 'Units', 'normalized')
-    figure(gui_CaImageViewer.figure.gui_CaImageViewer.figure.figure1)
-    axes(gui_CaImageViewer.figure.gui_CaImageViewer.figure.GreenGraph);
-    set(gui_CaImageViewer.figure.GreenGraph, 'Position', [Green_loc(1), Red_loc(2), Red_loc(3), Red_loc(4)]);      %%% If an image using only 1 channel is already loaded, the "green" graph overlays the red, but the size of the original axes is maintained in the "red" graph.
-    set(gui_CaImageViewer.figure.RedGraph, 'Position', [Red_loc(1), Red_loc(2),  Red_loc(3), Red_loc(4)]);
+    set(gui_CaImageViewer.figure.handles.RedGraph, 'Visible', 'on')
+    set(gui_CaImageViewer.figure.handles.Channel2_StaticText, 'Visible', 'on')
+    set(gui_CaImageViewer.figure.handles.RedUpperLUT_EditableText, 'Visible', 'on')
+    set(gui_CaImageViewer.figure.handles.RedLowerLUT_EditableText, 'Visible', 'on')
+    set(gui_CaImageViewer.figure.handles.RedGamma_EditableText, 'Visible', 'on')
+    set(gui_CaImageViewer.figure.handles.RedGamma_StaticText, 'Visible', 'on')
+    set(gui_CaImageViewer.figure.handles.GreenGraph, 'Units', 'normalized')
+    set(gui_CaImageViewer.figure.handles.RedGraph, 'Units', 'normalized')
+    figure(gui_CaImageViewer.figure.handles.figure1)
+    axes(gui_CaImageViewer.figure.handles.GreenGraph);
+    set(gui_CaImageViewer.figure.handles.GreenGraph, 'Position', [Green_loc(1), Red_loc(2), Red_loc(3), Red_loc(4)]);      %%% If an image using only 1 channel is already loaded, the "green" graph overlays the red, but the size of the original axes is maintained in the "red" graph.
+    set(gui_CaImageViewer.figure.handles.RedGraph, 'Position', [Red_loc(1), Red_loc(2),  Red_loc(3), Red_loc(4)]);
         SliceFocus = regexp(zStack_Interface.CurrentSliceEdit.String, '[0-9]+_*', 'match');
     if zStack_Interface.LimittoSlice
         numslices = str2num(zStack_Interface.SlicesEdit.String);

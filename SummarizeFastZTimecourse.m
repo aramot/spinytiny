@@ -56,7 +56,10 @@ for i = 1:numberofROIs
 end
 
 figure; f1 = axes; plot(cell2mat(data.Fluorescence_Measurement)')
-figure; f2 = axes;  plot(processed_dFoF(:,:)');
+figure; f2 = axes; hold on;  %plot(processed_dFoF(:,:)');
+for i = 1:numberofROIs
+    plot((i+(i*0.25))+processed_dFoF(i,:)); 
+end
 figure; f3 = axes; hold on;
 for i=1:numberofROIs
     plot((i+(i*0.25))+square(i,:)); 
@@ -69,8 +72,9 @@ somataROIs = cell2mat(cellfun(@(x) strcmpi(x,'Soma'), data.ROILabels, 'uni', fal
 if length(find(somataROIs))>1
     allsomata = find(somataROIs);
     for i= 1:length(allsomata)
-        currentpairing = inputdlg({['Which dendrites are on cell ', num2str(allsomata(i)),':']}, 'Input', 1, 2);
-        currentpairing = regexp(currentpairing, '[0-9]+_*', 'match'); currentpairing = currentpairing{1};
+        currentpairing = inputdlg({['Which dendrites are on cell ', num2str(i),'?:']}, 'Cell Pairing', 1, {'Dend Nums'});
+        currentpairing = regexp(currentpairing, '[0-9]+_*', 'match'); currentpairing = cell2mat(cellfun(@str2num, currentpairing{1}, 'uni', false));
+        CellPairing{i} = currentpairing;
     end
 else
     CellPairing{1} = find(~somataROIs);
@@ -81,11 +85,11 @@ a.Binarized_Data = trueeventcount;
 a.CellDendritePairing = CellPairing;
 
 animal = regexp(data.Filename, '[A-Z]{2,3}0*[0-9]*', 'match'); animal = animal{1};
-field = regexp(data.Filename, '[a-z]{1}[0-9]{1}', 'match'); 
+field = regexp(data.Filename, '[_][A-Z]{1}[0-9]{1}[_]', 'match'); 
 if isempty(field)
     field = regexp(data.Filename, '[A-Z]{1}[0-9]{1}', 'match');
 end
-field = field{1};
+field = field{1}(2:end-1);
 
 save_fname = [animal, '_', field, '_ZSeriesSummary'];
 

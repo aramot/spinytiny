@@ -1038,7 +1038,7 @@ for i = 1:File.NumberofDendrites
                 spine_pos{j} = [File.ROIPosition{j+1}(1)+File.ROIPosition{j+1}(3)/2, File.ROIPosition{j+1}(2)+File.ROIPosition{j+1}(4)/2]; %%% Don't forget that position 1 in this cell is actually ROI0/background ROI!!!! 
             case 'new'
                 spine_pos{j} = ROIfile.ROIPosition{j+1}.Center;
-                analyzed.ROIPosition{j} = [ROIfile.ROIPosition{j+1}.Center, 0, 0];
+                File.ROIPosition{j+1} = [ROIPosition{j+1}.Center-ROIPosition{j+1};
         end
         [~, index] = min(sqrt(((PolyX_center{i}-spine_pos{j}(1)).^2)+(PolyY_center{i}-spine_pos{j}(2)).^2)); %%% Find the closest ROI along the dendrite (usually spaced evenly and regularly enough that it should be right at the base of the spine, more or less)
 %         spine_address{j} = [PolyX_center{i}(1,index), PolyY_center{i}(1,index)]; %%% Set a spine's "address" as that point along the dendrite, found above

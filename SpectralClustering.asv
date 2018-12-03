@@ -97,16 +97,10 @@ for j = 1:DendNum
 
         MovementCorrelationsforAllSpinesonDend{j} = Correlations(Choices.MovementAddress,Choices.Spine1_Address+firstspine:Choices.Spine1_Address+lastspine)';
         
-        rowcount = 1; 
-        for row = firstspine:lastspine
-            colcount = 1;
-            for column = firstspine:lastspine
-                MeanInterspineMovementCorrelation{j}(rowcount,colcount) = nanmean([MovementCorrelationsforAllSpinesonDend{j}(rowcount),MovementCorrelationsforAllSpinesonDend{j}(colcount)]);
-                MeanInterspineMovementReliability{j}(rowcount,colcount) = nanmean([StatClass{session}.AllSpineReliability(row),StatClass{session}.AllSpineReliability(column)]);
-                colcount = colcount+1;
-            end
-            rowcount = rowcount+1;
-        end
+        for row = :lastspine
+            for column = 1:lastspine
+                MeanInterspineMovementCorrelation{j}(row,column) = nanmean(MovementCorrelationsforAllSpinesonDend{j}(column);
+                MeanINterspineMovementReliability{j}(row,column) = nanmean(StatClass{session}.AllSpineReliability
 
 %         MovementCorrelationsforAllSpinesonDend{j} = MovementCorrelationsforAllSpinesonDend{j}.*(MovementCorrelationsforAllSpinesonDend{j});
 
@@ -165,7 +159,6 @@ SpectralData.Temporal_Laplacian = Temporal_Laplacian;
 SpectralData.Temporal_Laplacian = Temporal_Laplacian ;
 
 try
-    SpectralData.SpatioTemporalAdjacencyMatrix = Spatiotemporal_Adjacency;
     SpectralData.MeanSpatialDegreeofCueSpines = nanmean(allspatialspines(StatClass{session}.CueSpines));
     SpectralData.MeanTemporalDegreeofCueSpines = nanmean(alltemporalspines(StatClass{session}.CueSpines));
     SpectralData.MeanSpatioTemporalDegreeofCueSpines = nanmean(allSTspines(StatClass{session}.CueSpines));
@@ -184,8 +177,6 @@ try
     SpectralData.MeanSpatialDegreeofRewardSpines = nanmean(allspatialspines(StatClass{session}.RewardSpines));
     SpectralData.MeanTemporalDegreeofRewardSpines = nanmean(alltemporalspines(StatClass{session}.RewardSpines));
     SpectralData.MeanSpatioTemporalDegreeofRewardSpines = nanmean(allSTspines(StatClass{session}.RewardSpines));
-    SpectralData.MeanInterspineMovementReliability = MeanInterspineMovementReliability;
-    SpectralData.MeanInterspineMovementCorrelation = MeanInterspineMovementCorrelation;
 catch
     SpectralData.MeanSpatialDegreeofCueSpines = nan;
     SpectralData.MeanTemporalDegreeofCueSpines = nan;

@@ -56,7 +56,7 @@ while roundnum<=roundstodo
             fornoise(fornoise>rawmed+(rawspread)) = rawmed+(rawspread);
                 rawspread = nanstd(fornoise);
                 rawmed = nanmedian(fornoise);
-            roundnum = roundnum+0.5;
+            roundnum = roundnum+1;
         otherwise
             fornoise(fornoise>rawmed+(rawspread)) = rawmed+(rawspread);      %%% Cap off large and small values to pinch the data towards the true baseline
             fornoise(fornoise<rawmed-(rawspread)) = rawmed-(rawspread);      %%%
@@ -69,11 +69,19 @@ end
 padlength = 2000;
 switch BeingAnalyzed
     case 'Soma'
-        ascendingvalues = sort(fornoise);
-        putative_resting_state = ascendingvalues(1:300);
-        pad_start = randi([1,length(putative_resting_state)],1,padlength);
-        pad_end = randi([1,length(putative_resting_state)],1,padlength);
-        padded_data = [putative_resting_state(pad_start),raw, putative_resting_state(pad_end)];
+        activitylevel = 'High';
+        switch activitylevel
+            case 'High'
+                ascendingvalues = sort(fornoise);
+                putative_resting_state = ascendingvalues(1:300);
+                pad_start = randi([1,length(putative_resting_state)],1,padlength);
+                pad_end = randi([1,length(putative_resting_state)],1,padlength);
+                padded_data = [putative_resting_state(pad_start),raw, putative_resting_state(pad_end)];
+            case 'Low'
+                pad_start = randi([1,length(fornoise)],1,padlength);
+                pad_end = randi([1,length(fornoise)],1,padlength);
+                padded_data = [fornoise(pad_start), raw, fornoise(pad_end)];
+        end
     otherwise
         pad_start = randi([1,length(fornoise)],1,padlength);
         pad_end = randi([1,length(fornoise)],1,padlength);
@@ -88,10 +96,18 @@ end
 %%% Kernel Density Estimation (Aki's method) %%%
 switch BeingAnalyzed
     case 'Soma'
-        [~,lo] = envelope(padded_data, 300, 'peak');
-        truebaseline = lo;
-        truebaseline = truebaseline(padlength+1:end-padlength)';
-        DriftBaseline = truebaseline;
+    switch activitylevel
+        case 'High'
+            [~,lo] = envelope(padded_data, 300, 'peak');
+            truebaseline = lo;
+            truebaseline = truebaseline(padlength+1:end-padlength)';
+            DriftBaseline = truebaseline;
+        case 'Low'
+            windowsize = 30;
+            truebaseline = baseline_kde(padded_data',20,windowsize,20);    %%% inputs = downsample ratio, window size, step
+            truebaseline = truebaseline(padlength+1:end-padlength);
+            DriftBaseline = truebaseline;
+    end
     otherwise
         windowsize = 30;
         truebaseline = baseline_kde(padded_data',20,windowsize,20);    %%% inputs = downsample ratio, window size, step

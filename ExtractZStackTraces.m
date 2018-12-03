@@ -76,10 +76,14 @@ timecourse_image_number = 0;
 acquisition_step = [];
 frame_bin_count = [];
 for i = 1:length(D)
-    timecourse_image_number = timecourse_image_number + 1;
     feat_step = regexp(D{i}, '_');
-    acquisition_step = [acquisition_step; D{i}(feat_step(end-1)+1:feat_step(end)-1)];
-    frame_bin_count = [frame_bin_count; D{i}(feat_step(end)+1:end-4)];
+    try
+        acquisition_step = [acquisition_step; D{i}(feat_step(end-1)+1:feat_step(end)-1)];
+        frame_bin_count = [frame_bin_count; D{i}(feat_step(end)+1:end-4)];
+        timecourse_image_number = timecourse_image_number + 1;
+    catch
+        continue
+    end
 end
 steps = timecourse_image_number*length(CaImage_File_info);
 

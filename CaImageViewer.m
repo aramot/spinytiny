@@ -923,15 +923,22 @@ axes2 = glovar.figure.handles.RedGraph;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% File Specifications
 
-file = gui_CaImageViewer.filename;
-file = file(1:end-4);
-experiment = regexp(gui_CaImageViewer.filename, '[A-Z]{2}\d+[_]\d+', 'match');
-experiment = experiment{1};
-animal = experiment(1:5);
-date = experiment(7:end);
+try
+    file = gui_CaImageViewer.filename;
+    file = file(1:end-4);
+    experiment = regexp(gui_CaImageViewer.filename, '[A-Z]{2}\d+[_]\d+', 'match');
+    experiment = experiment{1};
+    animal = experiment(1:5);
+catch
+    experiment = regexp(gui_CaImageViewer.filename, '[A-Z]{2,3}\w+', 'match');
+    if ~isempty(experiment)
+        experiment = experiment{1};
+    else
+    end
+    animal = experiment(1:5);
+end
 
 twochannels = get(glovar.figure.handles.TwoChannels_CheckBox, 'Value');
-fname = [];
 
 % if ispc
     save_directory = gui_CaImageViewer.save_directory;
@@ -1488,9 +1495,15 @@ if gui_CaImageViewer.NewSpineAnalysis
         end
         save([drawer, '_Imaging Field ', num2str(currentimagingfield), ' Spine Registry'], 'SpineRegistry');
 else
-    experiment = regexp(gui_CaImageViewer.filename, '[A-Z]{2}\d+[_]\d+', 'match');
+    global zStack_Interface
+    if ishandle(zStack_Interface.figure)
+        experiment = regexp(gui_CaImageViewer.filename, '[A-Z]{2,3}\d+', 'match');
+        fname = [experiment{1}, '_zStackSavedROIs', '_DrawnBy', drawer];
+    else
+        experiment = regexp(gui_CaImageViewer.filename, '[A-Z]{2}\d+[_]\d+', 'match');
 
-    fname = [experiment{1}, '_SavedROIs', '_DrawnBy', drawer];
+        fname = [experiment{1}, '_SavedROIs', '_DrawnBy', drawer];
+    end
 end
 
 eval([fname,'= a'])

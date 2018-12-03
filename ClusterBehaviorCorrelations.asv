@@ -1079,8 +1079,8 @@ if isempty(strfind(inputname(1), 'SpineCorrelationTimecourse'))
             [r,c] = find(isnan(triu(FarDistanceMap)));
             
             for m = 1:length(r)
-                spine_pos1 = [varargin{i}.ROIPosition{r(m)+1}(1)+varargin{i}.ROIPosition{r(m)+1}(3)/2, varargin{i}.ROIPosition{r(m)+1}(2)+varargin{i}.ROIPosition{r(m)+1}(4)/2];
-                spine_pos2 = [varargin{i}.ROIPosition{c(m)+1}(1)+varargin{i}.ROIPosition{c(m)+1}(3)/2, varargin{i}.ROIPosition{c(m)+1}(2)+varargin{i}.ROIPosition{c(m)+1}(4)/2];
+                spine_pos1 = [varargin{i}.ROIPosition{r(m)}(1)+varargin{i}.ROIPosition{r(m)}(3)/2, varargin{i}.ROIPosition{r(m)}(2)+varargin{i}.ROIPosition{r(m)}(4)/2];
+                spine_pos2 = [varargin{i}.ROIPosition{c(m)}(1)+varargin{i}.ROIPosition{c(m)}(3)/2, varargin{i}.ROIPosition{c(m)}(2)+varargin{i}.ROIPosition{c(m)}(4)/2];
                 FarDistanceMap(r(m),c(m)) = (sqrt((spine_pos1(1)-spine_pos2(1)).^2 +(spine_pos1(2)-spine_pos2(2)).^2))/pixpermicron;
             end
             
@@ -2626,8 +2626,8 @@ if isempty(strfind(inputname(1), 'SpineCorrelationTimecourse'))
             [r,c] = find(isnan(triu(FarDistanceMap)));
             
             for m = 1:length(r)
-                spine_pos1 = [varargin{i}.ROIPosition{r(m)+1}(1)+varargin{i}.ROIPosition{r(m)+1}(3)/2, varargin{i}.ROIPosition{r(m)+1}(2)+varargin{i}.ROIPosition{r(m)+1}(4)/2];
-                spine_pos2 = [varargin{i}.ROIPosition{c(m)+1}(1)+varargin{i}.ROIPosition{c(m)+1}(3)/2, varargin{i}.ROIPosition{c(m)+1}(2)+varargin{i}.ROIPosition{c(m)+1}(4)/2];
+                spine_pos1 = [varargin{i}.ROIPosition{r(m)}(1)+varargin{i}.ROIPosition{r(m)}(3)/2, varargin{i}.ROIPosition{r(m)}(2)+varargin{i}.ROIPosition{r(m)}(4)/2];
+                spine_pos2 = [varargin{i}.ROIPosition{c(m)}(1)+varargin{i}.ROIPosition{c(m)}(3)/2, varargin{i}.ROIPosition{c(m)}(2)+varargin{i}.ROIPosition{c(m)}(4)/2];
                 FarDistanceMap(r(m),c(m)) = (sqrt((spine_pos1(1)-spine_pos2(1)).^2 +(spine_pos1(2)-spine_pos2(2)).^2))/pixpermicron;
             end
 
@@ -5690,8 +5690,8 @@ else
     xlabel('Spatiotemporal Adjacency')
     title('Early')
     [r,p] = corrcoef(xdata,ydata);
-    if p(1,2) < 0.05
-        text(max(xdata),ycalc(xdata==max(xdata)), '*', 'Color', 'r', 'Fontsize', 20)
+    if p < 0.05
+        text(xdata(end),ydata(end), '*', 'Color', 'r')
     end
     
     h2 = subplot(2,4,2); hold on;
@@ -5712,8 +5712,8 @@ else
     xlabel('Spatiotemporal Adjacency')
     title('Late')
     [r,p] = corrcoef(xdata,ydata);
-    if p(1,2) < 0.05
-        text(max(xdata),ycalc(xdata==max(xdata)), '*', 'Color', 'r', 'Fontsize', 20)
+    if p < 0.05
+        text(xdata(end),ydata(end), '*', 'Color', 'r')
     end
     
     h3 = subplot(2,4,3); hold on;
@@ -5734,8 +5734,8 @@ else
     xlabel('Spine Correlation')
     title('Early')
     [r,p] = corrcoef(xdata,ydata);
-    if p(1,2) < 0.05
-        text(max(xdata),ycalc(xdata==max(xdata)), '*', 'Color', 'r', 'Fontsize', 20)
+    if p < 0.05
+        text(xdata(end),ydata(end), '*', 'Color', 'r')
     end
     
     h4 = subplot(2,4,4); hold on;
@@ -5756,8 +5756,8 @@ else
     xlabel('Spine Correlation')
     title('Late')
     [r,p] = corrcoef(xdata,ydata);
-    if p(1,2) < 0.05
-        text(max(xdata),ycalc(xdata==max(xdata)), '*', 'Color', 'r', 'Fontsize', 20)
+    if p < 0.05
+        text(xdata(end),ydata(end), '*', 'Color', 'r')
     end
     
     h5 = subplot(2,4,5); hold on;
@@ -5776,9 +5776,8 @@ else
     ylabel('Shared Reliability')
     xlabel('Spatiotemporal Adjacency')
     title('Early')
-    [r,p] = corrcoef(xdata,ydata);
-    if p(1,2) < 0.05
-        text(max(xdata),ycalc(xdata==max(xdata)), '*', 'Color', 'r', 'Fontsize', 20)
+    if p < 0.05
+        text(xdata(end),ydata(end), '*', 'Color', 'r')
     end
     
     h6 = subplot(2,4,6); hold on;
@@ -5797,9 +5796,8 @@ else
     ylabel('Shared Reliability')
     xlabel('Spatiotemporal Adjacency')
     title('Late')
-    [r,p] = corrcoef(xdata,ydata);
-    if p(1,2) < 0.05
-        text(max(xdata),ycalc(xdata==max(xdata)), '*', 'Color', 'r', 'Fontsize', 20)
+    if p < 0.05
+        text(xdata(end),ydata(end), '*', 'Color', 'r')
     end
     
     h7 = subplot(2,4,7); hold on;
@@ -5818,11 +5816,10 @@ else
     ylabel('Shared Reliability')
     xlabel('Spine Correlation')
     title('Early')
-    [r,p] = corrcoef(xdata,ydata);
-    if p(1,2) < 0.05
-        text(max(xdata),ycalc(xdata==max(xdata)), '*', 'Color', 'r', 'Fontsize', 20)
+    if p < 0.05
+        text(xdata(end),ydata(end), '*', 'Color', 'r')
     end
-    
+
     h8 = subplot(2,4,8); hold on;
     xdata = cell2mat(ConDendCorrelationUmbrellaDataChoice(latesessions))';xdata(isnan(xdata)) = 0;
     ydata = abs(cell2mat(SharedPairwiseReliabilityValuesforAllSpines(latesessions))');
@@ -5839,10 +5836,6 @@ else
     ylabel('Shared Reliability')
     xlabel('Spine Correlation')
     title('Late')
-    [r,p] = corrcoef(xdata,ydata);
-    if p(1,2) < 0.05
-        text(max(xdata),ycalc(xdata==max(xdata)), '*', 'Color', 'r', 'Fontsize', 20)
-    end
     
     linkaxes([h1,h2], 'xy')
     linkaxes([h3,h4], 'xy')
