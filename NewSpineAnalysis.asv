@@ -126,7 +126,6 @@ if length(experimentnames) == 1
     ElimSpinesMaxCorr = cell(1,NumFields);
     OtherSpinesMaxCorr = cell(1,NumFields);
     NewSpinesBehaviorCorrelation = cell(1,NumFields);
-    ElimSpinesBehaviorCorrelation = cell(1,NumFields);
     OtherSpinesBehaviorCorrelation = cell(1,NumFields);
     AllDendriteDistances = cell(1,NumFields);
     AllMovementSpines = cell(1,NumFields);
@@ -161,8 +160,6 @@ if length(experimentnames) == 1
         shuffnum = 1000;
         ShuffledEarlyMovementLabels = cell(1,shuffnum);
         ShuffledLateMovementLabels = cell(1,shuffnum);
-        behaviorcorrdataearly = FieldData{f}.Correlations{1}.SpineCorrelations(1:Spine1_Address-1,Spine1_Address:Spine1_Address+NumberofLateSpines-1); 
-        behaviorcorrdatalate = FieldData{f}.Correlations{end}.SpineCorrelations(1:Spine1_Address-1,Spine1_Address:Spine1_Address+NumberofLateSpines-1);
         for shuff = 1:shuffnum
             ShuffledEarlyMovementLabels{shuff} = randi(NumberofEarlySpines,[length(AllMovementSpinesOnEarlySession),1]);
             ShuffledLateMovementLabels{shuff} = randi(NumberofLateSpines,[length(AllMovementSpinesOnLateSession),1]);
@@ -263,9 +260,10 @@ if length(experimentnames) == 1
             OtherSpinesMaxCorr{f} = max(AllLateSpineCorrelations(allotherspines,:),[],2);
             %%%%%%
             for ns = 1:length(NewSpines)
-                NewSpinesBehaviorCorrelation{f}(ns,1:9) = behaviorcorrdatalate(:,ns);
+                behaviorcorrdata = FieldData{f}.Correlations{end}.SpineCorrelations(1:Spine1_Address-1,Spine1_Address:Spine1_Address+NumberofLateSpines-1);
+                NewSpinesBehaviorCorrelation{f}(ns,1:9) = behaviorcorrdata(:,ns);
             end
-            OtherSpinesBehaviorCorrelation{f} = behaviorcorrdatalate(:,setdiff(1:NumberofLateSpines,NewSpines));
+            OtherSpinesBehaviorCorrelation{f} = behaviorcorrdata(:,setdiff(1:NumberofLateSpines,NewSpines));
         end
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         if size(FieldChanges{f},2)>1
@@ -289,8 +287,8 @@ if length(experimentnames) == 1
                         [val, ~] = sort([ElimSpines(ns), AllMovementSpinesOnEarlySession(ms)]);
                         ElimSpinestoEarlyMovementSpines(1,count) = FieldData{f}.CalciumData{1}.DistanceHeatMap(val(1),val(2));
                         CorrElimSpinestoEarlyMovementSpines(1,count) = AllEarlySpineCorrelations(val(1), val(2));
-                        if ElimSpinestoEarlyMovementSpines(1,count)<20 || CorrElimSpinestoEarlyMovementSpines(1,count)>0.2
-                            k =1;
+                        if any(ismember(ElimSpines(ns),ElimSpinesThatWereMR))
+                            
                         end
                         count = count+1;
                     end
@@ -348,9 +346,6 @@ if length(experimentnames) == 1
             [ElimSpinesMaxCorr{f}, ElimSpineMaxInd] = max(currentcorrdata(ElimSpines,:),[],2);
             allotherspines = setdiff(1:NumberofEarlySpines,union(ElimSpineMaxInd, ElimSpines));
             OtherSpinesMaxCorr{f} = max(currentcorrdata(allotherspines,:),[],2);
-            for es = 1:length(ElimSpines)
-                ElimSpinesBehaviorCorrelation{f}(es,1:9) = behaviorcorrdataearly(:,es);
-            end
             %%%%%%
         end
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -530,7 +525,6 @@ if length(experimentnames) == 1
     a.DistancesBetweenElimSpinesandShuffledMovementSpines = DistancesBetweenElimSpinesandShuffledMovementSpines;
     a.NewSpinesMaxCorrelation = NewSpinesMaxCorr;
     a.NewSpinesBehaviorCorrelation = NewSpinesBehaviorCorrelation;
-    a.ElimSpinesBehaviorCorrelation = ElimSpinesBehaviorCorrelation;
     a.OtherSpinesBehaviorCorrelation = OtherSpinesBehaviorCorrelation;
     a.ElimSpinesMaxCorrelation = ElimSpinesMaxCorr;
     a.OtherSpinesMaxCorrelation = OtherSpinesMaxCorr;    

@@ -28,20 +28,26 @@ for i = 1:1000
     
     if wavecount >0
         for j = 1:wavecount
-            theta = (0:1/200:1)*2*pi;
-            rad = wavelifetime{j};
-            x_center = wave{j}(1);
-            y_center = wave{j}(2);
-            circle_x = round(sqrt(rad^2*rad^2./(rad^2*sin(theta).^2 + rad^2*cos(theta).^2)).*cos(theta) + x_center);    %%%%% Derives from the formula for an ellipse, wherein X(theta) = a * cos(theta)  
-            circle_y = round(sqrt(rad^2*rad^2./(rad^2*sin(theta).^2 + rad^2*cos(theta).^2)).*sin(theta) + y_center);    %%%%% Derives from the formula for an ellipse, wherein Y(theta) = b * sin(theta)
-%             a(circle_x, circle_y) = a(circle_x, circle_y)+2;
-            ROImask = roipoly(fieldsize,fieldsize, circle_x, circle_y);
-%             x = round(rad * cos(theta) + x_center);
-%             y = round(rad * sin(theta) + y_center);
-%             a(x,y) = a(x,y) + 5;
-            edge = bwperim(ROImask);
-            a(edge) = a(edge)+10;
-            wavelifetime{j} = wavelifetime{j}+1;
+            if ~isempty(wave{j})
+                theta = (0:1/200:1)*2*pi;
+                rad = wavelifetime{j};
+                x_center = wave{j}(1);
+                y_center = wave{j}(2);
+                circle_x = round(sqrt(rad^2*rad^2./(rad^2*sin(theta).^2 + rad^2*cos(theta).^2)).*cos(theta) + x_center);    %%%%% Derives from the formula for an ellipse, wherein X(theta) = a * cos(theta)  
+                circle_y = round(sqrt(rad^2*rad^2./(rad^2*sin(theta).^2 + rad^2*cos(theta).^2)).*sin(theta) + y_center);    %%%%% Derives from the formula for an ellipse, wherein Y(theta) = b * sin(theta)
+    %             a(circle_x, circle_y) = a(circle_x, circle_y)+2;
+                ROImask = roipoly(fieldsize,fieldsize, circle_x, circle_y);
+    %             x = round(rad * cos(theta) + x_center);
+    %             y = round(rad * sin(theta) + y_center);
+    %             a(x,y) = a(x,y) + 5;
+                edge = bwperim(ROImask);
+                a(edge) = a(edge)+10;
+                if ~any(any(edge))
+                    wave{wavecount} = [];
+                else
+                    wavelifetime{j} = wavelifetime{j}+1;
+                end
+            end
         end
     end
     drawnow

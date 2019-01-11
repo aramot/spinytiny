@@ -1,10 +1,11 @@
-function [Clustered, CorrelationofClusters, FarClustered, CausalClustered] = binaryclusterclass(Data, Correlations, Causal)
+function [HCSs, Clustered, CorrelationofClusters, FarClustered, CausalClustered] = binaryclusterclass(Data, Correlations, Causal)
             
 
 %%% Find all values that are greater than the cluster threshold
 
 ClusterThresh = 0.5;
 
+HCSnum = 0;
 Clustnum = 0;
 FarClustnum = 0;
 
@@ -26,6 +27,7 @@ farcount = 1;
 %%% 'Synapse only' clusters
 
 %%% Find the parent dendrites of highly correlated spines
+HCSs = {[]};
 Clustered = {[]};
 for r = 1:length(row)
     for D = 1:DendNum
@@ -90,47 +92,55 @@ for A = 1:length(addresses)
             end
             
             %%% Add distance contingency
-%             DistanceMax = 10;
-% %             
-%             a = Data.DistanceHeatMap;
-%             b = a';
-%             a(isnan(a)) = b(isnan(a));
-%             Distances = a;
+            DistanceMax = 10;
 %             
-%             toofar = [];
-%             for i = 1:length(clust)
-%                 for j = 1:length(clust{i})
-%                     partnerdist = [];
-%                     for k = 1:length(clust{i})
-%                         partnerdist(k) = Distances(clust{i}(j), clust{i}(k));
-%                     end
-%                     if min(partnerdist) > DistanceMax
-%                         toofar = [toofar; clust{i}(j)];
-%                     end
-%                 end
-%                 clust{i} = setdiff(clust{i},toofar);
-%                 if length(clust{i})<2
-%                     clust{i} = [];
-%                 end
-%             end
-%             
-%             clust = clust(~cellfun(@isempty, clust));
+            a = Data.DistanceHeatMap;
+            b = a';
+            a(isnan(a)) = b(isnan(a));
+            Distances = a;
+            clust2 = clust;
+            
+            toofar = [];
+            for i = 1:length(clust)
+                for j = 1:length(clust{i})
+                    partnerdist = [];
+                    for k = 1:length(clust{i})
+                        partnerdist(k) = Distances(clust{i}(j), clust{i}(k));
+                    end
+                    if min(partnerdist) > DistanceMax
+                        toofar = [toofar; clust{i}(j)];
+                    end
+                end
+                clust2{i} = setdiff(clust2{i},toofar);
+                if length(clust2{i})<2
+                    clust2{i} = [];
+                end
+            end
+            
+            clust2 = clust2(~cellfun(@isempty, clust2));
             
 
-            Clustered(Clustnum+1:Clustnum+sum(~cellfun(@(x) isempty(x), clust))) = clust(~cellfun(@(x) isempty(x), clust));
-            CorrelationofClusters(Clustnum+1:Clustnum+sum(~cellfun(@(x) isempty(x), clust))) = cellfun(@(x) nanmean(nanmean(Correlations(x,x))), clust(~cellfun(@(x) isempty(x), clust)));
-            Clustnum = Clustnum+sum(~cellfun(@(x) isempty(x), clust));
-
+            HCSs(HCSnum+1:HCSnum+sum(~cellfun(@(x) isempty(x), clust))) = clust(~cellfun(@(x) isempty(x), clust));
+            CorrelationofClusters(HCSnum+1:HCSnum+sum(~cellfun(@(x) isempty(x), clust))) = cellfun(@(x) nanmean(nanmean(Correlations(x,x))), clust(~cellfun(@(x) isempty(x), clust)));
+            HCSnum = HCSnum+sum(~cellfun(@(x) isempty(x), clust));
+       
+            Clustered(Clustnum+1:Clustnum+sum(~cellfun(@(x) isempty(x), clust2))) = clust2(~cellfun(@(x) isempty(x), clust2));
+            CorrelationofClusters(Clustnum+1:Clustnum+sum(~cellfun(@(x) isempty(x), clust2))) = cellfun(@(x) nanmean(nanmean(Correlations(x,x))), clust2(~cellfun(@(x) isempty(x), clust2)));
+            Clustnum = Clustnum+sum(~cellfun(@(x) isempty(x), clust2));
             
         else
             spines = unique(addresses{A});
+            HCSs{HCSnum+1} = spines';
+            CorrelationofClusters(HCSnum+1) = nanmean(nanmean(Correlations(spines,spines)));
+            HCSnum = HCSnum+1;
+            
             Clustered{Clustnum+1} = spines';
-            CorrelationofClusters(Clustnum+1) = nanmean(nanmean(Correlations(spines,spines)));
             Clustnum = Clustnum+1;
         end
     else
+        HCSs{HCSnum+1} = [];
         Clustered{Clustnum+1} = [];
-        CorrelationofClusters(Clustnum+1) = nan;
+        CorrelationofClusters(HCSnum+1) = nan;
     end
 end
 
@@ -138,8 +148,9 @@ end
 
 
 
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Highly correlated spines on different dendrites
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 FarClustered = {[]};
 
@@ -187,7 +198,7 @@ end
 
 %%% Causal clusters
 
-Clustnum = 1;
+HCSnum = 1;
 
 CausalClustered = {[]};
 for Cr = 1:length(Crow)
@@ -213,8 +224,8 @@ for A = 1:length(Caddresses)
                 end
             end
             if length(clust)>1
-                CausalClustered{Clustnum} = clust;
-                Clustnum = Clustnum+1;
+                CausalClustered{HCSnum} = clust;
+                HCSnum = HCSnum+1;
             end
             while length(clust)<length(spines)
                 for c = 1:length(clust)
@@ -231,17 +242,17 @@ for A = 1:length(Caddresses)
                     end
                 end
                 if length(clust)>1
-                    CausalClustered{Clustnum} = clust;
-                    Clustnum = Clustnum+1;
+                    CausalClustered{HCSnum} = clust;
+                    HCSnum = HCSnum+1;
                 end
             end
         else
             spines = unique(Caddresses{A});
-            CausalClustered{Clustnum} = spines';
-            Clustnum = Clustnum+1;
+            CausalClustered{HCSnum} = spines';
+            HCSnum = HCSnum+1;
         end
     else
-        CausalClustered{Clustnum} = [];
+        CausalClustered{HCSnum} = [];
     end
 end
 end

@@ -235,10 +235,6 @@ gui_CaImageViewer.save_directory = pathname;
 cd(pathname)
 twochannels = get(gui_CaImageViewer.figure.handles.TwoChannels_CheckBox, 'Value');
 
-%%% New Spine Analysis Section
-date = regexp(pathname, '[0-9]{4,6}', 'match'); date = date{1};
-gui_CaImageViewer.NewSpineAnalysisInfo.CurrentDate = date;
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%% Set Image Properties %%%
@@ -1462,8 +1458,8 @@ if gui_CaImageViewer.NewSpineAnalysis
         fullpath = gui_CaImageViewer.save_directory;
         allseps = strfind(fullpath, '\');
         parentlocator = strfind(fullpath, animal);
-        desiredfilepoint = find([(allseps - parentlocator)>0],1,'first');
-        newpath = fullpath(1:allseps(desiredfilepoint)-1); %%% move two steps up in the path directory to get bath to the main animal folder (e.g. Z:/People/Nathan/Data/NH004 instead of Z:/People/Nathan/Data/NH004/160316/summed)
+        stepsup = 2;
+        newpath = fullpath(1:allseps(end-stepsup)-1); %%% move two steps up in the path directory to get bath to the main animal folder (e.g. Z:/People/Nathan/Data/NH004 instead of Z:/People/Nathan/Data/NH004/160316/summed)
         cd(newpath)
         
         %%%%% Identify imaging field number
@@ -1494,9 +1490,6 @@ if gui_CaImageViewer.NewSpineAnalysis
            SpineRegistry.Data(1:length(a.SpineROIs)-1,currentsession) = gui_CaImageViewer.NewSpineAnalysisInfo.SpineList;
            a.SpineStatusList = gui_CaImageViewer.NewSpineAnalysisInfo.SpineList;
         else  %% ZL comment: this part causing more issues in saving ROIs for session 1, use with caution
-            if ~any(gui_CaImageViewer.NewSpineAnalysisInfo.SpineList==1)
-                error('Spine List has been corrupted! Change gui_CaImageViewer.NewSpineAnalysisInfo.SpineList to reflect the data, then retry')
-            end
             SpineRegistry.Data(1:length(gui_CaImageViewer.NewSpineAnalysisInfo.SpineList),currentsession) = gui_CaImageViewer.NewSpineAnalysisInfo.SpineList;
             gui_CaImageViewer.NewSpineAnalysisInfo.SpineList(SpineRegistry.Data(:,currentsession) == 0) = 0;
             a.SpineStatusList = gui_CaImageViewer.NewSpineAnalysisInfo.SpineList;

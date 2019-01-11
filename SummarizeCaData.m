@@ -88,6 +88,8 @@ else
     switch Experimenter
         case 'Assaf'
             targetdir = [filestart, filesep, Experimenter, filesep, 'Data', filesep, folder, filesep, Date, filesep, 'motion_corrected_tiffs', filesep, 'GFP', filesep, 'summed'];
+        case 'Pantong'
+            targetdir = [filestart, filesep, Experimenter, filesep, 'Data', filesep, folder, filesep, Date, filesep, 'Snfr', filesep, 'summed'];
         otherwise
             targetdir = [filestart, filesep, Experimenter, filesep, 'Data', filesep, folder, filesep, Date, filesep, 'summed'];
     end
@@ -96,33 +98,42 @@ else
         files = fastdir(targetdir, 'Analyzed');
         check = 0;    
         if isempty(files)
-            return
-        end    
-        if length(files)>1
+            disp('Raw data file not found; PULLING FROM PREVIOUS ANALYSIS!!')
+            cd('E:\ActivitySummary')
+            files = fastdir(cd, folder);
             for i = 1:length(files)
-                searchpattern1 = regexp(files(i),['_summed_50_Analyzed_By', Analyzer], 'once');
-                searchpattern2 = regexp(files(i),['_summed_50Analyzed_By', Analyzer], 'once');
-                if ~isempty(searchpattern1{1}) || ~isempty(searchpattern2{1})
+                if ~isempty(regexp(files{i}, [folder, '_', Date], 'once')) && isempty(regexp(files{i},'Poly', 'once'))
                     load(files{i})
-                    check = 1;
                 end
             end
         else
-            load(files{1});
-            check = 1;
-        end
-        if ~check
-            disp('Raw data file not found; PULLING FROM PREVIOUS ANALYSIS!!')
-            cd('E:\ActivitySummary')
-            files = dir(cd);
-            for i = 1:length(files)
-                if ~isempty(regexp(files(i).name, [folder, '_', Date], 'once')) && ~isempty(regexp(files(i).name,'_Summary', 'once')) && isempty(regexp(files(i).name,'Poly', 'once'))
-                    load(files(i).name)
+            if length(files)>1
+                for i = 1:length(files)
+                    searchpattern1 = regexp(files(i),['_summed_50_Analyzed_By', Analyzer], 'once');
+                    searchpattern2 = regexp(files(i),['_summed_50Analyzed_By', Analyzer], 'once');
+                    if ~isempty(searchpattern1{1}) || ~isempty(searchpattern2{1})
+                        load(files{i})
+                        check = 1;
+                    end
+                end
+            else
+                load(files{1});
+                check = 1;
+            end
+            if ~check
+                disp('Raw data file not found; PULLING FROM PREVIOUS ANALYSIS!!')
+                cd('E:\ActivitySummary')
+                files = fastdir(cd, folder);
+                for i = 1:length(files)
+                    if ~isempty(regexp(files{i}, [folder, '_', Date], 'once')) && isempty(regexp(files{i},'Poly', 'once'))
+                        load(files{i})
+                    end
                 end
             end
         end
+
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %%% set "file" data to be used
+        %%% set loaded file as generic variable name, "File"
         try
             eval(['File =' folder, '_', Date, '_001_001_summed_50_Analyzed;'])
         catch
@@ -133,10 +144,10 @@ else
     else
         disp('COULD NOT LINK TO TARGET DIRECTORY; PULLING FROM PREVIOUS ANALYSIS!!')
         cd('E:\ActivitySummary')
-        files = dir(cd);
+        files = fastdir(cd, folder);
         for i = 1:length(files)
-            if ~isempty(regexp(files(i).name, [folder, '_', Date], 'once')) && ~isempty(regexp(files(i).name,'_Summary', 'once')) && isempty(regexp(files(i).name,'Poly', 'once'))
-                load(files(i).name)
+            if ~isempty(regexp(files{i}, [folder, '_', Date], 'once')) && isempty(regexp(files{i},'Poly', 'once'))
+                load(files{i})
             end
         end
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -220,7 +231,7 @@ else
         spinesmoothwindow = 60;
     elseif strcmpi(ImagingSensor, 'GluSnFR')
         ImagingFrequency = 60;
-        spinesmoothwindow = 60;
+        spinesmoothwindow = 15;
     end 
     polythreshmultiplier = 2*ones(1,length(File.Poly_Fluorescence_Measurement));
     Dendthreshmultiplier = 2*ones(1,File.NumberofDendrites);
@@ -251,16 +262,21 @@ analyzed.dendsmoothwindow = dendsmoothwindow;
 analyzed.ClusterThresh = ClusterThresh;
 analyzed.SpectralLengthConstant = SpectralLengthConstant;
 
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Select which spine to plot %%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 if File.NumberofSpines ==  0 || File.NumberofSpines ~= length(File.deltaF)
     File.NumberofSpines = length(File.deltaF);
     analyzed.NumberofSpines = length(File.deltaF);
 end
 % 
-SpineNo = randi(File.NumberofSpines,1); %%% Will choose a random spine from the available ones for this file
-% SpineNo = 16;  %%% Manually select spine to be considered
+% SpineNo = randi(File.NumberofSpines,1); %%% Will choose a random spine from the available ones for this file
+SpineNo = 1;  %%% Manually select spine to be considered
 
 
 DendNum = File.NumberofDendrites;
@@ -297,34 +313,9 @@ elseif spinetraceoption ==4
 end
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Search for spines that were not
-%%% properly analyzed (this is now
-%%% mostly obsolete)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-% if length(File.dF_over_F) ~= length(File.MeanEventAmp)
-%     spinesnotanalyzed = length(File.dF_over_F) - length(File.MeanEventAmp);
-%     if spinesnotanalyzed>1
-%         disp(['More than one spine was not properly analyzed for the file ', File.Filename(1:10), '; Check analysis'])
-%     else
-%         pickup = length(File.MeanEventAmp)+spinesnotanalyzed;
-%         old_alpha = robustfit(File.Dendrite_dFoF(File.NumberofDendrites,:),File.dF_over_F{pickup});
-%         File.Alphas{File.NumberofDendrites}(1:2,pickup) = old_alpha;
-%         deltaF_subtracted = File.dF_over_F{pickup}-(old_alpha(1)+old_alpha(2)*File.Dendrite_dFoF(File.NumberofDendrites,:));
-%         analyzed.Alphas = File.Alphas;
-%         analyzed.SynapticEvents{pickup} = deltaF_subtracted;
-%         File.SynapticEvents{pickup} = deltaF_subtracted;
-%         File.SpineDendriteGrouping{end} = [File.SpineDendriteGrouping{end},pickup];
-%         analyzed.SpineDendriteGrouping{end} = [File.SpineDendriteGrouping{end},pickup];
-%     end  
-% end
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% %% Describe the basic shape of each calcium trace
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Initialize variables
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 truebaseline = zeros(length(File.Fluorescence_Measurement),length(File.Fluorescence_Measurement{1}));
@@ -336,14 +327,12 @@ spread = zeros(length(File.Fluorescence_Measurement),1);
 binarized = zeros(length(File.Fluorescence_Measurement),length(File.Fluorescence_Measurement{1}));
 amp = zeros(1,length(File.Fluorescence_Measurement));
 freq = zeros(1,length(File.Fluorescence_Measurement),1);
-
 numberofSpines = size(binarized,1);
-
-
-%%% Trace extraction and smoothing
-
 spine_thresh = zeros(numberofSpines,1);
-static_thresh_dend = zeros(File.NumberofDendrites,1);
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Set options
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 Options.DriftBaselineSmoothWindow = driftbaselinesmoothwindow;
 Options.BaselineSmoothWindow = spinebaselinesmoothwindow;
@@ -353,6 +342,7 @@ Options.ValuesLimitforBaseline = spinevalueslimitforbaseline;
 Options.ValuesLimitforNoise = spinevalueslimitfornoise;
 Options.ImagingSensor = ImagingSensor; 
 Options.BeingAnalyzed = 'Spine';
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -365,6 +355,8 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -436,7 +428,7 @@ analyzed.StandardDeviationofNoise = spread;
 
 %%% Raw data and estimated baseline
 
-if showFig == 1
+if showFig
     k = zeros(1,length(File.Time));
     k(1:end) = thresh(SpineNo,1);
     m = ones(1,length(File.Time))*med(SpineNo,1);
@@ -453,7 +445,7 @@ end
 
 %%% Processed data and event counts
 
-if showFig == 1
+if showFig
     procplot = subplot(2,2,3:4);
     hold on; plot(File.Time, processed_dFoF(SpineNo,:), 'Color',[0.2 0.2 0.2], 'LineWidth', 1);
     linkaxes([rawplot,procplot], 'x');
@@ -468,15 +460,12 @@ if showFig == 1
 else
 end
 
-if showFig == 1
-else
-end
-
-
 for i = 1:numberofSpines
     frequency(i,1) = (nnz(diff(trueeventcount(i,:)>0.5)>0)/((length(File.Time)/ImagingFrequency)/60))';
 end
 
+%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%
 
 for i = 1:size(floored,1)
     [peaks, loc] = findpeaks(smooth(floored(i,:),10), 'MinPeakDistance', 5);   %%% The "floored" variable is used to count events, and so should be used to find the corresponding amplitude
@@ -529,10 +518,10 @@ globaldendriteevents = cell(1,DendNum);
 
 cumulativepolypoints = cumsum(File.DendritePolyPointNumber);
 File.Poly_Fluorescence_Measurement = File.Poly_Fluorescence_Measurement(~cell2mat(cellfun(@(x) isempty(x), File.Poly_Fluorescence_Measurement, 'UniformOutput', false))); %%% Remove any empty cells
-if length(File.Poly_Fluorescence_Measurement) ~= sum(File.DendritePolyPointNumber)
-    disp(['File ', File.Filename, ' has weird poly point problems... check it, broh'])
-    return
-end
+% if length(File.Poly_Fluorescence_Measurement) ~= sum(File.DendritePolyPointNumber)
+%     disp(['File ', File.Filename, ' has weird poly point problems... check it, broh'])
+%     return
+% end
 
 Pdriftbaseline = zeros(cumulativepolypoints(end),length(File.Dendrite_dFoF(1,:)));
 Pthresh = zeros(cumulativepolypoints(end),1);
@@ -589,9 +578,9 @@ for i = 1:DendNum
         Options.ValuesLimitforNoise = Dendvalueslimitfornoise;
         Options.BeingAnalyzed = 'Poly';
 
-
+        %%%%%%%%%%%%%%
         [Pthresh(j,1), Pdriftbaseline(i,:), processed_PolyROI{j}] = AnalyzeTrace(rawpoly{j}, Options);
-
+        %%%%%%%%%%%%%%
         
         %%% Binarization    
         floored_Poly{i}(j-polyptstouse(1)+1,:) = zeros(1,length(processed_PolyROI{j}));
@@ -632,9 +621,10 @@ for i = 1:DendNum
     Options.ValuesLimitforNoise = Dendvalueslimitfornoise;
     Options.BeingAnalyzed = 'Dendrite';
 
-
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     [Dthresh(i,1), Ddriftbaseline(i,:), processed_Dendrite(i,:)] = AnalyzeTrace(dendritedatatouse(i,:), Options);
-
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
     floored_Dend = zeros(DendNum,length(processed_Dendrite(1,:)));
     Driders = zeros(DendNum,length(processed_Dendrite(1,:)));
 
@@ -723,7 +713,7 @@ for i = 1:size(floored_Dend,1)
     Dfreq(i,1) = length(peaks);
 end
 
-
+%%
 %%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%
 
@@ -732,7 +722,7 @@ end
 %%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%
 
-if showFig == 1
+if showFig
     k = zeros(1,length(File.Time));
     k(1:end) = Dthresh(DendriteChoice,1);
 %     m = zeros(1,length(File.Time)) * Dmed(DendriteChoice,1);
@@ -773,6 +763,9 @@ if showFig == 1
 
 else
 end
+
+%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%
 
 Dboth(Dboth>1) = 1;
 Dglobal(Dglobal>1) = 1;
@@ -824,6 +817,9 @@ end
 % end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
 %%
 %%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%
@@ -832,24 +828,6 @@ end
 
 %%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%
-
-
-cofires = sum(square);
-cofires(cofires == 1) = 0; %%% values of '1' correspond to a single event, meaning it's not actually a 'cofire' event
-
-
-%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%
-
-%%% Figure 4 %%%
-
-%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%
-
-if showFig == 1
-    rasterfig = figure('Position', [Scrsz(3)/2, Scrsz(4)/2.5,Scrsz(3)/2,Scrsz(4)/2]); 
-else
-end
 
 causal = zeros(numberofSpines,size(all,2));
 back = 10;   %%% Number of frames prior to a dendritic event that a spine must be active to be considered "causal"
@@ -870,6 +848,7 @@ for i = 1:numberofSpines
             %%% dendrite-corrected or dendrite-removed data!!!
             %%%
             synapticEvents(i,:) = analyzed.SynapseOnlyBinarized_DendriteSubtracted(i,:)-Dglobal(onDend,:);
+            synapseOnlyActivity(i,:) = processed_dFoF(i,:).*synapticEvents(i,:);
 %             synapticEvents(i,:) = square_Ds(i,:);
             %%%
             %%%
@@ -897,9 +876,18 @@ for i = 1:numberofSpines
 end
 
 if showFig
+    rasterfig = figure('Position', [Scrsz(3)/2, Scrsz(4)/2.5,Scrsz(3)/2,Scrsz(4)/2]); 
     imagesc(synapticEvents)
     set(rasterfig, 'ColorMap', hot)
+    xlabel('Frames');
+    ylabel('Spine number');
+    xlim([0 size(binarized,2)+1]);
+    ylim([0 numberofSpines+1]);
+    title('Synaptic Events For All Spines');
 end
+
+%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%
 
 Dfrequency = zeros(DendNum, 1);
 for i = 1:DendNum
@@ -908,39 +896,29 @@ end
 
 disp(['Dendritic Frequencies: ', num2str(Dfrequency(:)')])
 
+synapticEvents(synapticEvents<0) = 0;
+synapseOnlyActivity(synapseOnlyActivity<0) = 0;
+
 analyzed.Dendritic_Frequency = Dfrequency;
 analyzed.Dendritic_Amp = Damp;
+analyzed.SynapseOnlyActivity = synapseOnlyActivity;
 analyzed.SynapseOnlyBinarized = synapticEvents;
 analyzed.OverallSpineActivity = square;
 analyzed.SynapseOnlyFreq = synapseOnlyFreq;
 analyzed.SpikeTimedEvents = withAPsFreq;
 analyzed.CausalBinarized = causal;
-%%%%%%%%%%%%
-
-if showFig == 1
-    xlabel('Frames');
-    ylabel('Spine number');
-    xlim([0 size(binarized,2)+1]);
-    ylim([0 numberofSpines+1]);
-    title('Synapse only vs. AP-paired events');
-else
-end
-%%%%%%%%%%%%%%%%
 
 Spine_No = numberofSpines;
 Time = size(binarized,2)/ImagingFrequency;
 Time = Time/60;
-cofire_index = sum(cofires)/(Spine_No*Time);
-
-cofires(cofires ==0) = NaN;
-coactive_percentage = 100*(max(cofires))/numberofSpines;
 % spec = 'Approximately %2.0f percent of spines showed co-active firing\n';
 % fprintf(spec, coactive_percentage);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Figure 5 : Spatial Analysis %%%
+%%% Figure 4 : Spatial Analysis %%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
@@ -954,7 +932,7 @@ if isfield(File, 'ZoomValue')
     end
 end
 SpineToSpineDistance = nan(numberofSpines,numberofSpines);
-OverallCorrelation = nan(numberofSpines, numberofSpines);
+OverallCorrelations = nan(numberofSpines, numberofSpines);
 SpineToSpineCorrelation = nan(numberofSpines,numberofSpines);
 SpineToSpinePValue = nan(numberofSpines, numberofSpines);
 SpwAPCorrelation = nan(numberofSpines, numberofSpines);
@@ -1065,7 +1043,7 @@ analyzed.DendriteLengthValues = Mic_Dist;
 
 [r_all, p_all] = corrcoef(square');
 r_all(isnan(r_all)) = 0;
-OverallCorrelation = r_all;
+OverallCorrelations = r_all;
 OverallPvalue = p_all;
 
 [r, p] = corrcoef(analyzed.SynapseOnlyBinarized');
@@ -1085,7 +1063,12 @@ CausalPValue = p_causal;
 
 
 nonnan = find(~isnan(SpineToSpineDistance)); %% Find the indices for  non-NaN values
-Correlations = SpineToSpineCorrelation(nonnan);
+switch ImagingSensor
+    case 'GCaMP'
+        Correlations = SpineToSpineCorrelation(nonnan);
+    case 'GluSnFR'
+        Correlations = OverallCorrelations(nonnan);
+end
 pValues = SpineToSpinePValue(nonnan);
 wAPCorrelations = SpwAPCorrelation(nonnan);
 SpwAP_PValue = SpwAP_PValue(nonnan);
@@ -1094,8 +1077,8 @@ CausalCorrelations = CausalCorrelation(nonnan);
 CausalPValues = CausalPValue(nonnan);
 
 analyzed.SpineToSpineDistance = Distances;
-analyzed.OverallCorrelationsHeatMap = OverallCorrelation;
-analyzed.OverallCorrelation = OverallCorrelation(nonnan);
+analyzed.OverallCorrelationsHeatMap = OverallCorrelations;
+analyzed.OverallCorrelation = OverallCorrelations(nonnan);
 analyzed.SpineToSpineCorrelation = Correlations;
 analyzed.CorrelationHeatMap = SpineToSpineCorrelation;
 analyzed.PValueHeatMap = SpineToSpinePValue;
@@ -1458,7 +1441,7 @@ if showFig
     windowwidth = Scrsz(3)/2;
     windowheight = Scrsz(4)/2;
     figure('Position', [(Scrsz(3)/2)-windowwidth/2, (Scrsz(4)/2)-windowheight/2, windowwidth, windowheight])
-    for i = 1:numberofSpines;
+    for i = 1:numberofSpines
         subplot(ceil(sqrt(numberofSpines)),ceil(sqrt(numberofSpines)),i); hold on;
         parentdend = find(~cell2mat(cellfun(@(x) isempty(find(x == i,1)), File.SpineDendriteGrouping, 'Uni', false)));
         plot(processed_Dendrite(parentdend,:), processed_dFoF(i,:), 'ok')

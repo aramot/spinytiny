@@ -30,6 +30,9 @@ else
     save_directory = [filesep,nameparts{2}, filesep, nameparts{3}, filesep, nameparts{4}, filesep, nameparts{5}, filesep, nameparts{6}, filesep, nameparts{7},filesep, nameparts{8}, filesep, nameparts{9}, filesep, nameparts{10}, filesep];
 end
 
+if ~strcmpi(save_directory(end), filesep)
+    save_directory = [save_directory, filesep];
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Determine if ROIs have been drawn, and exist in the appropriate format
@@ -192,10 +195,15 @@ if newspineanalysis || islong
         userspecificpart = [];
     end
     load([targ_folder, filesep,userspecificpart,'Imaging Field ', num2str(currentfield), ' Spine Registry'])
-    if isempty(gui_CaImageViewer.NewSpineAnalysisInfo.CurrentDate)
-        date = regexp(save_directory, '[0-9]{6}', 'match'); date = date{1};
+    datefromglobal = regexp(save_directory, '[0-9]{6}', 'match'); datefromglobal = datefromglobal{1};
+    if ~isempty(gui_CaImageViewer.NewSpineAnalysisInfo.CurrentDate)
+        datefromNSI = gui_CaImageViewer.NewSpineAnalysisInfo.CurrentDate;
+    end
+    if ~strcmpi(datefromglobal, datefromNSI)
+        datedecision = inputdlg('Date information is conflicting; enter date::', 'YYMMDD');
+        date = datedecision{1};
     else
-        date = gui_CaImageViewer.NewSpineAnalysisInfo.CurrentDate;
+        date = datefromglobal;
     end
     instanceofappearance = logical(strcmpi(sortrows(SpineRegistry.DatesAcquired), date));
     SpineList = SpineRegistry.Data(:,instanceofappearance); %%% Note: Although the first ROI is always ROI0 (background), this is excluded (wrt indexing) for the final variables, so a direct translation of spine number is possible here

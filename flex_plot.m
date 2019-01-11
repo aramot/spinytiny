@@ -39,6 +39,9 @@ if strcmpi(stattype, 'parametric')
             SEM = nanstd(y(:,i))/sqrt(sum(~isnan(y(:,i))));
             line([x(i),x(i)], [nanmean(y(:,i))-SEM, nanmean(y(:,i))+SEM], 'linewidth', 0.5, 'color', colorS);
         end
+        xlim([x(1)-1,x(end)+1])
+        %%% Automatically perform regression-based statistics
+        
         X = repmat(x,size(y,sample_dim),1);
         y = y(find(~isnan(y)));
         X = X(find(~isnan(y)));
@@ -46,7 +49,13 @@ if strcmpi(stattype, 'parametric')
         if length(p)>1
             if p(1,2) < 0.05
                 ydata = get(line_handle, 'YData');
-                text(length(x)+1, ydata(end), '*', 'color', colorS, 'Fontsize', 14)
+                text(x(end)+1, ydata(find(~isnan(ydata), 1,'last')), '*', 'color', colorS, 'Fontsize', 16)
+                text(x(end)+1.1, ydata(find(~isnan(ydata), 1,'last')), ['p = ', num2str(p(1,2))], 'color', colorS, 'Fontsize', 6)
+            else
+                ydata = get(line_handle, 'YData');
+                if any(~isnan(ydata))
+                    text(x(end)+1, ydata(find(~isnan(ydata), 1,'last')), ['p = ', num2str(p(1,2))], 'color', colorS, 'Fontsize', 6)
+                end
             end
         end
     end
@@ -72,4 +81,5 @@ elseif strcmpi(stattype, 'nonparametric')
             end
         end
     end
+    xlim([x(1)-1,x(end)+1])
 end

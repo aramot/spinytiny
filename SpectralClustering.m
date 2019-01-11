@@ -102,7 +102,11 @@ for j = 1:DendNum
             colcount = 1;
             for column = firstspine:lastspine
                 MeanInterspineMovementCorrelation{j}(rowcount,colcount) = nanmean([MovementCorrelationsforAllSpinesonDend{j}(rowcount),MovementCorrelationsforAllSpinesonDend{j}(colcount)]);
-                MeanInterspineMovementReliability{j}(rowcount,colcount) = nanmean([StatClass{session}.AllSpineReliability(row),StatClass{session}.AllSpineReliability(column)]);
+                if ~isempty(StatClass{session})
+                    MeanInterspineMovementReliability{j}(rowcount,colcount) = nanmean([StatClass{session}.AllSpineReliability(row),StatClass{session}.AllSpineReliability(column)]);
+                else
+                    MeanINterspineMovementReliability{j}(rowcount,colcount) = nan;
+                end
                 colcount = colcount+1;
             end
             rowcount = rowcount+1;

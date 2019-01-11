@@ -59,12 +59,10 @@ switch Options.ImagingSensor
         roundstodo = 10;
         multiplier = 1;
         windowsize = 30;
-        stepforKDE = 20;
     case 'GluSnFR'
         roundstodo = 10;
-        multiplier = 1.5;
-        windowsize = 15;
-        stepforKDE = 10;
+        multiplier = 2;
+        windowsize = 30;
 end
 rawmed = nanmedian(raw);
 rawspread = nanstd(raw);
@@ -104,7 +102,7 @@ switch BeingAnalyzed
     otherwise
         pad_start = randi([1,length(fornoise)],1,padlength);
         pad_end = randi([1,length(fornoise)],1,padlength);
-        padded_data = [fornoise(pad_start), fornoise, fornoise(pad_end)];
+        padded_data = [fornoise(pad_start), raw, fornoise(pad_end)];
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -127,7 +125,7 @@ switch BeingAnalyzed
             DriftBaseline = truebaseline;
     end
     otherwise
-        truebaseline = baseline_kde(padded_data',20,windowsize,stepforKDE);    %%% inputs = downsample ratio, window size, step
+        truebaseline = baseline_kde(padded_data',20,windowsize,20);    %%% inputs = downsample ratio, window size, step
         truebaseline = truebaseline(padlength+1:end-padlength);
         DriftBaseline = truebaseline;
 end

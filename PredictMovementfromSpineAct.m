@@ -34,7 +34,11 @@ if ~any(SpineData(:)>0 & SpineData(:)<1) && ~any(MovementData(:)>0 & MovementDat
     
     conmat = confusionmat(TestMovementData, PredictedMovement); %%% Confusion matrix, which displays accuracy of classification algorithm
     
-    TruePosRate = conmat(2,2)/sum(conmat(2,:)); %%% Finds true positive rate (confusion matrix for binary decisions: (1,1)=true neg; (1,2)= false neg; (2,1) = false pos
+    if length(conmat)<2
+        TruePosRate = 0;
+    else
+        TruePosRate = conmat(2,2)/sum(conmat(2,:)); %%% Finds true positive rate (confusion matrix for binary decisions: (1,1)=true neg; (1,2)= false neg; (2,1) = false pos
+    end
     
     predictioncorrelation = corrcoef(TestMovementData, PredictedMovement);
 
