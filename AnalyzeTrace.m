@@ -48,6 +48,10 @@ Data(1:10) = Data(randi([20,100],1,10));
 Data(end-9:end) = Data(randi([length(Data)-100,length(Data)-20],1,10));
 raw = Data;
 
+%%% Correct for large drift
+
+raw = raw-smooth(raw,driftbaselinesmoothwindow)'+nanmedian(raw); %%% Correct for slow drift, then restore data to original scale
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Pad data for protecting edges while estimating baseline
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -63,8 +67,8 @@ switch Options.ImagingSensor
     case 'GluSnFR'
         roundstodo = 10;
         multiplier = 1.5;
-        windowsize = 15;
-        stepforKDE = 10;
+        windowsize = 10;
+        stepforKDE = 5;
 end
 rawmed = nanmedian(raw);
 rawspread = nanstd(raw);
@@ -187,7 +191,7 @@ if traceoption == 1
 
 
     roundnum = 1;
-    roundstodo = 50;
+    roundstodo = 10;
     while roundnum<=roundstodo 
         fornoise(fornoise>rawmed+(valueslimitfornoise*rawspread)) = rawmed+(valueslimitfornoise*rawspread);      %%% Cap off large and small values to pinch the data towards the true baseline
         fornoise(fornoise<rawmed-(valueslimitfornoise*rawspread)) = rawmed-(valueslimitfornoise*rawspread);      %%%

@@ -896,11 +896,10 @@ index = handles.AnimalName_ListBox.Value;
 
 if ~isempty(index)
     animals = handles.AnimalName_ListBox.String(index);
-    plotspineanddenddata(animals);
 else
-    plotspineanddenddata;
-end
+    
 
+plotspineanddenddata;
 
 
 % --- Executes on button press in DendSubtracted_CheckBox.

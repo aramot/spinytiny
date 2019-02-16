@@ -921,14 +921,17 @@ Time = Time/60;
 %%% Figure 4 : Spatial Analysis %%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%% Current measurements can be found on the imaging computer; 512x512 and
+%%% 1024x1024 images are taken of a fluorescent ruler. Pixels per micron at
+%%% 1x zoom = 0.5
 
-pixpermicron = 4.65;
+pixpermicron = 0.5;
 if ~isempty(strfind(File.Filename, 'ZL'))
     File.ZoomValue = 8.5;
 end
 if isfield(File, 'ZoomValue')
     if File.ZoomValue ~= 0
-        pixpermicron = (pixpermicron*File.ZoomValue)/12.1;
+        pixpermicron = (pixpermicron*File.ZoomValue);
     end
 end
 SpineToSpineDistance = nan(numberofSpines,numberofSpines);

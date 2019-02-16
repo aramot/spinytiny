@@ -92,8 +92,12 @@ used_trial = [];
 
 countedasfirsttrial = find([bitcode.behavior_trial_num]==1);
 
-if length(countedasfirsttrial) > 1 && firsttrial == 1 && countedasfirsttrial(end)<100   
-    firsttrial = countedasfirsttrial(end);
+if length(countedasfirsttrial) > 1 && firsttrial == 1 && countedasfirsttrial(end)<100 
+    if countedasfirsttrial(end)<20
+        firsttrial = countedasfirsttrial(end);
+    else
+        firsttrial = countedasfirsttrial(1);
+    end
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -570,6 +574,7 @@ end
 
 Classified.AllSpineReliability = AllSpineReliability;
 
+counter = 1;
 for i = 1:length(movespines)
     movespineactivity_separated = mat2cell(spinedatatouse(movespines(i),:)', diff(bound));
     movespineactivity_moveperiods = movespineactivity_separated(cell2mat(cellfun(@(x) ~isempty(find(x,1)), allperiods, 'uni', false)));

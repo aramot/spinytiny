@@ -53,6 +53,8 @@ if length(experimentnames) == 1
                 FieldData{f}.CalciumData{j} = [];
             end
         end
+        FieldData{f}.CalciumData = FieldData{f}.CalciumData(~cellfun(@isempty, FieldData{f}.CalciumData));
+        sessionstouse = find
     end
 
     for f = 1:length(activitydata)
@@ -124,20 +126,37 @@ if length(experimentnames) == 1
     NumberofElimSpines = 0;
     NewSpinesMaxCorr = cell(1,NumFields);
     ElimSpinesMaxCorr = cell(1,NumFields);
+    TaskCorrelationofNearbyEarlyMRSs = cell(1,NumFields);
+    TaskCorrelationofNearbyLateMRSs = cell(1,NumFields);
+    TaskCorrelationofNearbyEarlyMRSsforElimSp = cell(1,NumFields);
+    MovementReliabilityofNearbyEarlyMRSs = cell(1,NumFields);
+    MovementReliabilityofNearbyLateMRSs = cell(1,NumFields);
+    MovementReliabilityofNearbyEarlyMRSsforElimSp = cell(1,NumFields);
+    NewSpineMaxCorrPartnerEarlyMoveCorrelation = cell(1,NumFields);
+    NewSpineMaxCorrPartnerEarlyMoveReliability = cell(1,NumFields);
+    NewSpineMaxCorrPartnerLateMoveCorrelation = cell(1,NumFields);
+    NewSpineMaxCorrPartnerLateMoveReliability = cell(1,NumFields);
+    ElimSpineMaxCorrPartnerEarlyMoveCorrelation = cell(1,NumFields);
+    ElimSpineMaxCorrPartnerEarlyMoveReliability = cell(1,NumFields);
     OtherSpinesMaxCorr = cell(1,NumFields);
     NewSpinesBehaviorCorrelation = cell(1,NumFields);
-    OtherSpinesBehaviorCorrelation = cell(1,NumFields);
+    ElimSpinesBehaviorCorrelation = cell(1,NumFields);
+    OtherSpinesBehaviorCorrelationEarly = cell(1,NumFields);
+    OtherSpinesBehaviorCorrelationLate = cell(1,NumFields);
     AllDendriteDistances = cell(1,NumFields);
     AllMovementSpines = cell(1,NumFields);
     DistancesBetweenNewSpinesandEarlyMovementSpines = cell(1,NumFields);
     LateCorrfNewSpinesandNearestMovementSpinefromEarlySessions = cell(1,NumFields);
     LateCorrfNewSpinesandNearestMovementSpinefromLateSessions = cell(1,NumFields);
+    NewSpinesCorrwithNearbyEarlyMRSs = cell(1,NumFields);
+    NewSpinesCorrwithNearbyLateMRSs = cell(1,NumFields);
     DistancesBetweenNewSpinesandLateMovementSpines = cell(1,NumFields);
     DistancesBetweenNewSpinesandRandomSpines = cell(1,NumFields);
     DistancesBetweenNewSpinesandShuffledEarlyMovementSpines = cell(1,NumFields);
     DistancesBetweenNewSpinesandShuffledMovementSpines = cell(1,NumFields);
     DistancesBetweenElimSpinesandEarlyMovementSpines = cell(1,NumFields);
     CorrelationsofElimSpinesandEarlyMovementSpines = cell(1,NumFields);
+    ElimSpinesCorrwithNearbyMRSs = cell(1,NumFields);
     DistancesBetweenElimSpinesandMovementSpines = cell(1,NumFields);
     DistancesBetweenElimSpinesandRandomSpines = cell(1,NumFields);
     DistancesBetweenElimSpinesandShuffledEarlyMovementSpines = cell(1,NumFields);
@@ -160,6 +179,8 @@ if length(experimentnames) == 1
         shuffnum = 1000;
         ShuffledEarlyMovementLabels = cell(1,shuffnum);
         ShuffledLateMovementLabels = cell(1,shuffnum);
+        behaviorcorrdataearly = FieldData{f}.Correlations{1}.SpineCorrelations(1:Spine1_Address-1,Spine1_Address:Spine1_Address+NumberofLateSpines-1); 
+        behaviorcorrdatalate = FieldData{f}.Correlations{end}.SpineCorrelations(1:Spine1_Address-1,Spine1_Address:Spine1_Address+NumberofLateSpines-1);
         for shuff = 1:shuffnum
             ShuffledEarlyMovementLabels{shuff} = randi(NumberofEarlySpines,[length(AllMovementSpinesOnEarlySession),1]);
             ShuffledLateMovementLabels{shuff} = randi(NumberofLateSpines,[length(AllMovementSpinesOnLateSession),1]);
@@ -184,7 +205,7 @@ if length(experimentnames) == 1
         end
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         if size(FieldChanges{f},2) >1
-            NewSpines = find(sum(FieldChanges{f},2));
+            NewSpines = find(sum(FieldChanges{f},2)>0);
         else
             NewSpines = find(FieldChanges{f}>0);
         end
@@ -195,14 +216,23 @@ if length(experimentnames) == 1
             OtherMovementSpinesThatArentNew = setdiff(AllMovementSpinesOnLateSession,NewSpines);
             %%% Compare new spines to EARLY session features
             if ~isempty(AllMovementSpinesOnEarlySession)
-                NewSpinestoEarlyMovementSpines = [];
-                NewSpinestoShuffledEarlyMovementSpines = [];
                 for ns = 1:length(NewSpines)
+                    NewSpinestoEarlyMovementSpines = [];
+                    NewSpinesEarlyMovementSpinesLateCorr = [];
+                    NewSpinesCorrwithCloseEarlyMRS = nan;
+                    NearbyMRSlist = [];
+                    NewSpinestoShuffledEarlyMovementSpines = [];
                     count = 1;
+                    closecount = 1;
                     for ms = 1:length(AllMovementSpinesOnEarlySession)
                         [val, ~] = sort([NewSpines(ns), AllMovementSpinesOnEarlySession(ms)]);
                         NewSpinestoEarlyMovementSpines(1,count) = FieldData{f}.CalciumData{1}.DistanceHeatMap(val(1),val(2));
                         NewSpinesEarlyMovementSpinesLateCorr(1,count) = AllLateSpineCorrelations(val(1), val(2));   %%% Find the correlation of new spines with the movement spines from early sessions (they might not be movement-related at the late sessions, but are they highly correlated with the new spine?)
+                        if NewSpinestoEarlyMovementSpines(1,count)<20
+                            NewSpinesCorrwithCloseEarlyMRS(1,closecount) = NewSpinesEarlyMovementSpinesLateCorr(1,count);
+                            NearbyMRSlist = [NearbyMRSlist,AllMovementSpinesOnEarlySession(ms)];
+                            closecount = closecount+1;
+                        end
                         count = count+1;
                     end
                     count = 1;
@@ -216,20 +246,36 @@ if length(experimentnames) == 1
                     end
                     [DistancesBetweenNewSpinesandEarlyMovementSpines{f}(ns), ind] = nanmin(NewSpinestoEarlyMovementSpines);
                     LateCorrfNewSpinesandNearestMovementSpinefromEarlySessions{f}(ns) = NewSpinesEarlyMovementSpinesLateCorr(ind);
+                    NewSpinesCorrwithNearbyEarlyMRSs{f}(ns) = nanmax(NewSpinesCorrwithCloseEarlyMRS);
                     DistancesBetweenNewSpinesandShuffledEarlyMovementSpines{f}(ns) = nanmean(NewSpinestoShuffledEarlyMovementSpines);
                 end
+            else
+                NearbyMRSlist = [];
             end
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            TaskCorrelationofNearbyEarlyMRSs{f} = behaviorcorrdataearly(:,NearbyMRSlist);
+            MovementReliabilityofNearbyEarlyMRSs{f} = FieldData{f}.StatClass{1}.AllSpineReliability(NearbyMRSlist);
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             %%% Compare new spines to LATE session features
             if ~isempty(AllMovementSpinesOnLateSession) && ~isempty(OtherMovementSpinesThatArentNew)
                 for ns = 1:length(NewSpines)
                     NewSpinestoLateMovementSpines = [];
+                    NewSpinesLateMovementSpinesLateCorr = [];
+                    NewSpinesCorrwithCloseMRS = nan;
+                    NearbyMRSlist = [];
                     NewSpinestoRandomSpines = [];
                     NewSpinestoShuffledMovementSpines = [];
                     count = 1;
-                    for os = 1:length(OtherMovementSpinesThatArentNew)
+                    closecount = 1;
+                    for os = 1:length(OtherMovementSpinesThatArentNew)  %%% Compare new spines to other *extant* (not new) movement-related spines on the same dendrite
                         [val, ~] = sort([NewSpines(ns),OtherMovementSpinesThatArentNew(os)]);
                         NewSpinestoLateMovementSpines(1,count) = FieldData{f}.CalciumData{end}.DistanceHeatMap(val(1),val(2));
                         NewSpinesLateMovementSpinesLateCorr(1,count) = AllLateSpineCorrelations(val(1), val(2));
+                        if NewSpinestoLateMovementSpines(1,count)<20
+                            NewSpinesCorrwithCloseMRS(1,closecount) = NewSpinesLateMovementSpinesLateCorr(1,count);
+                            NearbyMRSlist = [NearbyMRSlist,OtherMovementSpinesThatArentNew(os)];
+                            closecount = closecount+1;
+                        end
                         ParentDend =  find(~cell2mat(cellfun(@(x) isempty(find(x == NewSpines(ns),1)), FieldData{f}.CalciumData{1}.SpineDendriteGrouping, 'Uni', false)));
                         randomspinefromsamedend = FieldData{f}.CalciumData{1}.SpineDendriteGrouping{ParentDend}(randi(length(FieldData{f}.CalciumData{1}.SpineDendriteGrouping{ParentDend})));
                         while randomspinefromsamedend == NewSpines(ns)
@@ -250,24 +296,34 @@ if length(experimentnames) == 1
                     end
                     [DistancesBetweenNewSpinesandLateMovementSpines{f}(ns),ind] = nanmin(NewSpinestoLateMovementSpines);
                     LateCorrfNewSpinesandNearestMovementSpinefromLateSessions{f}(ns) = NewSpinesLateMovementSpinesLateCorr(ind);
+                    NewSpinesCorrwithNearbyLateMRSs{f}(ns) = max(NewSpinesCorrwithCloseMRS);
                     DistancesBetweenNewSpinesandRandomSpines{f}(ns) = NewSpinestoRandomSpines(randi(length(NewSpinestoRandomSpines)));
                     DistancesBetweenNewSpinesandShuffledMovementSpines{f}(ns) = nanmean(NewSpinestoShuffledMovementSpines);
                 end
+            else
+                NearbyMRSlist = [];
             end
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            TaskCorrelationofNearbyLateMRSs{f} = behaviorcorrdatalate(:,NearbyMRSlist);
+            MovementReliabilityofNearbyLateMRSs{f} = FieldData{f}.StatClass{end}.AllSpineReliability(NearbyMRSlist);
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             %%%%%%
             [NewSpinesMaxCorr{f}, NewSpineMaxInd] = max(AllLateSpineCorrelations(NewSpines,:),[],2); %%% Find the spine that has the highest correlation with each new spine
             allotherspines = setdiff(1:NumberofLateSpines,union(NewSpineMaxInd, NewSpines)); %%% For comparison, find the spine that has the maximum correlation value with every other spine ("every other" can exclude either just new spines or new spines AND their highly correlated partners)
             OtherSpinesMaxCorr{f} = max(AllLateSpineCorrelations(allotherspines,:),[],2);
+            NewSpineMaxCorrPartnerEarlyMoveCorrelation{f} = behaviorcorrdataearly(:,NewSpineMaxInd);
+            NewSpineMaxCorrPartnerLateMoveCorrelation{f} = behaviorcorrdatalate(:,NewSpineMaxInd);
+            NewSpineMaxCorrPartnerEarlyMoveReliability{f} = FieldData{f}.StatClass{1}.AllSpineReliability(NewSpineMaxInd);
+            NewSpineMaxCorrPartnerLateMoveReliability{f} = FieldData{f}.StatClass{end}.AllSpineReliability(NewSpineMaxInd);
             %%%%%%
             for ns = 1:length(NewSpines)
-                behaviorcorrdata = FieldData{f}.Correlations{end}.SpineCorrelations(1:Spine1_Address-1,Spine1_Address:Spine1_Address+NumberofLateSpines-1);
-                NewSpinesBehaviorCorrelation{f}(ns,1:9) = behaviorcorrdata(:,ns);
+                NewSpinesBehaviorCorrelation{f}(ns,1:9) = behaviorcorrdatalate(:,ns);
             end
-            OtherSpinesBehaviorCorrelation{f} = behaviorcorrdata(:,setdiff(1:NumberofLateSpines,NewSpines));
+            OtherSpinesBehaviorCorrelationLate{f} = behaviorcorrdatalate(:,setdiff(1:NumberofLateSpines,NewSpines));
         end
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         if size(FieldChanges{f},2)>1
-            ElimSpines = find(sum(FieldChanges{f},2));
+            ElimSpines = find(sum(FieldChanges{f},2)<0);
         else
             ElimSpines = find(FieldChanges{f}<0);
         end
@@ -277,36 +333,48 @@ if length(experimentnames) == 1
             ElimSpinesThatWereMR = ElimSpines(ismember(ElimSpines, find(FieldData{f}.StatClass{1}.MovementSpines)));
             NumberofElimSpinesThatWereMR = NumberofElimSpinesThatWereMR+sum(FieldData{f}.StatClass{1}.MovementSpines(ElimSpines));
             OtherMovementSpinesThatArentElim = setdiff(AllMovementSpinesOnLateSession,ElimSpines);
-            %%% Compare new spines to early session features
+            %%% Compare eliminated spines to early session features
             if ~isempty(AllMovementSpinesOnEarlySession)
-                ElimSpinestoEarlyMovementSpines = [];
-                ElimSpinestoShuffledEarlyMovementSpines = [];
-                for ns = 1:length(ElimSpines)
+                for es = 1:length(ElimSpines)
+                    ElimSpinestoEarlyMovementSpines = [];
+                    ElimSpinestoShuffledEarlyMovementSpines = [];
+                    ElimSpinesCorrwithCloseMRS = nan;
+                    NearbyMRSlist = [];
                     count = 1;
-                    for ms = 1:length(AllMovementSpinesOnEarlySession)
-                        [val, ~] = sort([ElimSpines(ns), AllMovementSpinesOnEarlySession(ms)]);
+                    closecount = 1;
+                    for ms = 1:length(AllMovementSpinesOnEarlySession) 
+                        [val, ~] = sort([ElimSpines(es), AllMovementSpinesOnEarlySession(ms)]);
                         ElimSpinestoEarlyMovementSpines(1,count) = FieldData{f}.CalciumData{1}.DistanceHeatMap(val(1),val(2));
                         CorrElimSpinestoEarlyMovementSpines(1,count) = AllEarlySpineCorrelations(val(1), val(2));
-                        if any(ismember(ElimSpines(ns),ElimSpinesThatWereMR))
-                            
+                        if ElimSpinestoEarlyMovementSpines(1,count)<20 
+                            ElimSpinesCorrwithCloseMRS(1,closecount) = CorrElimSpinestoEarlyMovementSpines(1,count);
+                            NearbyMRSlist = [NearbyMRSlist,AllMovementSpinesOnEarlySession(ms)];
+                            closecount = closecount+1;
                         end
                         count = count+1;
                     end
                     count = 1;
                     for shuff = 1:shuffnum
                         for sh = 1:length(ShuffledEarlyMovementLabels{shuff})
-                            [val, ~] = sort([ElimSpines(ns),ShuffledEarlyMovementLabels{shuff}(sh)]);
+                            [val, ~] = sort([ElimSpines(es),ShuffledEarlyMovementLabels{shuff}(sh)]);
                             shuffleddistances(1,sh) = FieldData{f}.CalciumData{1}.DistanceHeatMap(val(1),val(2));
                         end
                         ElimSpinestoShuffledEarlyMovementSpines(1,count) = nanmin(shuffleddistances);
                         count = count+1;
                     end
-                    [DistancesBetweenElimSpinesandEarlyMovementSpines{f}(ns), ind] = nanmin(ElimSpinestoEarlyMovementSpines);
-                    CorrelationsofElimSpinesandEarlyMovementSpines{f}(ns) = CorrElimSpinestoEarlyMovementSpines(ind);
-                    DistancesBetweenElimSpinesandShuffledEarlyMovementSpines{f}(ns) = nanmean(ElimSpinestoShuffledEarlyMovementSpines);
+                    [DistancesBetweenElimSpinesandEarlyMovementSpines{f}(es), ind] = nanmin(ElimSpinestoEarlyMovementSpines);
+                    CorrelationsofElimSpinesandEarlyMovementSpines{f}(es) = CorrElimSpinestoEarlyMovementSpines(ind);
+                    ElimSpinesCorrwithNearbyMRSs{f}(es) = max(ElimSpinesCorrwithCloseMRS);
+                    DistancesBetweenElimSpinesandShuffledEarlyMovementSpines{f}(es) = nanmean(ElimSpinestoShuffledEarlyMovementSpines);
                 end
+            else
+                NearbyMRSlist = [];
             end
-            %%% Compare new spines to late session features
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            TaskCorrelationofNearbyEarlyMRSsforElimSp{f} = behaviorcorrdataearly(:,NearbyMRSlist);
+            MovementReliabilityofNearbyEarlyMRSsforElimSp{f} = FieldData{f}.StatClass{end}.AllSpineReliability(NearbyMRSlist);
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            %%% Compare eliminated spines to late session features
             if ~isempty(AllMovementSpinesOnLateSession) && ~isempty(OtherMovementSpinesThatArentElim)
                 for ns = 1:length(ElimSpines)
                     ElimSpinestoMovementSpines = [];
@@ -340,12 +408,17 @@ if length(experimentnames) == 1
                 end
             end
             %%%%%%
-            Spine1_Address = 10;
             currentcorrdata = FieldData{f}.Correlations{1}.SpineCorrelations(Spine1_Address:Spine1_Address+NumberofEarlySpines-1,Spine1_Address:Spine1_Address+NumberofEarlySpines-1);
             currentcorrdata(1:1+size(currentcorrdata,1):end) = nan; %%% set identity values to nan
             [ElimSpinesMaxCorr{f}, ElimSpineMaxInd] = max(currentcorrdata(ElimSpines,:),[],2);
             allotherspines = setdiff(1:NumberofEarlySpines,union(ElimSpineMaxInd, ElimSpines));
             OtherSpinesMaxCorr{f} = max(currentcorrdata(allotherspines,:),[],2);
+            ElimSpineMaxCorrPartnerEarlyMoveCorrelation{f} = behaviorcorrdataearly(:,ElimSpineMaxInd);
+            ElimSpineMaxCorrPartnerEarlyMoveReliability{f} = FieldData{f}.StatClass{1}.AllSpineReliability(ElimSpineMaxInd);
+            for es = 1:length(ElimSpines)
+                ElimSpinesBehaviorCorrelation{f}(es,1:9) = behaviorcorrdataearly(:,es);
+            end
+            OtherSpinesBehaviorCorrelationEarly{f} = behaviorcorrdataearly(:,setdiff(1:NumberofEarlySpines,ElimSpines));
             %%%%%%
         end
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -514,8 +587,17 @@ if length(experimentnames) == 1
     a.LateCorrfNewSpinesandNearestMovementSpinefromEarlySessions = LateCorrfNewSpinesandNearestMovementSpinefromEarlySessions;
     a.DistancesBetweenNewSpinesandMovementSpines = DistancesBetweenNewSpinesandLateMovementSpines;
     a.LateCorrfNewSpinesandNearestMovementSpinefromLateSessions = LateCorrfNewSpinesandNearestMovementSpinefromLateSessions;
+    a.NewSpinesCorrwithNearbyEarlyMRSs = NewSpinesCorrwithNearbyEarlyMRSs;
+    a.TaskCorrelationofNearbyEarlyMRSs = TaskCorrelationofNearbyEarlyMRSs;
+    a.MovementReliabilityofNearbyEarlyMRSs = MovementReliabilityofNearbyEarlyMRSs;
+    a.NewSpinesCorrwithNearbyLateMRSs = NewSpinesCorrwithNearbyLateMRSs;
+    a.TaskCorrelationofNearbyLateMRSs = TaskCorrelationofNearbyLateMRSs;
+    a.MovementReliabilityofNearbyLateMRSs = MovementReliabilityofNearbyLateMRSs;
+    a.TaskCorrelationofNearbyEarlyMRSsforElimSp = TaskCorrelationofNearbyEarlyMRSsforElimSp;
+    a.MovementReliabilityofNearbyEarlyMRSsforElimSp = MovementReliabilityofNearbyEarlyMRSsforElimSp;
     a.DistancesBetweenElimSpinesandEarlyMovementSpines = DistancesBetweenElimSpinesandEarlyMovementSpines;
     a.CorrelationsofElimSpinesandEarlyMovementSpines = CorrelationsofElimSpinesandEarlyMovementSpines;
+    a.ElimSpinesCorrwithNearbyMRSs = ElimSpinesCorrwithNearbyMRSs;
     a.DistancesBetweenElimSpinesandMovementSpines = DistancesBetweenElimSpinesandMovementSpines;
     a.DistancesBetweenNewSpinesandRandomSpines = DistancesBetweenNewSpinesandRandomSpines;
     a.DistancesBetweenElimSpinesandRandomSpines = DistancesBetweenElimSpinesandRandomSpines;
@@ -524,8 +606,16 @@ if length(experimentnames) == 1
     a.DistancesBetweenElimSpinesandShuffledEarlyMovementSpines = DistancesBetweenElimSpinesandShuffledEarlyMovementSpines;
     a.DistancesBetweenElimSpinesandShuffledMovementSpines = DistancesBetweenElimSpinesandShuffledMovementSpines;
     a.NewSpinesMaxCorrelation = NewSpinesMaxCorr;
+    a.NewSpineMaxCorrPartnerEarlyMoveCorrelation = NewSpineMaxCorrPartnerEarlyMoveCorrelation;
+    a.NewSpineMaxCorrPartnerLateMoveCorrelation = NewSpineMaxCorrPartnerLateMoveCorrelation;
+    a.NewSpineMaxCorrPartnerEarlyMoveReliability = NewSpineMaxCorrPartnerEarlyMoveReliability;
+    a.NewSpineMaxCorrPartnerLateMoveReliability = NewSpineMaxCorrPartnerLateMoveReliability;
+    a.ElimSpineMaxCorrPartnerEarlyMoveReliability = ElimSpineMaxCorrPartnerEarlyMoveReliability;
+    a.ElimSpineMaxCorrPartnerEarlyMoveCorrelation = ElimSpineMaxCorrPartnerEarlyMoveCorrelation;
     a.NewSpinesBehaviorCorrelation = NewSpinesBehaviorCorrelation;
-    a.OtherSpinesBehaviorCorrelation = OtherSpinesBehaviorCorrelation;
+    a.ElimSpinesBehaviorCorrelation = ElimSpinesBehaviorCorrelation;
+    a.OtherSpinesBehaviorCorrelationEarly = OtherSpinesBehaviorCorrelationEarly;
+    a.OtherSpinesBehaviorCorrelationLate = OtherSpinesBehaviorCorrelationLate;
     a.ElimSpinesMaxCorrelation = ElimSpinesMaxCorr;
     a.OtherSpinesMaxCorrelation = OtherSpinesMaxCorr;    
 
@@ -579,10 +669,19 @@ else
         NumberofElimSpinesThatWereMR(1,i) = currentdata.NumberofElimSpinesThatWereMR;
         DistancesBetweenNewSpinesandEarlyMovementSpines{i} = cell2mat(currentdata.DistancesBetweenNewSpinesandEarlyMovementSpines);
         LateCorrfNewSpinesandNearestMovementSpinefromEarlySessions{i} = cell2mat(currentdata.LateCorrfNewSpinesandNearestMovementSpinefromEarlySessions);
+        NewSpinesCorrwithNearbyEarlyMRSs{i} = cell2mat(currentdata.NewSpinesCorrwithNearbyEarlyMRSs);
+        TaskCorrelationofNearbyEarlyMRSs{i} = cell2mat(currentdata.TaskCorrelationofNearbyEarlyMRSs);
+        MovementReliabilityofNearbyEarlyMRSs{i} = cell2mat(currentdata.MovementReliabilityofNearbyEarlyMRSs');
         DistancesBetweenNewSpinesandLateMovementSpines{i} = cell2mat(currentdata.DistancesBetweenNewSpinesandMovementSpines);
         LateCorrfNewSpinesandNearestMovementSpinefromLateSessions{i} = cell2mat(currentdata.LateCorrfNewSpinesandNearestMovementSpinefromLateSessions);
+        NewSpinesCorrwithNearbyLateMRSs{i} = cell2mat(currentdata.NewSpinesCorrwithNearbyLateMRSs);
+        TaskCorrelationofNearbyLateMRSs{i} = cell2mat(currentdata.TaskCorrelationofNearbyLateMRSs);
+        MovementReliabilityofNearbyLateMRSs{i} = cell2mat(currentdata.MovementReliabilityofNearbyLateMRSs');
         DistancesBetweenElimSpinesandEarlyMovementSpines{i} = cell2mat(currentdata.DistancesBetweenElimSpinesandEarlyMovementSpines);
         CorrelationsofElimSpinesandEarlyMovementSpines{i} = cell2mat(currentdata.CorrelationsofElimSpinesandEarlyMovementSpines);
+        ElimSpinesCorrwithNearbyMRSs{i} = cell2mat(currentdata.ElimSpinesCorrwithNearbyMRSs);
+        TaskCorrelationofNearbyEarlyMRSsforElimSp{i} = cell2mat(currentdata.TaskCorrelationofNearbyEarlyMRSsforElimSp);
+        MovementReliabilityofNearbyEarlyMRSsforElimSp{i} = cell2mat(currentdata.MovementReliabilityofNearbyEarlyMRSsforElimSp');
         DistancesBetweenElimSpinesandMovementSpines{i} = cell2mat(currentdata.DistancesBetweenElimSpinesandMovementSpines);
         DistancesBetweenNewSpinesandRandomSpines{i} = cell2mat(currentdata.DistancesBetweenNewSpinesandRandomSpines);
         DistancesBetweenElimSpinesandRandomSpines{i} = cell2mat(currentdata.DistancesBetweenElimSpinesandRandomSpines);
@@ -604,9 +703,18 @@ else
         NewSpinesMaxCorr{i} = cell2mat(currentdata.NewSpinesMaxCorrelation');
         ElimSpinesMaxCorr{i} = cell2mat(currentdata.ElimSpinesMaxCorrelation');
         OtherSpinesMaxCorr{i} = cell2mat(currentdata.OtherSpinesMaxCorrelation');
-        
+        NewSpineMaxCorrPartnerEarlyMoveCorrelation{i} = cell2mat(currentdata.NewSpineMaxCorrPartnerEarlyMoveCorrelation);
+        NewSpineMaxCorrPartnerLateMoveCorrelation{i} = cell2mat(currentdata.NewSpineMaxCorrPartnerLateMoveCorrelation);
+        NewSpineMaxCorrPartnerEarlyMoveReliability{i} = cell2mat(currentdata.NewSpineMaxCorrPartnerEarlyMoveReliability');
+        NewSpineMaxCorrPartnerLateMoveReliability{i} = cell2mat(currentdata.NewSpineMaxCorrPartnerLateMoveReliability');
+        ElimSpineMaxCorrPartnerEarlyMoveReliability{i} = cell2mat(currentdata.ElimSpineMaxCorrPartnerEarlyMoveReliability');
+        ElimSpineMaxCorrPartnerEarlyMoveCorrelation{i} = cell2mat(currentdata.ElimSpineMaxCorrPartnerEarlyMoveCorrelation);
+
+    
         NewSpinesBehaviorCorrelation{i} = cell2mat(currentdata.NewSpinesBehaviorCorrelation');
-        OtherSpinesBehaviorCorrelation{i} = cell2mat(currentdata.OtherSpinesBehaviorCorrelation)';
+        ElimSpinesBehaviorCorrelation{i} = cell2mat(currentdata.ElimSpinesBehaviorCorrelation');
+        OtherSpinesBehaviorCorrelationEarly{i} = cell2mat(currentdata.OtherSpinesBehaviorCorrelationEarly)';
+        OtherSpinesBehaviorCorrelationLate{i} = cell2mat(currentdata.OtherSpinesBehaviorCorrelationLate)';
         clear currentdata
     end
     
@@ -737,8 +845,33 @@ else
     set(gca, 'XTickLabel', {'New Spines', 'Elim Spines'})
     ylabel('Fractin of Spines that Become MR')
     
+    
+    
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %%% Figure 6: Distance Between Dynamic Spines and MR spines
+    %%% Figure 6: Number of Movement Spines on Dynamic vs. Static Dendrites
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
+    MoveSpinesonAdditionDendrites = cell2mat(NumberofMovementSpinesOnAdditionDendrites');
+    MoveSpinesonEliminationDendrites = cell2mat(NumberofMovementSpinesOnEliminationDendrites');
+    MoveSpinesonStaticDendrites = cell2mat(NumberofMovementSpinesOnStaticDendrites');
+    
+    allmat = [{MoveSpinesonAdditionDendrites}, {MoveSpinesonEliminationDendrites}, {MoveSpinesonStaticDendrites}];
+    figure; bar(1:length(allmat), cell2mat(cellfun(@nanmedian, allmat, 'uni', false)), 'FaceColor', lgreen)
+    
+    shuffnum = 1000;
+    bootstrpnum = shuffnum;
+    alphaforbootstrap = 0.05;
+
+    for i = 1:length(allmat)
+        Y = bootci(bootstrpnum, {@median, allmat{i}(~isnan(allmat{i}))}, 'alpha', alphaforbootstrap);
+        line([i,i], [Y(1), Y(2)], 'linewidth', 0.5, 'color', 'k');
+    end
+    set(gca, 'XTick', 1:length(allmat), 'XTickLabel',{'Add. Dends', 'Elim. Dends', 'Static Dends'})
+    ylabel('Median # of Move Spines')
+    
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%% Figure 7: Distance Between Dynamic Spines and MR spines
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    
     newspinesrandspines = cell2mat(DistancesBetweenNewSpinesandRandomSpines);
@@ -752,8 +885,6 @@ else
     elimspinesshuffledspines = cell2mat(DistancesBetweenElimSpinesandShuffledMovementSpines);
     elimspineslatemovspines = cell2mat(DistancesBetweenElimSpinesandMovementSpines);
     
-    shuffnum = 1000;
-    alphaforbootstrap = 0.05;
     SimNewSpinetoEarlyMovementSpineDistance = nan(1,shuffnum);
     SimNewSpinetoLateMovementSpineDistance = nan(1,shuffnum);
     
@@ -837,7 +968,6 @@ else
     datamat = [{SimNewSpinetoEarlyMovementSpineDistance},{newspinesearlymovspines}, {SimNewSpinetoLateMovementSpineDistance}, {newspineslatemovspines}, {SimElimSpinetoEarlyMovementSpineDistance},{elimspinesearlymovspines}, {SimElimSpinetoLateMovementSpineDistance}, {elimspineslatemovspines}];
     figure; bar(1:length(datamat), cell2mat(cellfun(@nanmedian, datamat, 'uni', false)), 'FaceColor', dred')
 %     r_errorbar(1:6, [nanmedian(randspines),nanmedian(shuffledearlyspines),nanmedian(earlyspines),nanmedian(shuffledspines),nanmedian(newspines),nanmedian(elimspines)], [nanstd(randspines)/sum(~isnan(randspines)),nanstd(shuffledearlyspines)/sum(~isnan(shuffledearlyspines)),nanstd(earlyspines)/sum(~isnan(earlyspines)),nanstd(shuffledspines)/sum(~isnan(shuffledspines)), nanstd(newspines)/sum(~isnan(newspines)), nanstd(elimspines)/sum(~isnan(elimspines))], 'k')
-    bootstrpnum = shuffnum;
     for i = 1:length(datamat)
         Y = bootci(bootstrpnum, {@median, datamat{i}(~isnan(datamat{i}))}, 'alpha', alphaforbootstrap);
         line([i,i], [Y(1), Y(2)], 'linewidth', 0.5, 'color', 'k');
@@ -848,43 +978,60 @@ else
 
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %%% Figure 7: Number of Movement Spines on Dynamic vs. Static Dendrites
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    
-    MoveSpinesonAdditionDendrites = cell2mat(NumberofMovementSpinesOnAdditionDendrites');
-    MoveSpinesonEliminationDendrites = cell2mat(NumberofMovementSpinesOnEliminationDendrites');
-    MoveSpinesonStaticDendrites = cell2mat(NumberofMovementSpinesOnStaticDendrites');
-    
-    allmat = [{MoveSpinesonAdditionDendrites}, {MoveSpinesonEliminationDendrites}, {MoveSpinesonStaticDendrites}];
-    figure; bar(1:length(allmat), cell2mat(cellfun(@nanmedian, allmat, 'uni', false)), 'FaceColor', lgreen)
-    
-    for i = 1:length(allmat)
-        Y = bootci(bootstrpnum, {@median, allmat{i}(~isnan(allmat{i}))}, 'alpha', alphaforbootstrap);
-        line([i,i], [Y(1), Y(2)], 'linewidth', 0.5, 'color', 'k');
-    end
-    set(gca, 'XTick', 1:length(allmat), 'XTickLabel',{'Add. Dends', 'Elim. Dends', 'Static Dends'})
-    ylabel('Median # of Move Spines')
-    
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %%% Figure 8: Dynamic Spines Max Correlation
+    %%% Figure 9: Dynamic Spines Max Correlation
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
     figure; subplot(1,2,1);hold on;
-    histogram(cell2mat(NewSpinesMaxCorr'),25); title('New Spines Max Corr. Dist.'); xlim([0 1])
+    NS = histogram(cell2mat(NewSpinesMaxCorr'),25); title('New Spines Max Corr. Dist.'); xlim([0 1]);
     plot(nanmedian(cell2mat(NewSpinesMaxCorr'))*ones(1,11),0:(max(hist(cell2mat(NewSpinesMaxCorr')))/10):max(hist(cell2mat(NewSpinesMaxCorr'))), '--r')
     text(nanmedian(cell2mat(NewSpinesMaxCorr')), max(hist(cell2mat(NewSpinesMaxCorr'))), [num2str(nanmedian(cell2mat(NewSpinesMaxCorr')))])
-    histogram(cell2mat(ElimSpinesMaxCorr'),25)
+    ES = histogram(cell2mat(ElimSpinesMaxCorr'),25);
+    legend([NS, ES], {'New Spines', 'Elim Spines'})
     subplot(1,2,2); hold on
     histogram(cell2mat(OtherSpinesMaxCorr'),25); title('All Other Spines Max Corr. Dist.'); xlim([0 1])
     plot(nanmedian(cell2mat(OtherSpinesMaxCorr'))*ones(1,11),0:(max(hist(cell2mat(OtherSpinesMaxCorr')))/10):max(hist(cell2mat(OtherSpinesMaxCorr'))), '--r')
     text(nanmedian(cell2mat(OtherSpinesMaxCorr')), max(hist(cell2mat(OtherSpinesMaxCorr'))), [num2str(nanmedian(cell2mat(OtherSpinesMaxCorr')))])
     
+    
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %%% Figure 9: New Spines Behavior Corr
+    %%% Figure 10: Dynamic Spines Correlation with Nearby Movement-related
+    %%% spines
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
-    figure; newspplot = subplot(1,2,1); hold on; title('New Spines'' Correlation with Task')
+    figure; a = subplot(2,2,1); hold on; 
+    plot(cell2mat(DistancesBetweenNewSpinesandEarlyMovementSpines), cell2mat(LateCorrfNewSpinesandNearestMovementSpinefromEarlySessions), '.k', 'Markersize', 14)
+    title('New spines vs. Early Movement Spines')
+    b = subplot(2,2,2); 
+    plot(cell2mat(DistancesBetweenNewSpinesandLateMovementSpines), cell2mat(LateCorrfNewSpinesandNearestMovementSpinefromLateSessions), '.k', 'Markersize', 14)
+    title('New spines vs. Late Movement Spines')
+    c = subplot(2,2,3);
+    plot(cell2mat(DistancesBetweenElimSpinesandEarlyMovementSpines), cell2mat(CorrelationsofElimSpinesandEarlyMovementSpines), '.k', 'Markersize', 14)
+    title('Elim spines vs. Early movement Spines')
+    linkaxes([a,b,c], 'xy')
+    subplot(2,2,4)
+    datamat = [{cell2mat(NewSpinesCorrwithNearbyEarlyMRSs)},{cell2mat(NewSpinesCorrwithNearbyLateMRSs)},{cell2mat(ElimSpinesCorrwithNearbyMRSs)}];
+    bar(1:length(datamat), cell2mat(cellfun(@nanmedian, datamat, 'uni', false)), 'FaceColor', gray')
+    bootstrpnum = shuffnum;
+    for i = 1:length(datamat)
+        Y = bootci(bootstrpnum, {@median, datamat{i}(~isnan(datamat{i}))}, 'alpha', alphaforbootstrap);
+        line([i,i], [Y(1), Y(2)], 'linewidth', 0.5, 'color', 'k');
+    end
+    set(gca, 'XTick', 1:length(datamat), 'XTickLabel',{'New Spines-Nearby Early MRS','New Spines-Nearby Late MRS', 'Elim Spines-Nearby Early MRS'})
+    xtickangle(gca, 45)
+    title('Max Correlation with Nearby MRSs')
+
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%% Figure 11: Dynamic Spines Behavior Corr
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
+    useabsvalbehcorr = 0;
+    
+    %%% New Spines
+    figure; newspplot = subplot(2,2,1); hold on; title('New Spines'' Correlation with Task')
     tempnewspmat = cell2mat(NewSpinesBehaviorCorrelation');
+    if useabsvalbehcorr
+        tempnewspmat = abs(tempnewspmat);
+    end
 %     tempnewspmat(tempnewspmat>=0) = nan;
     bar(nanmedian(tempnewspmat,1))
     for i = 1:9
@@ -896,8 +1043,12 @@ else
     xtickangle(gca, 45)
     ylabel('Correlation')
     
-    otherspplot = subplot(1,2,2); hold on; title('All Other Spines'' Correlation with Task')
-    tempotherspmat = cell2mat(OtherSpinesBehaviorCorrelation');
+    %%% All other spines from late sessions (i.e. not new spines) 
+    otherspplot = subplot(2,2,2); hold on; title('All Other Spines'' Correlation with Task')
+    tempotherspmat = cell2mat(OtherSpinesBehaviorCorrelationLate');
+    if useabsvalbehcorr
+        tempotherspmat = abs(tempotherspmat);
+    end
 %     tempotherspmat(tempotherspmat>=0) = nan;
     bar(nanmedian(tempotherspmat,1))
     linkaxes([newspplot,otherspplot],'y')
@@ -909,5 +1060,181 @@ else
     set(gca, 'XTickLabel', {'Cue', 'Movement', 'Wide Move', 'PreMove', 'Rewarded Move', 'Wider Reward Move', 'MDC', 'Reward Del', 'Punish'})
     xtickangle(gca, 45)
     ylabel('Correlation')
-end
+
+    %%% Eliminated spines
+    elimspplot = subplot(2,2,3); hold on; title('Elim Spines'' Correlation with Task')
+    tempelimspmat = cell2mat(ElimSpinesBehaviorCorrelation');
+    if useabsvalbehcorr
+        tempelimspmat = abs(tempelimspmat);
+    end
+%     tempotherspmat(tempotherspmat>=0) = nan;
+    bar(nanmedian(tempelimspmat,1))
+    linkaxes([newspplot,elimspplot],'y')
+    for i = 1:9
+        Y = bootci(bootstrpnum, {@median, tempelimspmat(~isnan(tempelimspmat(:,i)),i)}, 'alpha', 0.05);
+        line([i,i], [Y(1), Y(2)], 'linewidth', 0.5, 'color', 'k');
+    end
+    set(gca, 'XTick', [1:9])
+    set(gca, 'XTickLabel', {'Cue', 'Movement', 'Wide Move', 'PreMove', 'Rewarded Move', 'Wider Reward Move', 'MDC', 'Reward Del', 'Punish'})
+    xtickangle(gca, 45)
+    ylabel('Correlation')
+    
+    %%% All other spines from early sessions (i.e. ones not eliminated)
+    otherspplot = subplot(2,2,4); hold on; title('All Other Spines'' Correlation with Task')
+    tempotherspmat = cell2mat(OtherSpinesBehaviorCorrelationEarly');
+    if useabsvalbehcorr
+        tempotherspmat = abs(tempotherspmat);
+    end
+%     tempotherspmat(tempotherspmat>=0) = nan;
+    bar(nanmedian(tempotherspmat,1))
+    linkaxes([newspplot,otherspplot],'y')
+    for i = 1:9
+        Y = bootci(bootstrpnum, {@median, tempotherspmat(~isnan(tempotherspmat(:,i)),i)}, 'alpha', 0.05);
+        line([i,i], [Y(1), Y(2)], 'linewidth', 0.5, 'color', 'k');
+    end
+    set(gca, 'XTick', [1:9])
+    set(gca, 'XTickLabel', {'Cue', 'Movement', 'Wide Move', 'PreMove', 'Rewarded Move', 'Wider Reward Move', 'MDC', 'Reward Del', 'Punish'})
+    xtickangle(gca, 45)
+    ylabel('Correlation')
+    
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%% Figure 12: Dynamic Spines HCP Behavior Correlation
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
+    figure; newspearlyplot = subplot(2,2,1); hold on; title('New Spines'' MRS Partner Correlation with Task')
+    tempnewspearlymat = cell2mat(TaskCorrelationofNearbyEarlyMRSs);
+    if useabsvalbehcorr
+        tempnewspearlymat = abs(tempnewspearlymat);
+    end
+    bar(nanmedian(tempnewspearlymat,2))
+    for i = 1:9
+        Y = bootci(bootstrpnum, {@median, tempnewspearlymat(i,~isnan(tempnewspearlymat(i,:)))}, 'alpha', 0.05);
+        line([i,i], [Y(1), Y(2)], 'linewidth', 0.5, 'color', 'k');
+    end
+    set(gca, 'XTick', [1:9])
+    set(gca, 'XTickLabel', {'Cue', 'Movement', 'Wide Move', 'PreMove', 'Rewarded Move', 'Wider Reward Move', 'MDC', 'Reward Del', 'Punish'})
+    xtickangle(gca, 45)
+    ylabel('Correlation')
+    
+    newsplateplot = subplot(2,2,2); hold on; title('New Spines'' Partner Correlation with Task')
+    tempnewsplatemat = cell2mat(TaskCorrelationofNearbyLateMRSs);
+    if useabsvalbehcorr
+        tempnewsplatemat = abs(tempnewsplatemat);
+    end
+%     tempotherspmat(tempotherspmat>=0) = nan;
+    bar(nanmedian(tempnewsplatemat,2))
+    for i = 1:9
+        Y = bootci(bootstrpnum, {@median, tempnewsplatemat(i,~isnan(tempnewsplatemat(i,:)))}, 'alpha', 0.05);
+        line([i,i], [Y(1), Y(2)], 'linewidth', 0.5, 'color', 'k');
+    end
+    set(gca, 'XTick', [1:9])
+    set(gca, 'XTickLabel', {'Cue', 'Movement', 'Wide Move', 'PreMove', 'Rewarded Move', 'Wider Reward Move', 'MDC', 'Reward Del', 'Punish'})
+    xtickangle(gca, 45)
+    ylabel('Correlation')
+
+    %%% Eliminated spines
+    elimspplot = subplot(2,2,3); hold on; title('Elim Spines'' Partner Correlation with Task')
+    tempelimspmat = cell2mat(TaskCorrelationofNearbyEarlyMRSsforElimSp);
+    if useabsvalbehcorr
+        tempelimspmat = abs(tempelimspmat);
+    end
+%     tempotherspmat(tempotherspmat>=0) = nan;
+    bar(nanmedian(tempelimspmat,2))
+    for i = 1:9
+        Y = bootci(bootstrpnum, {@median, tempelimspmat(i,~isnan(tempelimspmat(i,:)))}, 'alpha', 0.05);
+        line([i,i], [Y(1), Y(2)], 'linewidth', 0.5, 'color', 'k');
+    end
+    set(gca, 'XTick', [1:9])
+    set(gca, 'XTickLabel', {'Cue', 'Movement', 'Wide Move', 'PreMove', 'Rewarded Move', 'Wider Reward Move', 'MDC', 'Reward Del', 'Punish'})
+    xtickangle(gca, 45)
+    ylabel('Correlation')
+    linkaxes([newspearlyplot,newsplateplot,elimspplot],'y')
+
+    
+    %%% All other spines from early sessions (i.e. ones not eliminated)
+    subplot(2,2,4); hold on; title('All Other Spines'' Correlation with Task')
+    datamat = [{cell2mat(MovementReliabilityofNearbyEarlyMRSs')}, {cell2mat(MovementReliabilityofNearbyLateMRSs')}, {cell2mat(MovementReliabilityofNearbyEarlyMRSsforElimSp')}];
+    bar(1:length(datamat), cell2mat(cellfun(@nanmedian, datamat, 'uni', false)), 'FaceColor', purple)
+    for i = 1:length(datamat)
+        Y = bootci(bootstrpnum, {@median, datamat{i}(~isnan(datamat{i}))}, 'alpha', 0.05);
+        line([i,i], [Y(1), Y(2)], 'linewidth', 0.5, 'color', 'k');
+    end
+    set(gca, 'XTick', [1:length(datamat)])
+    set(gca, 'XTickLabel', {'New Sp-Early MRSP', 'New Sp-Late MRSP', 'Elim Sp- Early HCP'})
+    xtickangle(gca, 45)
+    ylabel('Movement Reliability')
+    
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%% Figure 13: Dynamic Spines HCP Behavior Correlation
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
+    %%% New Spines
+    figure; newspearlyplot = subplot(2,2,1); hold on; title('New Spines'' Partner Correlation with Task')
+    tempnewspearlymat = cell2mat(NewSpineMaxCorrPartnerEarlyMoveCorrelation);
+    if useabsvalbehcorr
+        tempnewspearlymat = abs(tempnewspearlymat);
+    end
+%     tempnewspmat(tempnewspmat>=0) = nan;
+    bar(nanmedian(tempnewspearlymat,2))
+    for i = 1:9
+        Y = bootci(bootstrpnum, {@median, tempnewspearlymat(i,~isnan(tempnewspearlymat(i,:)))}, 'alpha', 0.05);
+        line([i,i], [Y(1), Y(2)], 'linewidth', 0.5, 'color', 'k');
+    end
+    set(gca, 'XTick', [1:9])
+    set(gca, 'XTickLabel', {'Cue', 'Movement', 'Wide Move', 'PreMove', 'Rewarded Move', 'Wider Reward Move', 'MDC', 'Reward Del', 'Punish'})
+    xtickangle(gca, 45)
+    ylabel('Correlation')
+    
+    %%% All other spines from late sessions (i.e. not new spines) 
+    newsplateplot = subplot(2,2,2); hold on; title('New Spines'' Partner Correlation with Task')
+    tempnewsplatemat = cell2mat(NewSpineMaxCorrPartnerLateMoveCorrelation);
+    if useabsvalbehcorr
+        tempnewsplatemat = abs(tempnewsplatemat);
+    end
+%     tempotherspmat(tempotherspmat>=0) = nan;
+    bar(nanmedian(tempnewsplatemat,2))
+    for i = 1:9
+        Y = bootci(bootstrpnum, {@median, tempnewsplatemat(i,~isnan(tempnewsplatemat(i,:)))}, 'alpha', 0.05);
+        line([i,i], [Y(1), Y(2)], 'linewidth', 0.5, 'color', 'k');
+    end
+    set(gca, 'XTick', [1:9])
+    set(gca, 'XTickLabel', {'Cue', 'Movement', 'Wide Move', 'PreMove', 'Rewarded Move', 'Wider Reward Move', 'MDC', 'Reward Del', 'Punish'})
+    xtickangle(gca, 45)
+    ylabel('Correlation')
+
+    %%% Eliminated spines
+    elimspplot = subplot(2,2,3); hold on; title('Elim Spines'' Partner Correlation with Task')
+    tempelimspmat = cell2mat(ElimSpineMaxCorrPartnerEarlyMoveCorrelation);
+    if useabsvalbehcorr
+        tempelimspmat = abs(tempelimspmat);
+    end
+%     tempotherspmat(tempotherspmat>=0) = nan;
+    bar(nanmedian(tempelimspmat,2))
+    for i = 1:9
+        Y = bootci(bootstrpnum, {@median, tempelimspmat(i,~isnan(tempelimspmat(i,:)))}, 'alpha', 0.05);
+        line([i,i], [Y(1), Y(2)], 'linewidth', 0.5, 'color', 'k');
+    end
+    set(gca, 'XTick', [1:9])
+    set(gca, 'XTickLabel', {'Cue', 'Movement', 'Wide Move', 'PreMove', 'Rewarded Move', 'Wider Reward Move', 'MDC', 'Reward Del', 'Punish'})
+    xtickangle(gca, 45)
+    ylabel('Correlation')
+    linkaxes([newspearlyplot,newsplateplot,elimspplot],'y')
+
+    
+    %%% All other spines from early sessions (i.e. ones not eliminated)
+    subplot(2,2,4); hold on; title('All Other Spines'' Correlation with Task')
+    datamat = [{cell2mat(NewSpineMaxCorrPartnerEarlyMoveReliability')}, {cell2mat(NewSpineMaxCorrPartnerLateMoveReliability')}, {cell2mat(ElimSpineMaxCorrPartnerEarlyMoveReliability')}];
+    bar(1:length(datamat), cell2mat(cellfun(@nanmedian, datamat, 'uni', false)), 'FaceColor', purple)
+    for i = 1:length(datamat)
+        Y = bootci(bootstrpnum, {@median, datamat{i}(~isnan(datamat{i}))}, 'alpha', 0.05);
+        line([i,i], [Y(1), Y(2)], 'linewidth', 0.5, 'color', 'k');
+    end
+    set(gca, 'XTick', [1:length(datamat)])
+    set(gca, 'XTickLabel', {'New Spines-Early HCP', 'New Spines-Late HCP', 'Elim Spines- Early HCP'})
+    xtickangle(gca, 45)
+    ylabel('Movement Reliability')
+    
+ end
 end

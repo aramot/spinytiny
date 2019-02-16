@@ -71,12 +71,9 @@ else
             SpineNo = randi(length(File.deltaF));
         end
     else
-        filechoice = varargin{1}{randi([1 length(varargin{1})], 1)};
-        filesearch = fastdir('E:\ActivitySummary', filechoice, 'Poly');
-        randdate = randi([1 length(filesearch)]);
-        load(filesearch{randdate});
-        eval(['File = ', filesearch{randdate}(1:end-4), ';']);
-        SpineNo = randi(length(File.deltaF));
+        filechoice = varargin{randi([1 length(varargin)], 1)};
+        filesearch = fastdir('E:\ActivitySummary', filechoice);
+        randdate = randi([1);
     end
     
     DendriteChoice =  find(~cell2mat(cellfun(@(x) isempty(find(x == SpineNo,1)), File.SpineDendriteGrouping, 'Uni', false))); %% Get the dendrite on which the chosen spine is located
@@ -85,11 +82,7 @@ else
     
     h1 = subplot(2,3,1:3);
     plot(File.Fluorescence_Measurement{SpineNo}, 'k')
-        filename = regexp(File.Filename, '[A-Z]{2,3}0+\d+_\d{4,6}', 'match');
-        filename = filename{1};
-        session = File.Session;
-    title(['Comparison of traces for spine no. ', num2str(SpineNo), ' from ', filename, ' (Session ', num2str(session), ')'], 'Interpreter', 'none')
-
+    
     h2 = subplot(2,3,4:6);
     hold on;
     p3 = plot(File.SynapseOnlyBinarized(SpineNo,:), 'r', 'Linewidth', 2);
