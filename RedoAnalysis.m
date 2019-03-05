@@ -46,7 +46,7 @@ else
         cd(foldertouse)
         files = dir(cd);
         for i = 1:length(files)
-            if ~isempty(strfind(files(i).name,'Summary')) && isempty(strfind(files(i).name, 'Poly')) 
+            if ~isempty(strfind(files(i).name,'Summary')) && isempty(strfind(files(i).name, 'Poly')) && isempty(strfind(files(i).name, 'ZSeries'))
                 if cell2mat(cellfun(@(x) strfind(files(i).name, x),varargin, 'uni', false))
                     mouse = regexp(files(i).name, '[ABCDEFGHIJKLMNOPQRSTUVWXYZ]{2}\d+[^_]', 'match');
                     mouse = mouse{1};

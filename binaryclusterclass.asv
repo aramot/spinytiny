@@ -3,7 +3,7 @@ function [HCSs, Clustered, CorrelationofClusters, FarClustered, CausalClustered]
 
 %%% Find all values that are greater than the cluster threshold
 
-ClusterThresh = 0.2;       %%% BASED ON THE 75th PERCENTILE OF CORRELATIONS OF MOVEMENT-RELATED SPINES (considering all data together); UPDATE AS NECESSARY
+ClusterThresh = 0.3;       %%% BASED ON THE 75th PERCENTILE OF CORRELATIONS OF MOVEMENT-RELATED SPINES (considering all data together); UPDATE AS NECESSARY
 
 HCSnum = 0;
 Clustnum = 0;
@@ -92,7 +92,7 @@ for A = 1:length(addresses)
             end
             
             %%% Add distance contingency
-            DistanceMax = 20;
+            DistanceMax = 10;
 %             
             a = Data.DistanceHeatMap;
             b = a';

@@ -35,8 +35,8 @@ maxtrialnum = 110;
 if sum(cell2mat(strfind(File.xsg_data.channel_names, 'Lick')))
     [n,d] = rat(1000/10000);
     lickdata_resample = resample(File.xsg_data.channels(:,3), n,d);
-    [b,a] = butter(4,(5/500), 'low');
-    File.lick_data_smooth = filtfilt(b,a,lickdata_resample);
+    [b,k] = butter(4,(5/500), 'low');
+    File.lick_data_smooth = filtfilt(b,k,lickdata_resample);
 else
     File.lick_data_smooth = [];
 end
@@ -64,6 +64,11 @@ if ~isempty(File.Behavior_Frames)
     for trialnumber = 1:length(File.Behavior_Frames)
         if trialnumber>maxtrialnum
             continue
+        end
+        if trialnumber==1
+            if File.Behavior_Frames{trialnumber}.states.state_0(1,2)>1000
+                continue
+            end
         end
         if ~isempty(File.Behavior_Frames{trialnumber}.states.reward)
             rewards = rewards+1;

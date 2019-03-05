@@ -73,8 +73,8 @@ for sample = 1:animalnumber
     eval(['currentfile = ', varargin{sample}, '_TrialInformation;'])
     if ~isempty(who('-regexp', '_SpineDynamicsSummary'))
         UseLongitudinalInfo = 1;
-        eval(['spinedynamicssummary = ', varargin{sample}, '_SpineDynamicsSummary;'])
-        clear([varargin{sample}, '_SpineDynamicsSummary'])
+        eval(['spinedynamicssummary = ', varargin{sample}, '_SpineDynamicsSummary'])
+        clear([
     else
         UseLongitudinalInfo = 0;
     end
@@ -83,9 +83,6 @@ for sample = 1:animalnumber
         statdends{session} = [];
         NewSpines{session} = [];
         locator = 0;
-        if session>14
-            continue
-        end
         if ~isempty(currentfile{session})
             if length(currentfile{session})<20
                 continue
@@ -95,7 +92,7 @@ for sample = 1:animalnumber
                 %%%% beside the activity map
                 
                 switch AnalysisType
-                    case 'Exclude'
+                    case 'Excluded'
                         statspines{session} = find(spinestatclass{session}.MovementSpines);
         %               statspines{session} = find(spinestatclass{session}.PreSuccessSpines);
                     case 'Subtract'
@@ -107,11 +104,7 @@ for sample = 1:animalnumber
                 
                 if UseLongitudinalInfo
                     fieldfind = logical(cell2mat(cellfun(@(x) ismember(session,x), spinedynamicssummary.SessionsbyField, 'uni', false)));
-                    if any(fieldfind)
-                        NewSpines{session} = find(spinedynamicssummary.NewSpines{fieldfind});
-                    else
-                        continue
-                    end
+                    NewSpines{session} = find(spinedynamicssummary.NewSpines{fieldfind});
                 end
                 
                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -148,7 +148,7 @@ File.Alphas = alpha;
 %%% Perform subtraction
 %%%%%%%%%%%%%%%%%%%%%%%%
 
-UseMinAlpha = 1;
+UseMinAlpha = 0.5;
 File.UsedMinAlpha = UseMinAlpha;
 
 MinAlpha = 0.5;

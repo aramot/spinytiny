@@ -62,6 +62,7 @@ if isempty(varargin)
 
             
 else
+    cd('E:\ActivitySummary');
     if length(dbstack)==1
         if length(varargin)>1
             File = varargin{1};

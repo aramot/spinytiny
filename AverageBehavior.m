@@ -189,8 +189,8 @@ ylabel('Duration of Movement Before Ignored Trials (s)')
 
 subplot(2,2,3); hold on;
 plot(NumberofMovementsDuringITIPreIgnoredTrials', 'Color', [0.7 0.7 0.7])
-ignored = flex_plot(1:14, NumberofMovementsDuringITIPreIgnoredTrials, stattype, 'k',4);
-rewarded = flex_plot(1:14, NumberofMovementsDuringITIPreRewardedTrials, stattype, 'g', 4);
+ignored = flex_plot(1:size(NumberofMovementsDuringITIPreIgnoredTrials,2), NumberofMovementsDuringITIPreIgnoredTrials, stattype, 'k',4);
+rewarded = flex_plot(1:size(NumberofMovementsDuringITIPreRewardedTrials,2), NumberofMovementsDuringITIPreRewardedTrials, stattype, 'g', 4);
 ylabel('Number of Movements During ITI')
 xlabel('Session')
 legend([ignored, rewarded], {'Ignored', 'Rewarded'}, 'Location', 'Northwest')
@@ -203,7 +203,7 @@ xlim([0 2])
 
 subplot(2,2,4); hold on;
 plot(FractionITISpentMovingPreIgnoredTrials', 'Color', [0.7 0.7 0.7])
-flex_plot(1:14, FractionITISpentMovingPreIgnoredTrials, stattype, 'k',4)
-flex_plot(1:14, FractionITISpentMovingPreRewardedTrials, stattype, 'g', 4)
+flex_plot(1:size(FractionITISpentMovingPreIgnoredTrials,2), FractionITISpentMovingPreIgnoredTrials, stattype, 'k',4)
+flex_plot(1:size(FractionITISpentMovingPreRewardedTrials,2), FractionITISpentMovingPreRewardedTrials, stattype, 'g', 4)
 xlabel('Session')
 ylabel('Fraction of ITI Spent Moving')

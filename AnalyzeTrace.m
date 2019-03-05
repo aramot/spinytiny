@@ -33,7 +33,6 @@ if sum(Data) == 0
     return
 end
 
-% Data(Data<0) = 0;
 
 switch Options.ImagingSensor
     case 'GluSnFR'
@@ -50,7 +49,14 @@ raw = Data;
 
 %%% Correct for large drift
 
-raw = raw-smooth(raw,driftbaselinesmoothwindow)'+nanmedian(raw); %%% Correct for slow drift, then restore data to original scale
+% raw = raw-smooth(raw,driftbaselinesmoothwindow)'+nanmedian(raw); %%% Correct for slow drift, then restore data to original scale
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Fix data near zero
+
+if any(raw<0)
+    raw = raw + abs(min(raw))+1;
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Pad data for protecting edges while estimating baseline
@@ -60,14 +66,14 @@ fornoise = raw;
 roundnum = 1;
 switch Options.ImagingSensor
     case 'GCaMP'
-        roundstodo = 10;
-        multiplier = 1;
+        roundstodo = 1;
+        multiplier = 1.5;
         windowsize = 30;
         stepforKDE = 20;
     case 'GluSnFR'
-        roundstodo = 10;
+        roundstodo = 2;
         multiplier = 1.5;
-        windowsize = 10;
+        windowsize = 5;
         stepforKDE = 5;
 end
 rawmed = nanmedian(raw);
@@ -141,11 +147,16 @@ end
 
 %%% Baseline Subtraction
 
-if any(truebaseline<=0)
-    constant = abs(min(truebaseline))+max(abs(truebaseline));
-    raw = raw+constant;
-    truebaseline = truebaseline+constant;
-end
+% if any(truebaseline<=0)
+%     constant = abs(min(truebaseline))+abs(nanmedian(raw));
+%     raw = raw+constant;
+%     truebaseline = truebaseline+constant;
+%     if any(raw<=0)
+%         shiftfactor = abs(min(raw))+1;
+%         raw = raw+shiftfactor;
+%         truebaseline = truebaseline+shiftfactor;
+%     end
+% end
 
 %     blsub = driftsub-truebaseline;                                                             %%% Baseline-subtracted value
 blsub = raw-truebaseline';
@@ -191,7 +202,7 @@ if traceoption == 1
 
 
     roundnum = 1;
-    roundstodo = 10;
+%     roundstodo = 2;
     while roundnum<=roundstodo 
         fornoise(fornoise>rawmed+(valueslimitfornoise*rawspread)) = rawmed+(valueslimitfornoise*rawspread);      %%% Cap off large and small values to pinch the data towards the true baseline
         fornoise(fornoise<rawmed-(valueslimitfornoise*rawspread)) = rawmed-(valueslimitfornoise*rawspread);      %%%
@@ -202,7 +213,7 @@ if traceoption == 1
 end
 
 %     spread = rawmed+spinevalueslimitfornoise*nanstd(fornoise);
-spread = nanmax(fornoise);
+spread = 3*std(fornoise);
 
 med = nanmedian(fornoise);
 
@@ -221,9 +232,9 @@ pks = findpeaks(processed_dFoF, 'MinPeakHeight', spread, 'MinPeakDistance', 200,
 
 switch Options.ImagingSensor
     case 'GCaMP'
-        spinethresh = 0.5;
-        dendthresh = 0.5;
-        somathresh = 0.5;
+        spinethresh = 0.25;
+        dendthresh = 0.25;
+        somathresh = 0.25;
     case 'GluSnFR'
         spinethresh = 0.25;
         dendthresh = 0.25;

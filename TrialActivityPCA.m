@@ -90,24 +90,26 @@ windowheight = scrsz(4)/2;
     
 %% Figure 1: Variance explained by first three PCs
 
+stattype = 'parametric';
+
 figure('Position', [10, scrsz(4)/2.5,windowwidth,windowheight]); 
 subplot(2,3,1);
 plot(ExplByPC1')
-flex_plot(1:14, ExplByPC1,'parametric', 'k', 2);
+flex_plot(1:14, ExplByPC1,stattype, 'k', 2);
 xlabel('Session')
 ylabel('Variance Explained')
 title('Variance Explained by PC1')
 ylim([0 100])
 
 subplot(2,3,2); plot(ExplByPC2')
-flex_plot(1:14, ExplByPC2,'parametric', 'k', 2);
+flex_plot(1:14, ExplByPC2,stattype, 'k', 2);
 xlabel('Session')
 ylabel('Variance Explained')
 title('Variance Explained by PC2')
 ylim([0 100])
 
 subplot(2,3,3); plot(ExplByPC3')
-flex_plot(1:14, ExplByPC3,'parametric', 'k',2);
+flex_plot(1:14, ExplByPC3,stattype, 'k',2);
 xlabel('Session')
 ylabel('Variance Explained')
 title('Variance Explained by PC3')
@@ -115,21 +117,21 @@ ylim([0 100])
 
 subplot(2,3,4);
 plot(DendriteExplByPC1')
-flex_plot(1:14, DendriteExplByPC1,'parametric', 'k', 2);
+flex_plot(1:14, DendriteExplByPC1,stattype, 'k', 2);
 xlabel('Session')
 ylabel('Variance Explained')
 title('Dend. Variance Explained by PC1')
 ylim([0 100])
 
 subplot(2,3,5); plot(DendriteExplByPC2')
-flex_plot(1:14, DendriteExplByPC2,'parametric', 'k', 2);
+flex_plot(1:14, DendriteExplByPC2,stattype, 'k', 2);
 xlabel('Session')
 ylabel('Variance Explained')
 title('Dend. Variance Explained by PC2')
 ylim([0 100])
 
 subplot(2,3,6); plot(DendriteExplByPC3')
-flex_plot(1:14, DendriteExplByPC3,'parametric', 'k',2);
+flex_plot(1:14, DendriteExplByPC3,stattype, 'k',2);
 xlabel('Session')
 ylabel('Variance Explained')
 title('Dend. Variance Explained by PC3')
@@ -157,17 +159,48 @@ end
 
 
 figure('Position',[windowwidth, scrsz(4)/2.5, windowwidth, windowheight]); 
-left = subplot(1,2,1);
-a = flex_plot(1:14, ClusteredSpinesPC1Coefficients,'parametric', 'k', 2);
-b = flex_plot(1:14, NonClusteredSpinePC1Coefficients, 'parametric', 'r', 2);
+left = subplot(2,2,1);
+a = flex_plot(1:14, ClusteredSpinesPC1Coefficients,stattype, 'k', 2);
+b = flex_plot(1:14, NonClusteredSpinePC1Coefficients, stattype, 'r', 2);
 legend([a,b], 'Clustered Spines', 'Nonclustered Spines')
 xlabel('Session')
 ylabel('Mean Coefficients')
 title('Coeff. for PC1')
-right = subplot(1,2,2);
-a = flex_plot(1:14, ClusteredSpinesPC2Coefficients,'parametric', 'k', 2);
-b = flex_plot(1:14, NonClusteredSpinePC2Coefficients, 'parametric', 'r', 2);
+right = subplot(2,2,2);
+a = flex_plot(1:14, ClusteredSpinesPC2Coefficients,stattype, 'k', 2);
+b = flex_plot(1:14, NonClusteredSpinePC2Coefficients, stattype, 'r', 2);
 legend([a,b], 'Clustered Spines', 'Nonclustered Spines')
+xlabel('Session')
+ylabel('Mean Coefficients')
+title('Coeff. for PC2')
+linkaxes([left,right], 'xy')
+
+NewSpinesPC1Coefficients = cell(1,14);
+NonNewSpinePC1Coefficients = cell(1,14);
+NewSpinesPC2Coefficients = cell(1,14);
+NonNewSpinePC2Coefficients = cell(1,14);
+for session = 1:14
+    for animal = 1:29
+        if ~isempty(coeffs{session}{animal})
+            NewSpinesPC1Coefficients{session} = [NewSpinesPC1Coefficients{session}; coeffs{session}{animal}(features.NewSpinesbyAnimal{session}{animal})];
+            NonNewSpinePC1Coefficients{session} = [NonNewSpinePC1Coefficients{session}; coeffs{session}{animal}(find(~ismember([1:size(coeffs{session}{animal},1)], features.NewSpinesbyAnimal{session}{animal}))')];
+            NewSpinesPC2Coefficients{session} = [NewSpinesPC2Coefficients{session}; coeffs{session}{animal}(features.NewSpinesbyAnimal{session}{animal},2)];
+            NonNewSpinePC2Coefficients{session} = [NonNewSpinePC2Coefficients{session}; coeffs{session}{animal}(find(~ismember([1:size(coeffs{session}{animal},1)], features.NewSpinesbyAnimal{session}{animal}))',2)];
+        end
+    end
+end
+
+left = subplot(2,2,3);
+a = flex_plot(1:14, NewSpinesPC1Coefficients,stattype, 'k', 2);
+b = flex_plot(1:14, NonNewSpinePC1Coefficients, stattype, 'r', 2);
+legend([a,b], 'New Spines', 'NonNew Spines')
+xlabel('Session')
+ylabel('Mean Coefficients')
+title('Coeff. for PC1')
+right = subplot(2,2,4);
+a = flex_plot(1:14, NewSpinesPC2Coefficients,stattype, 'k', 2);
+b = flex_plot(1:14, NonNewSpinePC2Coefficients, stattype, 'r', 2);
+legend([a,b], 'New Spines', 'NonNew Spines')
 xlabel('Session')
 ylabel('Mean Coefficients')
 title('Coeff. for PC2')
@@ -197,15 +230,15 @@ end
 
 figure('Position', [10, 50,windowwidth,windowheight]); 
 left = subplot(1,2,1);
-a = flex_plot(1:14, StatSpinesPC1Coefficients,'nonparametric', 'k', 2);
-b = flex_plot(1:14, NonStatSpinePC1Coefficients, 'nonparametric', 'r', 2);
+a = flex_plot(1:14, StatSpinesPC1Coefficients,stattype, 'k', 2);
+b = flex_plot(1:14, NonStatSpinePC1Coefficients, stattype, 'r', 2);
 legend([a,b], 'Stat Spines', 'NonStat Spines')
 xlabel('Session')
 ylabel('Mean Coefficients')
 title('Coeff. for PC1')
 right = subplot(1,2,2);
-a = flex_plot(1:14, StatSpinesPC2Coefficients,'nonparametric', 'k', 2);
-b = flex_plot(1:14, NonStatSpinePC2Coefficients, 'nonparametric', 'r', 2);
+a = flex_plot(1:14, StatSpinesPC2Coefficients,stattype, 'k', 2);
+b = flex_plot(1:14, NonStatSpinePC2Coefficients, stattype, 'r', 2);
 legend([a,b], 'Stat Spines', 'NonStat Spines')
 xlabel('Session')
 ylabel('Mean Coefficients')

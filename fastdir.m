@@ -3,13 +3,18 @@ function [fn, ffn,sort_keys] = fastdir(dir_name,expression,exclude,opt,sort_key)
         expression = '';
     end
     if(nargin<3)
-        exclude = '';
+        exclude = {''};
     end  
     if(nargin<4)
         opt = '';
     end
     if(nargin<5)
         sort_key = '';
+    end
+    if ~iscell(exclude)
+        tempstore = exclude; 
+        exclude = {};
+        exclude{1} = tempstore;
     end
     jif = java.io.File(dir_name);
     if(~jif.isDirectory())
@@ -23,7 +28,7 @@ function [fn, ffn,sort_keys] = fastdir(dir_name,expression,exclude,opt,sort_key)
     selected = false(jifl.length(),1);
     for i=1:jifl.length()
         fn{i} = char(jifl(i).getName());
-        selected(i) = (isempty(expression) || ~isempty(regexp(fn{i},expression,'once','start'))&& isempty(regexp(fn{i}, exclude, 'once')))...
+        selected(i) = (isempty(expression) || ~isempty(regexp(fn{i},expression,'once','start'))&& (sum(cell2mat(cellfun(@(x) isempty(regexp(fn{i}, x, 'once')), exclude, 'uni', false))) == length(exclude)))...
                     &&(isempty(opt) || (strcmp(opt,'d') && jifl(i).isDirectory()) ...
                     || (strcmp(opt,'f') && ~jifl(i).isDirectory()) );
     end

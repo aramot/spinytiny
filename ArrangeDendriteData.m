@@ -1,5 +1,10 @@
 function corrdata = ArrangeDendriteData(ZhongminsFile, DendOutput)
 
+%%% Zhongmins file is the file that Zhongmin produced to organize her
+%%% dendrite data, and contains indices valuable to this function
+%%% DendOutput is the output of the function "CollectDendriteData"
+
+
 animallist = {'NH051', 'NH052', 'NH053', 'NH054', 'ZL024', 'ZL025', 'ZL026', 'ZL027', 'ZL028', 'ZL029', 'ZL030', 'ZL031', 'ZL032', 'ZL033', 'ZL034', 'ZL035', 'ZL036', 'ZL037', 'ZL038', 'ZL039', 'ZL040', 'ZL041', 'ZL042', 'ZL043', 'ZL044', 'ZL045', 'ZL046', 'ZL047', 'ZL048'};
 
 addresslist = [cell2mat(cellfun(@str2double, ZhongminsFile{5,1}{1,2}(:,2), 'uni', false)); cell2mat(cellfun(@str2double, ZhongminsFile{5,1}{1,1}(:,2), 'uni', false))];
