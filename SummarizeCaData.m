@@ -172,7 +172,7 @@ Scrsz = get(0, 'Screensize');
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%
+%%
 %%%%%%%%%%%%%%%%%%%%%%%%
 %%% Controlled variables
 %%%%%%%%%%%%%%%%%%%%%%%%
@@ -231,7 +231,7 @@ else
         spinesmoothwindow = 15;
     elseif strcmpi(ImagingSensor, 'GluSnFR')
         ImagingFrequency = 60;
-        spinesmoothwindow = 30;
+        spinesmoothwindow = 15;
     end 
     polythreshmultiplier = 2*ones(1,length(File.Poly_Fluorescence_Measurement));
     Dendthreshmultiplier = 2*ones(1,File.NumberofDendrites);
@@ -923,10 +923,10 @@ Time = Time/60;
 
 %%% Current measurements can be found on the imaging computer; 512x512 and
 %%% 1024x1024 images are taken of a fluorescent ruler. Pixels per micron at
-%%% 1x zoom = 0.5
+%%% 1x zoom at 1024x1024 = 1; at 512x512 = 0.5
 
 pixpermicron = 0.5;
-if ~isempty(strfind(File.Filename, 'ZL'))
+if ~isempty(strfind(File.Filename, 'ZL')) || ~isempty(strfind(File.Filename, 'PY'))
     File.ZoomValue = 8.5;
 end
 if isfield(File, 'ZoomValue')

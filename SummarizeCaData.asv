@@ -276,7 +276,7 @@ if File.NumberofSpines ==  0 || File.NumberofSpines ~= length(File.deltaF)
 end
 % 
 % SpineNo = randi(File.NumberofSpines,1); %%% Will choose a random spine from the available ones for this file
-SpineNo = 17;  %%% Manually select spine to be considered
+SpineNo = 2;  %%% Manually select spine to be considered
 
 
 DendNum = File.NumberofDendrites;
@@ -923,10 +923,10 @@ Time = Time/60;
 
 %%% Current measurements can be found on the imaging computer; 512x512 and
 %%% 1024x1024 images are taken of a fluorescent ruler. Pixels per micron at
-%%% 1x zoom = 0.5
+%%% 1x zoom at 1024x1024 = 1; at 512x512 = 0.5
 
 pixpermicron = 0.5;
-if ~isempty(strfind(File.Filename, 'ZL'))
+if ~isempty(strfind(File.Filename, 'ZL')) || ~isempty(strfind(File.Filename, 'PY'))
     File.ZoomValue = 8.5;
 end
 if isfield(File, 'ZoomValue')

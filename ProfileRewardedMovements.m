@@ -55,7 +55,7 @@ if trialnumber>1
     end
 else
     UsedTrialInfo.FractionITISpentMoving = sum(File.lever_active(1:cue_start))/length(File.lever_active(1:cue_start));
-    if UsedTrialInfo.FractionITISpentMoving == 1;
+    if UsedTrialInfo.FractionITISpentMoving == 1
         UsedTrialInfo.numberofmovementssincelasttrial = 1;
     else
         UsedTrialInfo.numberofmovementssincelasttrial = length(find(diff(File.lever_active(1:cue_start))>0));

@@ -49,7 +49,7 @@ for i = 1:length(varargin)
     
     if ~isempty(missingsessions)
         sessionsaccountedfor = [];
-        for j = 1:length(missingsessions);
+        for j = 1:length(missingsessions)
             if length(varargin{i}.MovementCorrelation)>=missingsessions(j)
                 if ~sum(~isnan(varargin{i}.MovementCorrelation(missingsessions(j),:)))
                     sessionsaccountedfor = [sessionsaccountedfor, j];

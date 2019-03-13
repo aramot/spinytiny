@@ -195,8 +195,7 @@ if traceoption == 1
         case 'GCaMP'
             processed_dFoF = sgolayfilt(dFoF,filterorder,filterwindow);
         case 'GluSnFR'
-            processed_dFoF = smooth(dFoF, filterwindow);
-    end
+            [tpv
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

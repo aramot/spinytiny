@@ -934,7 +934,7 @@ try
     experiment = experiment{1};
     animal = experiment(1:5);
 catch
-    experiment = regexp(gui_CaImageViewer.filename, '[A-Z]{2,3}\w+', 'match');
+    experiment = regexp(gui_CaImageViewer.filename, '\w+\d+', 'match');
     if ~isempty(experiment)
         experiment = experiment{1};
     else
@@ -1508,8 +1508,10 @@ else
         experiment = regexp(gui_CaImageViewer.filename, '[A-Z]{2,3}\d+', 'match');
         fname = [experiment{1}, '_zStackSavedROIs', '_DrawnBy', drawer];
     else
-        experiment = regexp(gui_CaImageViewer.filename, '[A-Z]{2}\d+[_]\d+', 'match');
-
+        experiment = regexp(gui_CaImageViewer.filename, '[A-Z]\d+[_]\d+', 'match');
+        if isempty(experiment)
+            experiment = regexp(gui_CaImageViewer.filename, '\w+\d+[_]\d+', 'match');
+        end
         fname = [experiment{1}, '_SavedROIs', '_DrawnBy', drawer];
     end
 end

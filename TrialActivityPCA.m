@@ -13,7 +13,9 @@ Dlatent = repmat({cell(1,animalnumber)},1,14);
 Dtsquared = repmat({cell(1,animalnumber)},1,14);
 Dexplained = repmat({cell(1,animalnumber)},1,14);
 
-for sessions = [1,2,3,6,7,8,11,12,13] %%% Change based on the sessions you wish to use
+sessionstouse = [1,2,3,6,7,8,11,12,13];
+
+for sessions = sessionstouse %%% Change based on the sessions you wish to use
     for animal = 1:animalnumber
         if ~isempty(trialdata.TrialAverageByAnimal{sessions}{animal})
 %             spinestouse = features.StatSpinesbyAnimal{sessions}{animal};
@@ -146,13 +148,20 @@ ClusteredSpinesPC1Coefficients = cell(1,14);
 NonClusteredSpinePC1Coefficients = cell(1,14);
 ClusteredSpinesPC2Coefficients = cell(1,14);
 NonClusteredSpinePC2Coefficients = cell(1,14);
-for session = 1:14
-    for animal = 1:29
+for session = sessionstouse
+    for animal = 1:animalnumber
         if ~isempty(coeffs{session}{animal})
-            ClusteredSpinesPC1Coefficients{session} = [ClusteredSpinesPC1Coefficients{session}; coeffs{session}{animal}(features.ClusteredSpinesbyAnimal{session}{animal})];
-            NonClusteredSpinePC1Coefficients{session} = [NonClusteredSpinePC1Coefficients{session}; coeffs{session}{animal}(find(~ismember([1:size(coeffs{session}{animal},1)], features.ClusteredSpinesbyAnimal{session}{animal}))')];
-            ClusteredSpinesPC2Coefficients{session} = [ClusteredSpinesPC2Coefficients{session}; coeffs{session}{animal}(features.ClusteredSpinesbyAnimal{session}{animal},2)];
-            NonClusteredSpinePC2Coefficients{session} = [NonClusteredSpinePC2Coefficients{session}; coeffs{session}{animal}(find(~ismember([1:size(coeffs{session}{animal},1)], features.ClusteredSpinesbyAnimal{session}{animal}))',2)];
+            try
+                ClusteredSpinesPC1Coefficients{session} = [ClusteredSpinesPC1Coefficients{session}; coeffs{session}{animal}(features.ClusteredSpinesbyAnimal{session}{animal})];
+                NonClusteredSpinePC1Coefficients{session} = [NonClusteredSpinePC1Coefficients{session}; coeffs{session}{animal}(find(~ismember([1:size(coeffs{session}{animal},1)], features.ClusteredSpinesbyAnimal{session}{animal}))')];
+                ClusteredSpinesPC2Coefficients{session} = [ClusteredSpinesPC2Coefficients{session}; coeffs{session}{animal}(features.ClusteredSpinesbyAnimal{session}{animal},2)];
+                NonClusteredSpinePC2Coefficients{session} = [NonClusteredSpinePC2Coefficients{session}; coeffs{session}{animal}(find(~ismember([1:size(coeffs{session}{animal},1)], features.ClusteredSpinesbyAnimal{session}{animal}))',2)];
+            catch
+                ClusteredSpinesPC1Coefficients{session} = [ClusteredSpinesPC1Coefficients{session}; NaN];
+                NonClusteredSpinePC1Coefficients{session} = [NonClusteredSpinePC1Coefficients{session}; NaN];
+                ClusteredSpinesPC2Coefficients{session} = [ClusteredSpinesPC2Coefficients{session}; NaN];
+                NonClusteredSpinePC2Coefficients{session} = [NonClusteredSpinePC2Coefficients{session}; NaN];
+            end
         end
     end
 end
@@ -179,14 +188,20 @@ NewSpinesPC1Coefficients = cell(1,14);
 NonNewSpinePC1Coefficients = cell(1,14);
 NewSpinesPC2Coefficients = cell(1,14);
 NonNewSpinePC2Coefficients = cell(1,14);
-for session = 1:14
-    for animal = 1:29
+for session = sessionstouse
+    for animal = 1:animalnumber
         if ~isempty(coeffs{session}{animal})
-            NewSpinesPC1Coefficients{session} = [NewSpinesPC1Coefficients{session}; coeffs{session}{animal}(features.NewSpinesbyAnimal{session}{animal})];
-            NonNewSpinePC1Coefficients{session} = [NonNewSpinePC1Coefficients{session}; coeffs{session}{animal}(find(~ismember([1:size(coeffs{session}{animal},1)], features.NewSpinesbyAnimal{session}{animal}))')];
-            NewSpinesPC2Coefficients{session} = [NewSpinesPC2Coefficients{session}; coeffs{session}{animal}(features.NewSpinesbyAnimal{session}{animal},2)];
-            NonNewSpinePC2Coefficients{session} = [NonNewSpinePC2Coefficients{session}; coeffs{session}{animal}(find(~ismember([1:size(coeffs{session}{animal},1)], features.NewSpinesbyAnimal{session}{animal}))',2)];
-        end
+            try
+                NewSpinesPC1Coefficients{session} = [NewSpinesPC1Coefficients{session}; coeffs{session}{animal}(features.NewSpinesbyAnimal{session}{animal})];
+                NonNewSpinePC1Coefficients{session} = [NonNewSpinePC1Coefficients{session}; coeffs{session}{animal}(find(~ismember([1:size(coeffs{session}{animal},1)], features.NewSpinesbyAnimal{session}{animal}))')];
+                NewSpinesPC2Coefficients{session} = [NewSpinesPC2Coefficients{session}; coeffs{session}{animal}(features.NewSpinesbyAnimal{session}{animal},2)];
+                NonNewSpinePC2Coefficients{session} = [NonNewSpinePC2Coefficients{session}; coeffs{session}{animal}(find(~ismember([1:size(coeffs{session}{animal},1)], features.NewSpinesbyAnimal{session}{animal}))',2)];
+            catch
+                NewSpinesPC1Coefficients{session} = [NewSpinesPC1Coefficients{session}; NaN];
+                NonNewSpinePC1Coefficients{session} = [NonNewSpinePC1Coefficients{session}; NaN];
+                NewSpinesPC2Coefficients{session} = [NewSpinesPC2Coefficients{session}; NaN];
+                NonNewSpinePC2Coefficients{session} = [NonNewSpinePC2Coefficients{session}; NaN];
+            end
     end
 end
 
@@ -217,13 +232,20 @@ NonStatSpinePC1Coefficients = cell(1,14);
 StatSpinesPC2Coefficients = cell(1,14);
 NonStatSpinePC2Coefficients = cell(1,14);
 
-for session = 1:14
-    for animal = 1:29
+for session = sessionstouse
+    for animal = 1:animalnumber
         if ~isempty(coeffs{session}{animal})
-            StatSpinesPC1Coefficients{session} = [StatSpinesPC1Coefficients{session}; coeffs{session}{animal}(features.StatSpinesbyAnimal{session}{animal})];
-            NonStatSpinePC1Coefficients{session} = [NonStatSpinePC1Coefficients{session}; coeffs{session}{animal}(find(~ismember([1:size(coeffs{session}{animal},1)], features.StatSpinesbyAnimal{session}{animal}))')];
-            StatSpinesPC2Coefficients{session} = [StatSpinesPC2Coefficients{session}; coeffs{session}{animal}(features.StatSpinesbyAnimal{session}{animal},2)];
-            NonStatSpinePC2Coefficients{session} = [NonStatSpinePC2Coefficients{session}; coeffs{session}{animal}(find(~ismember([1:size(coeffs{session}{animal},1)], features.StatSpinesbyAnimal{session}{animal}))',2)];
+            try
+                StatSpinesPC1Coefficients{session} = [StatSpinesPC1Coefficients{session}; coeffs{session}{animal}(features.StatSpinesbyAnimal{session}{animal})];
+                NonStatSpinePC1Coefficients{session} = [NonStatSpinePC1Coefficients{session}; coeffs{session}{animal}(find(~ismember([1:size(coeffs{session}{animal},1)], features.StatSpinesbyAnimal{session}{animal}))')];
+                StatSpinesPC2Coefficients{session} = [StatSpinesPC2Coefficients{session}; coeffs{session}{animal}(features.StatSpinesbyAnimal{session}{animal},2)];
+                NonStatSpinePC2Coefficients{session} = [NonStatSpinePC2Coefficients{session}; coeffs{session}{animal}(find(~ismember([1:size(coeffs{session}{animal},1)], features.StatSpinesbyAnimal{session}{animal}))',2)];
+            catch
+                StatSpinesPC1Coefficients{session} = [StatSpinesPC1Coefficients{session}; NaN];
+                NonStatSpinePC1Coefficients{session} = [NonStatSpinePC1Coefficients{session}; NaN];
+                StatSpinesPC2Coefficients{session} = [StatSpinesPC2Coefficients{session}; NaN];
+                NonStatSpinePC2Coefficients{session} = [NonStatSpinePC2Coefficients{session}; NaN];
+            end
         end
     end
 end

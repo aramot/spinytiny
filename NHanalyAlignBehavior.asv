@@ -151,7 +151,7 @@ for i = firsttrial:lasttrial
     %%% Activity Section
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
-    Trial_Processed_dFoF{i} = Fluor.Processed_dFoF(:,Behavior.Behavior_Frames{i}.states.state_0(1,2):Behavior.Behavior_Frames{i}.states.state_0(2,1));
+    Trial_dFoF_Raw{i} = Fluor.Processed_dFoF(:,Behavior.Behavior_Frames{i}.states.state_0(1,2):Behavior.Behavior_Frames{i}.states.state_0(2,1));
     Trial_dFoF_DendriteSubtracted{i} = Fluor.Processed_dFoF_DendriteSubtracted(:,Behavior.Behavior_Frames{i}.states.state_0(1,2):Behavior.Behavior_Frames{i}.states.state_0(2,1));
     Trial_OverallSpineActivity{i} = Fluor.OverallSpineActivity(:,Behavior.Behavior_Frames{i}.states.state_0(1,2):Behavior.Behavior_Frames{i}.states.state_0(2,1));
     Trial_SynapseOnlyActivity{i} = Fluor.SynapseOnlyActivity(:,Behavior.Behavior_Frames{i}.states.state_0(1,2):Behavior.Behavior_Frames{i}.states.state_0(2,1));
@@ -185,7 +185,7 @@ for i = firsttrial:lasttrial
     
     if endcue-startcue > 60 || (Behavior.Behavior_Frames{i}.states.state_0(1,2)-60) < 0 %%% You want at least two seconds of data preceeding each movement, so the duration of cuestart;cueend should be > 60. If this is not the case, then move the "trial start" back 2 seconds (unless it's the first trial, in which case this is impossible). 
         trial_binary_cue{i} = cuemat;
-        Trial{i}.trialactivity = Trial_Processed_dFoF{i}(:,1:end);
+        Trial{i}.trialactivity = Trial_dFoF_Raw{i}(:,1:end);
         Trial{i}.synapseonlyactivity = Trial_SynapseOnlyActivity{i}(:,1:end);
         Trial{i}.trialbinaryactivity = Trial_SynapseOnlyBinarized{i}(:,1:end);
         Trial{i}.trialdendsubactivity = Trial_dFoF_DendriteSubtracted{i}(:,1:end); 
@@ -209,9 +209,9 @@ for i = firsttrial:lasttrial
     Trial{i}.TrialStart = starttrial_imframes;
     Trial{i}.CueStart = startcue+Trial{i}.TrialBacktrack;
     Trial{i}.CueEnd = endcue+Trial{i}.TrialBacktrack;
-    reward_period{i} = zeros(size(Trial_Processed_dFoF{i}(:,1:end),2),1);
-    punish_period{i} = zeros(size(Trial_Processed_dFoF{i}(:,1:end),2),1);
-    numimframes = size(Trial_Processed_dFoF{i}(:,1:end),2);   %%% This value is used as the standard to downsample the movement periods, which are taken from the true trial start and end times. Thus, any "backtracking" should NOT be included (i.e. this number should be the length of the trial as defined by ephus in BOTH cases of this if clause). 
+    reward_period{i} = zeros(size(Trial_dFoF_Raw{i}(:,1:end),2),1);
+    punish_period{i} = zeros(size(Trial_dFoF_Raw{i}(:,1:end),2),1);
+    numimframes = size(Trial_dFoF_Raw{i}(:,1:end),2);   %%% This value is used as the standard to downsample the movement periods, which are taken from the true trial start and end times. Thus, any "backtracking" should NOT be included (i.e. this number should be the length of the trial as defined by ephus in BOTH cases of this if clause). 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%% Downsampling to match beh and fluor frames
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -245,7 +245,7 @@ for i = firsttrial:lasttrial
     
     if ~isempty(Behavior.Behavior_Frames{i}.states.reward)
         reward = reward+1;
-%         trial_rewarded_presses{i} = zeros(length(trial_binary_behavior{i}),1);
+        trial_rewarded_presses{i} = zeros(length(trial_binary_behavior{i}),1);
         startreward = Behavior.Behavior_Frames{i}.states.reward(1)-starttrial_imframes;
         if startreward == 0
             startreward = 1;
@@ -255,12 +255,10 @@ for i = firsttrial:lasttrial
         if isempty(startmovement)
             startmovement = startcue;
         end
-        endmovement = startmovement+find(sign(diff(trial_binary_behavior_downsampled{i}(startmovement:endtrial_imframes))) == -1, 1,'first');
+        endmovement = startmovement + find(sign(diff(trial_binary_behavior_downsampled{i}(startcue:endtrial_imframes))) == -1, 1,'first');
         if isempty(endmovement)
             endmovement = startmovement + 1000;
         end
-        trial_rewarded_presses_downsampled{i} = zeros(length(trial_binary_behavior_downsampled{i}),1);
-        trial_rewarded_presses_downsampled{i}(startmovement:endmovement) = 1;
         Trial{i}.MovementStart = startmovement+Trial{i}.TrialBacktrack;
         Trial{i}.MovementEnd = endmovement+Trial{i}.TrialBacktrack;
         Trial{i}.Result = 'Reward';
@@ -275,7 +273,7 @@ for i = firsttrial:lasttrial
         Trial{i}.successactivity{reward} = Trial_SynapseOnlyBinarized{i}(startcue:endtrial_imframes);
     else
         punish = punish+1;
-        trial_rewarded_presses_downsampled{i} = zeros(length(trial_binary_behavior{i}),1);
+        trial_rewarded_presses{i} = zeros(length(trial_binary_behavior{i}),1);
         startpunish = Behavior.Behavior_Frames{i}.states.punish(1)-starttrial_imframes;
         if startpunish == 0
             startpunish = 1;
@@ -355,7 +353,6 @@ binary_behavior = cell2mat(trial_binary_behavior_downsampled');
 floored_behavior = abs(lever_movement).*binary_behavior;
 successful_behavior = cell2mat(trial_rewarded_presses_downsampled');
 OverallSpine_Data = cell2mat(Trial_OverallSpineActivity);
-Processed_dFoF_Data = cell2mat(Trial_Processed_dFoF);
 Dend = cell2mat(Trial_Dendrite_Binarized);
 spinedatatouse = cell2mat(Trial_SynapseOnlyBinarized);
 causal_Data = cell2mat(Trial_CausalBinarized);
@@ -364,7 +361,7 @@ movementduringcue = binarycue.*binary_behavior';
 reward_delivery = cell2mat(reward_period');
 punishment = cell2mat(punish_period');
 
-floored_spine_data =  spinedatatouse.*cell2mat(Trial_Processed_dFoF);
+floored_spine_data =  spinedatatouse.*cell2mat(Trial_dFoF_Raw);
 floored_dendsub_spine_data = DendSubspinedatatouse.*cell2mat(Trial_dFoF_DendriteSubtracted);
 
 
@@ -491,7 +488,7 @@ Aligned.PreMovement = premovement;
 Aligned.SuccessfulPresses = successful_behavior; 
 Aligned.RewardDelivery = reward_delivery;
 Aligned.Punishment = punishment; 
-Aligned.RawSpineActivity = cell2mat(Trial_Processed_dFoF);
+Aligned.RawSpineActivity = cell2mat(Trial_dFoF_Raw);
 Aligned.DendSubSpineActivity = cell2mat(Trial_dFoF_DendriteSubtracted);
 Aligned.SynapseOnlyBinarized = spinedatatouse;
 Aligned.DendSubSynapseOnlyBinarized = DendSubspinedatatouse;

@@ -14,7 +14,13 @@ for i = 1:length(experimentnames)
     SpineDynamics{i} = currentdata.SpineDynamics;
     DendriteDynamics{i} =  currentdata.DendriteDynamics;
     AllDendriteDistances{i} = currentdata.AllDendriteDistances;
+    SpineDendriteGrouping{i} = currentdata.SpineDendriteGrouping;
     AllMovementSpines{i} = currentdata.AllMovementSpines;
+    NumberofEarlyMovementRelatedSpines(1,i) = currentdata.NumberofEarlyMovementRelatedSpines;
+    NumberofLateMovementRelatedSpines(1,i) = currentdata.NumberofLateMovementRelatedSpines;
+    NumberofPersistentMovementRelatedSpines{i} = cell2mat(currentdata.NumberofPersistentMovementRelatedSpines);
+    NumberofPersistentMovementSpinesClustered{i} = cell2mat(currentdata.NumberofPersistentMovementSpinesClustered);
+    NumberofClusteredMoveSpines(1,i) = currentdata.NumberofClusteredMoveSpines;
     FractionofDendritesThatAreDynamic(1,i) = currentdata.FractionofDendritesThatAreDynamic;
     FractionofDendriteswithAddition(1,i) = currentdata.FractionofDendriteswithAddition;
     FractionofDendriteswithElimination(1,i) = currentdata.FractionofDendriteswithElimination;
@@ -55,8 +61,10 @@ for i = 1:length(experimentnames)
     NewSpineAllSpinesLateCorr{i} = currentdata.NewSpineAllSpinesLateCorr(~cellfun(@isempty, currentdata.NewSpineAllSpinesLateCorr));
     
     DistancesBetweenNewSpinesandEarlyMovementSpines{i} = cell2mat(currentdata.DistancesBetweenNewSpinesandEarlyMovementSpines);
-    LateCorrofNewSpinesandMovementSpinefromEarlySessions{i} = cell2mat(currentdata.LateCorrfNewSpinesandNearestMovementSpinefromEarlySessions);
+    LateCorrfNewSpinesandNearestMovementSpinefromEarlySessions{i} = cell2mat(currentdata.LateCorrfNewSpinesandNearestMovementSpinefromEarlySessions);
     NewSpinesCorrwithDistanceMatchedNonEarlyMRSs{i} = cell2mat(currentdata.NewSpinesCorrwithDistanceMatchedNonEarlyMRSs);
+    MovementSpineDistanceMatchedControlCorrelation{i} = cell2mat(cellfun(@cell2mat, currentdata.MovementSpineDistanceMatchedControlCorrelation(~cell2mat(cellfun(@isempty, currentdata.MovementSpineDistanceMatchedControlCorrelation, 'uni', false))), 'uni', false));
+    TaskCorrelationofClusteredNewSpines{i} = cell2mat(currentdata.TaskCorrelationofClusteredNewSpines);
     NewSpinesCorrwithNearbyEarlyMRSs{i} = cell2mat(currentdata.NewSpinesCorrwithNearbyEarlyMRSs);
     TaskCorrelationofNearbyEarlyMRSs{i} = cell2mat(currentdata.TaskCorrelationofNearbyEarlyMRSs);
     MovementReliabilityofNearbyEarlyMRSs{i} = cell2mat(currentdata.MovementReliabilityofNearbyEarlyMRSs');
@@ -103,7 +111,6 @@ for i = 1:length(experimentnames)
     ElimSpineMaxCorrPartnerEarlyMoveReliability{i} = cell2mat(currentdata.ElimSpineMaxCorrPartnerEarlyMoveReliability');
     ElimSpineMaxCorrPartnerEarlyMoveCorrelation{i} = cell2mat(currentdata.ElimSpineMaxCorrPartnerEarlyMoveCorrelation);
 
-
     NewSpinesBehaviorCorrelation{i} = cell2mat(currentdata.NewSpinesBehaviorCorrelation');
     ElimSpinesBehaviorCorrelation{i} = cell2mat(currentdata.ElimSpinesBehaviorCorrelation');
     NonNewSpinesBehaviorCorrelationEarly{i} = cell2mat(currentdata.NonNewSpinesBehaviorCorrelationEarly)';
@@ -122,12 +129,29 @@ for i = 1:length(experimentnames)
     
     SuccessCentricClusterCorrelation{i} = cell2mat(cellfun(@cell2mat,currentdata.SuccessCentricClusterCorrelation(~cell2mat(cellfun(@isempty, currentdata.SuccessCentricClusterCorrelation, 'uni', false))),'uni', false));
     SuccessCentricDistanceMatchedCorrelation{i} = cell2mat(cellfun(@cell2mat,currentdata.SuccessCentricDistanceMatchedCorrelation(~cell2mat(cellfun(@isempty, currentdata.SuccessCentricDistanceMatchedCorrelation, 'uni', false))),'uni', false));
-
+    SuccessCentricDistanceMatchedCorrelationforMRS{i} = cell2mat(cellfun(@cell2mat,currentdata.SuccessCentricDistanceMatchedCorrelationforMRS(~cell2mat(cellfun(@isempty, currentdata.SuccessCentricDistanceMatchedCorrelationforMRS, 'uni', false))),'uni', false));
+    SuccessCentricCorrelationofAllOtherSpines{i} = cell2mat(currentdata.SuccessCentricCorrelationofAllOtherSpines');
+    FailureCentricClusterCorrelation{i} = cell2mat(cellfun(@cell2mat, currentdata.FailureCentricClusterCorrelation(~cell2mat(cellfun(@isempty, currentdata.FailureCentricClusterCorrelation, 'uni', false))), 'uni', false));
+    
     CombinedClusterActivityCorrwithMovement{i} = cell2mat(cellfun(@cell2mat,currentdata.CombinedClusterActivityCorrwithMovement(~cell2mat(cellfun(@isempty, currentdata.CombinedClusterActivityCorrwithMovement, 'uni', false))),'uni', false));
     CombinedClusterActivityCorrwithSuccess{i} = cell2mat(cellfun(@cell2mat,currentdata.CombinedClusterActivityCorrwithSuccess(~cell2mat(cellfun(@isempty, currentdata.CombinedClusterActivityCorrwithSuccess, 'uni', false))),'uni', false));
     ClusterMovementReliability{i} = cell2mat(cellfun(@cell2mat,currentdata.ClusterMovementReliability(~cell2mat(cellfun(@isempty, currentdata.ClusterMovementReliability, 'uni', false))),'uni', false));
     ClusterSuccessReliability{i} = cell2mat(cellfun(@cell2mat,currentdata.ClusterSuccessReliability(~cell2mat(cellfun(@isempty, currentdata.ClusterSuccessReliability, 'uni', false))),'uni', false));
+    ControlPairMovementReliability{i} = cell2mat(cellfun(@cell2mat, currentdata.ControlPairMovementReliability(~cell2mat(cellfun(@isempty, currentdata.ControlPairMovementReliability, 'uni', false))), 'uni', false));
+    ControlPairSuccessReliability{i} = cell2mat(cellfun(@cell2mat, currentdata.ControlPairSuccessReliability(~cell2mat(cellfun(@isempty, currentdata.ControlPairSuccessReliability, 'uni', false))), 'uni', false));
     
+    MovementCorrelationwithCoActiveClusters{i} = cell2mat(cellfun(@cell2mat, currentdata.MovementCorrelationwithCoActiveClusters(~cell2mat(cellfun(@isempty, currentdata.MovementCorrelationwithCoActiveClusters, 'uni', false))), 'uni', false));
+    MovementCorrelationofAllOtherMovements{i} = cell2mat(cellfun(@cell2mat, currentdata.MovementCorrelationofAllOtherMovements(~cell2mat(cellfun(@isempty, currentdata.MovementCorrelationofAllOtherMovements, 'uni', false))), 'uni', false));
+    
+    HCPClusteredNewSpineCorrwithMovement{i} = cell2mat(currentdata.HCPClusteredNewSpineCorrwithMovement);
+    HCPClusteredNewSpineCorrwithSuccess{i} = cell2mat(currentdata.HCPClusteredNewSpineCorrwithSuccess);
+    HCPCorrwithMovement{i} = cell2mat(currentdata.HCPCorrwithMovement);
+    HCPCorrwithSuccess{i} = cell2mat(currentdata.HCPCorrwithSuccess);
+    CoActiveHCPClusterCorrwithMovement{i} = cell2mat(currentdata.CoActiveHCPClusterCorrwithMovement);
+    CoActiveHCPClusterCorrwithSuccess{i} = cell2mat(currentdata.CoActiveHCPClusterCorrwithSuccess);
+    SuccessCentricHCPClusterCorrelation{i} = cell2mat(currentdata.SuccessCentricHCPClusterCorrelation);
+    MovementCorrelationwithCoActiveHCPClusters{i} = cell2mat(currentdata.MovementCorrelationwithCoActiveHCPClusters);
+    MovementCorrelationofAllOtherNonHCPMovements{i} = cell2mat(currentdata.MovementCorrelationofAllOtherNonHCPMovements);
     clear currentdata
 end
 
@@ -258,7 +282,7 @@ xlim([0 3])
 set(gca, 'XTick', [1 2])
 set(gca, 'XTickLabel', {'New Spines', 'Elim Spines'})
 ylabel('Fraction')
-title('Fraction of Dynamic Spines that with MR')
+title('Fraction of Dynamic Spines that are MR')
 
 subplot(1,3,2)
 y = [nanmean(FractionofNewSpinesClustered),nanmean(1-FractionofNewSpinesClustered)];
@@ -267,7 +291,7 @@ b2 = bar(1,y(1));
 legend([b1, b2], {'Unclustered', 'Clustered'})
 set(gca, 'XTickLabel', [])
 ylabel('Fraction')
-title('Fraction of New Spines that are MR')
+title('Fraction of New MR Spines that are Clustered')
 
 ind = find(NumberofNewSpines);
 PofA = NumberofNewSpinesThatAreMR(ind)./NumberofNewSpines(ind);
@@ -287,7 +311,7 @@ set(gca, 'XTick', 1:2)
 set(gca, 'XTickLabel', {'PofA*PofB', 'PofAnB'});
 xtickangle(gca, 45)
 ylabel('Probability')
-title('Probability Interaction')
+title('Interaction of Clustering and New Spine MR')
 
 if ranksum([PofA.*PofB], PofAnB)<0.05
     text(1.4, maxline+0.03, '*')
@@ -295,9 +319,58 @@ else
     text(1.4, maxline+0.03, 'ns')
 end
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Figure 6: Persistence of Movement Related Spines
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+figure; 
+subplot(1,2,1)
+
+NumberofPersistentMovementSpinesClustered(cell2mat(cellfun(@isempty, NumberofPersistentMovementSpinesClustered, 'uni', false))) = mat2cell(zeros(1,sum(cell2mat(cellfun(@isempty, NumberofPersistentMovementSpinesClustered, 'uni', false)))),1,ones(1,sum(cell2mat(cellfun(@isempty, NumberofPersistentMovementSpinesClustered, 'uni', false))))); %%% Replace any empty cells with cells of {0}
+
+allmat = [sum(cell2mat(NumberofPersistentMovementRelatedSpines))/sum(NumberofEarlyMovementRelatedSpines), sum(cell2mat(NumberofPersistentMovementSpinesClustered))/sum(cell2mat(NumberofPersistentMovementRelatedSpines))];
+bar(allmat, 'FaceColor', red);
+
+text(1,sum(cell2mat(NumberofPersistentMovementRelatedSpines))/sum(NumberofEarlyMovementRelatedSpines)+0.05, [num2str(sum(cell2mat(NumberofPersistentMovementRelatedSpines))), '/', num2str(sum(NumberofEarlyMovementRelatedSpines))])
+text(2,sum(cell2mat(NumberofPersistentMovementSpinesClustered))/sum(cell2mat(NumberofPersistentMovementRelatedSpines))+0.05, [num2str(sum(cell2mat(NumberofPersistentMovementSpinesClustered))), '/', num2str(sum(cell2mat(NumberofPersistentMovementRelatedSpines)))])
+ylim([0 1])   
+xlim([0 3])
+set(gca, 'XTick', [1 2])
+set(gca, 'XTickLabel', {'Persistent MRS', 'Persistent MRS that cluster'})
+ylabel('Fraction')
+title('Fraction of Persistent MRSs')
+
+ind = find(NumberofEarlyMovementRelatedSpines);
+
+PersistentMRSbyanimal = cell2mat(cellfun(@sum, NumberofPersistentMovementRelatedSpines, 'uni', false));
+PofA = PersistentMRSbyanimal(ind)./NumberofEarlyMovementRelatedSpines(ind);
+PofB = NumberofClusteredMoveSpines(ind)./NumberofEarlyMovementRelatedSpines(ind);
+persistentandclustered = cell2mat(NumberofPersistentMovementSpinesClustered);
+PofAnB = persistentandclustered(ind)./NumberofEarlyMovementRelatedSpines(ind);
+
+subplot(1,2,2)
+bar(1,nanmean(PofA.*PofB)); hold on;
+scatterabout = 0.75 + (1.25-0.75)*rand(length(PofA),1);
+plot(scatterabout, PofA.*PofB, '.k', 'Markersize', 14)
+scatterabout = 1.75 + (2.25-1.75)*rand(length(PofA),1);
+bar(2,nanmean(PofAnB))
+plot(scatterabout, PofAnB, '.k', 'Markersize', 14)
+maxline = max([nanmean(PofA.*PofB), nanmean(PofAnB)]);
+plot(1:2, (maxline+0.01)*ones(1,2), 'k', 'Linewidth', 2)
+set(gca, 'XTick', 1:2)
+set(gca, 'XTickLabel', {'PofA*PofB', 'PofAnB'});
+xtickangle(gca, 45)
+ylabel('Probability')
+title('Interaction of Clustering and Persistence of MRSs')
+
+if ranksum([PofA.*PofB], PofAnB)<0.05
+    text(1.4, maxline+0.03, '*')
+else
+    text(1.4, maxline+0.03, 'ns')
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Figure 6: Number of Movement Spines on Dynamic vs. Static Dendrites
+%%% Figure 7: Number of Movement Spines on Dynamic vs. Static Dendrites
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 MoveSpinesonAdditionDendrites = cell2mat(NumberofMovementSpinesOnAdditionDendrites');
@@ -320,7 +393,7 @@ ylabel('Median # of Move Spines')
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Figure 7: Distance Between Dynamic Spines and MR spines
+%%% Figure 8: Distance Between Dynamic Spines and MR spines
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 newspinesrandspines = cell2mat(DistancesBetweenNewSpinesandRandomSpines);
@@ -347,33 +420,38 @@ for i = 1:shuffnum
     for j = 1:sum(NumberofNewSpines)
         randAnimal = randi([1,length(AllDendriteDistances)],1);
         randField = randi([1,length(AllDendriteDistances{randAnimal})]);
-        randSpine = randi([1,length(AllDendriteDistances{randAnimal}{randField})]);
-        simNewSpine = randSpine;
-%         simNewSpineDistances = AllDendriteDistances{randAnimal}{randField}(simNewSpine,:);
+        randDend = randi([1,length(SpineDendriteGrouping{randAnimal}{randField})]);
+        randDendspines = SpineDendriteGrouping{randAnimal}{randField}{randDend}(1:end);
+        randDendDistances = AllDendriteDistances{randAnimal}{randField}(randDendspines(1):randDendspines(end), randDendspines(1):randDendspines(end));
+        [dendLength, longeststretch] = max(max(randDendDistances,[],2));
+        simNewSpine = randi([1,2*round(dendLength)])/2; %%% THe 2x multiplier is to provide 0,5um precision
         %%%
-        EarlyMovementSpines = AllMovementSpines{randAnimal}{randField}(:,1); %%% 1 index corresponds to early session
-        while ~any(~isnan(AllDendriteDistances{randAnimal}{randField}(simNewSpine, EarlyMovementSpines))) 
+        EarlyMovementSpines = AllMovementSpines{randAnimal}{randField}(randDendspines,1); %%% 1 index corresponds to early session
+        while ~any(EarlyMovementSpines)
             randAnimal = randi([1,length(AllDendriteDistances)],1);
             randField = randi([1,length(AllDendriteDistances{randAnimal})]);
-            randSpine = randi([1,length(AllDendriteDistances{randAnimal}{randField})]);
-            simNewSpine = randSpine;
-        %         simNewSpineDistances = AllDendriteDistances{randAnimal}{randField}(simNewSpine,:);
-            EarlyMovementSpines = AllMovementSpines{randAnimal}{randField}(:,1);
+            randDend = randi([1,length(SpineDendriteGrouping{randAnimal}{randField})]);
+            randDendspines = SpineDendriteGrouping{randAnimal}{randField}{randDend}(1:end);
+            randDendDistances = AllDendriteDistances{randAnimal}{randField}(randDendspines(1):randDendspines(end), randDendspines(1):randDendspines(end));
+            [dendLength, longeststretch] = max(max(randDendDistances,[],2));
+            simNewSpine = randi([1,2*round(dendLength)])/2; %%% THe 2x multiplier is to provide 0,5um precision
+            EarlyMovementSpines = AllMovementSpines{randAnimal}{randField}(randDendspines,1);
         end
-        mockearlynewspinedistribution(j) = nanmin(AllDendriteDistances{randAnimal}{randField}(simNewSpine, EarlyMovementSpines));
-        mockearlyelimspinedistribution(j) = nanmin(AllDendriteDistances{randAnimal}{randField}(simNewSpine, EarlyMovementSpines));
+        %%%
+        mockearlynewspinedistribution(j) = abs(nanmin(randDendDistances(longeststretch, EarlyMovementSpines))-simNewSpine);
         %%%%
-        LateMovementSpines = AllMovementSpines{randAnimal}{randField}(:,end);%%% 'end' index corresponds to final session
-        while ~any(~isnan(AllDendriteDistances{randAnimal}{randField}(simNewSpine, LateMovementSpines)))
+        LateMovementSpines = AllMovementSpines{randAnimal}{randField}(randDendspines,end);      %%% 'end' index corresponds to final session'
+        while ~any(LateMovementSpines)
             randAnimal = randi([1,length(AllDendriteDistances)],1);
             randField = randi([1,length(AllDendriteDistances{randAnimal})]);
-            randSpine = randi([1,length(AllDendriteDistances{randAnimal}{randField})]);
-            simNewSpine = randSpine;
-        %         simNewSpineDistances = AllDendriteDistances{randAnimal}{randField}(simNewSpine,:);
-            LateMovementSpines = AllMovementSpines{randAnimal}{randField}(:,end);
+            randDend = randi([1,length(SpineDendriteGrouping{randAnimal}{randField})]);
+            randDendspines = SpineDendriteGrouping{randAnimal}{randField}{randDend}(1:end);
+            randDendDistances = AllDendriteDistances{randAnimal}{randField}(randDendspines(1):randDendspines(end), randDendspines(1):randDendspines(end));
+            [dendLength, longeststretch] = max(max(randDendDistances,[],2));
+            simNewSpine = randi([1,2*round(dendLength)])/2; %%% THe 2x multiplier is to provide 0,5um precision
+            LateMovementSpines = AllMovementSpines{randAnimal}{randField}(randDendspines,end);
         end
-        mocklatenewspinedistribution(j) = nanmin(AllDendriteDistances{randAnimal}{randField}(simNewSpine, LateMovementSpines));
-        mocklateelimspinedistribution(j) = nanmin(AllDendriteDistances{randAnimal}{randField}(simNewSpine, LateMovementSpines));
+        mocklatenewspinedistribution(j) =abs(nanmin(randDendDistances(longeststretch, LateMovementSpines))-simNewSpine);
     end
     SimNewSpinetoEarlyMovementSpineDistance(i) = nanmedian(mockearlynewspinedistribution);
         if SimNewSpinetoEarlyMovementSpineDistance(i) > nanmedian(newspinesearlymovspines)
@@ -391,22 +469,35 @@ for i = 1:shuffnum
     for j = 1:sum(NumberofElimSpines)
         randAnimal = randi([1,length(AllDendriteDistances)],1);
         randField = randi([1,length(AllDendriteDistances{randAnimal})]);
-        randSpine = randi([1,length(AllDendriteDistances{randAnimal}{randField})]);
-        simElimSpine = randSpine;
-        EarlyMovementSpines = AllMovementSpines{randAnimal}{randField}(:,1); %%% 1 index corresponds to early session
-        LateMovementSpines = AllMovementSpines{randAnimal}{randField}(:,end);%%% 'end' index corresponds to final session
-        while ~any(~isnan(AllDendriteDistances{randAnimal}{randField}(simElimSpine, EarlyMovementSpines))) || ~any(~isnan(AllDendriteDistances{randAnimal}{randField}(simElimSpine, LateMovementSpines)))
+        randDend = randi([1,length(SpineDendriteGrouping{randAnimal}{randField})]);
+        randDendspines = SpineDendriteGrouping{randAnimal}{randField}{randDend}(1:end);
+        randDendDistances = AllDendriteDistances{randAnimal}{randField}(randDendspines(1):randDendspines(end), randDendspines(1):randDendspines(end));
+        [dendLength, longeststretch] = max(max(randDendDistances,[],2));
+        simElimSpine = randi([1,2*round(dendLength)])/2; %%% THe 2x multiplier is to provide 0,5um precision
+        EarlyMovementSpines = AllMovementSpines{randAnimal}{randField}(randDendspines,1); %%% 1 index corresponds to early session
+        while ~any(EarlyMovementSpines)
             randAnimal = randi([1,length(AllDendriteDistances)],1);
             randField = randi([1,length(AllDendriteDistances{randAnimal})]);
-            randSpine = randi([1,length(AllDendriteDistances{randAnimal}{randField})]);
-            simElimSpine = randSpine;
-            EarlyMovementSpines = AllMovementSpines{randAnimal}{randField}(:,1);
-            LateMovementSpines = AllMovementSpines{randAnimal}{randField}(:,end);
+            randDend = randi([1,length(SpineDendriteGrouping{randAnimal}{randField})]);
+            randDendspines = SpineDendriteGrouping{randAnimal}{randField}{randDend}(1:end);
+            randDendDistances = AllDendriteDistances{randAnimal}{randField}(randDendspines(1):randDendspines(end), randDendspines(1):randDendspines(end));
+            [dendLength, longeststretch] = max(max(randDendDistances,[],2));
+            simElimSpine = randi([1,2*round(dendLength)])/2; %%% THe 2x multiplier is to provide 0,5um precision
+            EarlyMovementSpines = AllMovementSpines{randAnimal}{randField}(randDendspines,1); 
         end
-        mockearlynewspinedistribution(j) = nanmin(AllDendriteDistances{randAnimal}{randField}(simElimSpine, EarlyMovementSpines));
-        mocklatenewspinedistribution(j) = nanmin(AllDendriteDistances{randAnimal}{randField}(simElimSpine, LateMovementSpines));
-        mockearlyelimspinedistribution(j) = nanmin(AllDendriteDistances{randAnimal}{randField}(simElimSpine, EarlyMovementSpines));
-        mocklateelimspinedistribution(j) = nanmin(AllDendriteDistances{randAnimal}{randField}(simElimSpine, LateMovementSpines));
+        mockearlyelimspinedistribution(j) = abs(nanmin(randDendDistances(longeststretch, EarlyMovementSpines))-simElimSpine);
+        LateMovementSpines = AllMovementSpines{randAnimal}{randField}(randDendspines,end);%%% 'end' index corresponds to final session
+        while ~any(LateMovementSpines)
+            randAnimal = randi([1,length(AllDendriteDistances)],1);
+            randField = randi([1,length(AllDendriteDistances{randAnimal})]);
+            randDend = randi([1,length(SpineDendriteGrouping{randAnimal}{randField})]);
+            randDendspines = SpineDendriteGrouping{randAnimal}{randField}{randDend}(1:end);
+            randDendDistances = AllDendriteDistances{randAnimal}{randField}(randDendspines(1):randDendspines(end), randDendspines(1):randDendspines(end));
+            [dendLength, longeststretch] = max(max(randDendDistances,[],2));
+            simElimSpine = randi([1,2*round(dendLength)])/2; %%% THe 2x multiplier is to provide 0,5um precision
+            LateMovementSpines = AllMovementSpines{randAnimal}{randField}(randDendspines,end);
+        end
+        mocklateelimspinedistribution(j) = abs(nanmin(randDendDistances(longeststretch, LateMovementSpines))-simElimSpine);
     end
 
     SimElimSpinetoEarlyMovementSpineDistance(i) = nanmedian(mockearlyelimspinedistribution);
@@ -426,15 +517,23 @@ end
 
 %     datamat = [{newspinesrandspines},{newspinesshuffledearlyspines},{SimNewSpinetoEarlyMovementSpineDistance},{newspinesearlymovspines},{newspinesshuffledlatespines},{SimNewSpinetoLateMovementSpineDistance},{newspineslatemovspines},{elimspinesrandspines}, {elimspinesshuffledearlyspines},{elimspinesearlymovspines},{elimspinesshuffledspines},{elimspineslatemovspines}];
 datamat = [{SimNewSpinetoEarlyMovementSpineDistance},{newspinesearlymovspines},{distancetoMaxCorrPartner}, {SimNewSpinetoLateMovementSpineDistance}, {newspineslatemovspines}, {SimElimSpinetoEarlyMovementSpineDistance},{elimspinesearlymovspines}, {SimElimSpinetoLateMovementSpineDistance}, {elimspineslatemovspines}];
-figure; bar(1:length(datamat), cell2mat(cellfun(@nanmedian, datamat, 'uni', false)), 'FaceColor', dred')
+figure; bar(1:length(datamat), cell2mat(cellfun(@nanmedian, datamat, 'uni', false)), 'FaceColor', dred'); hold on;
 %     r_errorbar(1:6, [nanmedian(randspines),nanmedian(shuffledearlyspines),nanmedian(earlyspines),nanmedian(shuffledspines),nanmedian(newspines),nanmedian(elimspines)], [nanstd(randspines)/sum(~isnan(randspines)),nanstd(shuffledearlyspines)/sum(~isnan(shuffledearlyspines)),nanstd(earlyspines)/sum(~isnan(earlyspines)),nanstd(shuffledspines)/sum(~isnan(shuffledspines)), nanstd(newspines)/sum(~isnan(newspines)), nanstd(elimspines)/sum(~isnan(elimspines))], 'k')
+Y = cell(1,length(datamat));
 for i = 1:length(datamat)
-    Y = bootci(bootstrpnum, {@median, datamat{i}(~isnan(datamat{i}))}, 'alpha', alphaforbootstrap);
-    line([i,i], [Y(1), Y(2)], 'linewidth', 0.5, 'color', 'k');
+    Y{i} = bootci(bootstrpnum, {@median, datamat{i}(~isnan(datamat{i}))}, 'alpha', alphaforbootstrap);
+    line([i,i], [Y{i}(1), Y{i}(2)], 'linewidth', 0.5, 'color', 'k');
 end
 set(gca, 'XTick', 1:length(datamat), 'XTickLabel',{'Shuff New Spine-Early MRS','New Spine-Early MRS','MaxCorrPartner','Shuff New Spine-MRS', 'New Spine-MRS','Shuff. Elim Sp - Early MRS', 'Elim Sp - Early MRS','Shuff Elim Sp - MRS', 'Elim Spine - MRS'})
 ylabel('Median Distance')
 xtickangle(gca, 45)
+
+plot(1:2, (max([Y{1}; Y{2}])+1)*ones(1,2), 'k', 'Linewidth', 2)
+text(1.4, (max([Y{1}; Y{2}])+2), num2str((shuffnum-sum(NewSpineEarlyMoveSpinesNullDistTest))/shuffnum))
+
+plot(4:5, (max([Y{4}; Y{5}])+1)*ones(1,2), 'k', 'Linewidth', 2)
+text(4.5, max([Y{4}; Y{5}])+2, num2str((shuffnum-sum(NewSpineLateMoveSpinesNullDistTest))/shuffnum))
+
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -447,17 +546,18 @@ plot(nanmedian(cell2mat(NewSpinesMaxCorr'))*ones(1,11),0:(max(hist(cell2mat(NewS
 text(nanmedian(cell2mat(NewSpinesMaxCorr')), max(hist(cell2mat(NewSpinesMaxCorr'))), [num2str(nanmedian(cell2mat(NewSpinesMaxCorr')))])
 ES = histogram(cell2mat(ElimSpinesMaxCorr'),25);
 legend([NS, ES], {'New Spines', 'Elim Spines'})
-ES = histogram(cell2mat(ElimSpinesMaxCorr'),25);
-legend([NS, ES], {'New Spines', 'Elim Spines'})
 subplot(1,3,2);hold on;
 MaxCorrs = cell2mat(NewSpinesMaxCorr');
-NSSD = histogram(MaxCorrs(~isnan(distancetoMaxCorrPartner)),25); title('New Spines Max Corr. Dist.'); xlim([0 1]);
+NSSD = histogram(MaxCorrs(~isnan(distancetoMaxCorrPartner)),25); %%% Perform the same calculations for only spines on the same dendrites
+ title('New Spines Max Corr. Dist.'); xlim([0 1]);
 % plot(nanmedian(cell2mat(NewSpinesMaxCorr'))*ones(1,11),0:(max(hist(cell2mat(NewSpinesMaxCorr')))/10):max(hist(cell2mat(NewSpinesMaxCorr'))), '--r')
 % text(nanmedian(cell2mat(NewSpinesMaxCorr')), max(hist(cell2mat(NewSpinesMaxCorr'))), [num2str(nanmedian(cell2mat(NewSpinesMaxCorr')))])
 subplot(1,3,3); hold on
 histogram(cell2mat(OtherSpinesMaxCorr'),25); title('All Other Spines Max Corr. Dist.'); xlim([0 1])
 plot(nanmedian(cell2mat(OtherSpinesMaxCorr'))*ones(1,11),0:(max(hist(cell2mat(OtherSpinesMaxCorr')))/10):max(hist(cell2mat(OtherSpinesMaxCorr'))), '--r')
 text(nanmedian(cell2mat(OtherSpinesMaxCorr')), max(hist(cell2mat(OtherSpinesMaxCorr'))), [num2str(nanmedian(cell2mat(OtherSpinesMaxCorr')))])
+
+p = Chi2DiffProportions(cell2mat(NewSpinesMaxCorr'), cell2mat(OtherSpinesMaxCorr'), 0.25);
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -466,7 +566,7 @@ text(nanmedian(cell2mat(OtherSpinesMaxCorr')), max(hist(cell2mat(OtherSpinesMaxC
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 figure; a = subplot(2,2,1); hold on; 
-plot(cell2mat(DistancesBetweenNewSpinesandEarlyMovementSpines), cell2mat(LateCorrofNewSpinesandMovementSpinefromEarlySessions), '.k', 'Markersize', 14)
+plot(cell2mat(DistancesBetweenNewSpinesandEarlyMovementSpines), cell2mat(LateCorrfNewSpinesandNearestMovementSpinefromEarlySessions), '.k', 'Markersize', 14)
 title('New spines vs. Early Movement Spines')
 
 b = subplot(2,2,2); 
@@ -479,14 +579,14 @@ title('Elim spines vs. Early movement Spines')
 linkaxes([a,b,c], 'xy')
 
 subplot(2,2,4)
-datamat = [{cell2mat(NewSpinesCorrwithNearbyEarlyMRSs)},{cell2mat(NewSpinesCorrwithNearbyLateMRSs)},{cell2mat(ElimSpinesCorrwithNearbyMRSs)}];
+datamat = [{cell2mat(NewSpinesCorrwithNearbyEarlyMRSs)},{cell2mat(NewSpinesCorrwithNearbyLateMRSs)},{cell2mat(ElimSpinesCorrwithNearbyMRSs)}, {cell2mat(NewSpinesCorrwithDistanceMatchedNonEarlyMRSs)}, {cell2mat(MovementSpineDistanceMatchedControlCorrelation)}];
 bar(1:length(datamat), cell2mat(cellfun(@nanmedian, datamat, 'uni', false)), 'FaceColor', gray')
 bootstrpnum = shuffnum;
 for i = 1:length(datamat)
     Y = bootci(bootstrpnum, {@median, datamat{i}(~isnan(datamat{i}))}, 'alpha', alphaforbootstrap);
     line([i,i], [Y(1), Y(2)], 'linewidth', 0.5, 'color', 'k');
 end
-set(gca, 'XTick', 1:length(datamat), 'XTickLabel',{'New Spines-Nearby Early MRS','New Spines-Nearby Late MRS', 'Elim Spines-Nearby Early MRS'})
+set(gca, 'XTick', 1:length(datamat), 'XTickLabel',{'New Spines-Nearby Early MRS','New Spines-Nearby Late MRS', 'Elim Spines-Nearby Early MRS','Dist-matched for NS', 'Dist-matched for MRS'})
 xtickangle(gca, 45)
 title('Max Correlation with Nearby MRSs')
 
@@ -498,7 +598,7 @@ title('Max Correlation with Nearby MRSs')
 
 figure; 
 subplot(1,2,1); hold on;
-datamat = [{cell2mat(LateCorrofNewSpinesandMovementSpinefromEarlySessions)}, {cell2mat(NewSpinesCorrwithDistanceMatchedNonEarlyMRSs)}];
+datamat = [{cell2mat(LateCorrfNewSpinesandNearestMovementSpinefromEarlySessions)}, {cell2mat(NewSpinesCorrwithDistanceMatchedNonEarlyMRSs)},{cell2mat(MovementSpineDistanceMatchedControlCorrelation)}];
 bar(1:length(datamat), cell2mat(cellfun(@nanmedian, datamat, 'uni', false)), 'FaceColor', gray')
 for i = 1:length(datamat)
     Y = bootci(bootstrpnum, {@nanmedian, datamat{i}(~isnan(datamat{i}))}, 'alpha', alphaforbootstrap);
@@ -509,9 +609,9 @@ set(gca, 'XTick', 1:length(datamat), 'XTickLabel', {'New Sp. vs. Near MRS', 'New
 xtickangle(gca, 45)
 title('New Spines Correlation with Closest eMRS')
 [p,~] = ranksum(datamat{1},datamat{2});
-% if p<0.05
-%     plot(1:2, (max(nanmean(cell2mat(datamat)))/10)*ones(1,2), 'k')
-% end
+if p<0.05
+    plot(1:2, (max(nanmean(cell2mat(datamat))))*ones(1,2), 'k')
+end
 
 subplot(1,2,2); hold on;
 datamat = [{cell2mat(LateCorrfNewSpinesandMovementSpinefromLateSessions)}, {cell2mat(NewSpinesCorrwithDistanceMatchedNonLateMRSs)}];
@@ -536,7 +636,7 @@ title('New Spines Correlation with Closest lMRS')
 useabsvalbehcorr = 0;
 
 %%% New Spines
-figure; newspplot = subplot(2,2,1); hold on; title('New Spines'' Correlation with Task')
+figure; newspplot = subplot(3,2,1); hold on; title('New Spines'' Correlation with Task')
 tempnewspmat = cell2mat(NewSpinesBehaviorCorrelation');
 if useabsvalbehcorr
     tempnewspmat = abs(tempnewspmat);
@@ -553,7 +653,7 @@ xtickangle(gca, 45)
 ylabel('Correlation')
 
 %%% All other spines from late sessions (i.e. not new spines) 
-otherspplot = subplot(2,2,2); hold on; title('All Other Spines'' Correlation with Task (Late)')
+otherspplot = subplot(3,2,2); hold on; title('All Other Spines'' Correlation with Task (Late)')
 tempotherspmat = cell2mat(NonNewSpinesBehaviorCorrelationLate'); %%% This variable excludes new and movement spines
 if useabsvalbehcorr
     tempotherspmat = abs(tempotherspmat);
@@ -570,8 +670,26 @@ set(gca, 'XTickLabel', {'Cue', 'Movement', 'Wide Move', 'PreMove', 'Rewarded Mov
 xtickangle(gca, 45)
 ylabel('Correlation')
 
+clustnewplot = subplot(3,2,3); hold on; title('All Clustered New Spines'' Correlation with Task')
+tempclustnewspmat = cell2mat(TaskCorrelationofClusteredNewSpines); %%% This variable excludes new and movement spines
+if useabsvalbehcorr
+    tempclustnewspmat = abs(tempclustnewspmat);
+end
+%     tempotherspmat(tempotherspmat>=0) = nan;
+bar(nanmedian(tempclustnewspmat,2))
+% linkaxes([newspplot,otherspplot],'y')
+for i = 1:9
+    Y = bootci(bootstrpnum, {@median, tempclustnewspmat(i,~isnan(tempclustnewspmat(i,:)))}, 'alpha', 0.05);
+    line([i,i], [Y(1), Y(2)], 'linewidth', 0.5, 'color', 'k');
+end
+set(gca, 'XTick', [1:9])
+set(gca, 'XTickLabel', {'Cue', 'Movement', 'Wide Move', 'PreMove', 'Rewarded Move', 'Wider Reward Move', 'MDC', 'Reward Del', 'Punish'})
+xtickangle(gca, 45)
+ylabel('Correlation')
+
+
 %%% Eliminated spines
-elimspplot = subplot(2,2,3); hold on; title('Elim Spines'' Correlation with Task')
+elimspplot = subplot(3,2,5); hold on; title('Elim Spines'' Correlation with Task')
 tempelimspmat = cell2mat(ElimSpinesBehaviorCorrelation');
 if useabsvalbehcorr
     tempelimspmat = abs(tempelimspmat);
@@ -589,7 +707,7 @@ xtickangle(gca, 45)
 ylabel('Correlation')
 
 %%% All other spines from early sessions (i.e. ones not eliminated)
-otherspplot = subplot(2,2,4); hold on; title('All Other Spines'' Correlation with Task (Early)')
+otherspplot = subplot(3,2,6); hold on; title('All Other Spines'' Correlation with Task (Early)')
 tempotherspmat = cell2mat(NonNewSpinesBehaviorCorrelationEarly');
 if useabsvalbehcorr
     tempotherspmat = abs(tempotherspmat);
@@ -759,7 +877,7 @@ datamat = [{cell2mat(ClusteredNewSpineCorrwithDendrite)}, {cell2mat(ClusteredMov
 bar(1:length(datamat), cell2mat(cellfun(@nanmedian, datamat, 'uni', false)), 'FaceColor', purple); hold on;
 
 for i = 1:length(datamat)
-    plot(i*ones(1,length(datamat{i})), datamat{i}, '.k', 'Markersize', 14)
+    plot(i-0.25:0.5/(length(datamat{i})-1):i+0.25, datamat{i}, '.k', 'Markersize', 14)
     Y = bootci(bootstrpnum, {@median, datamat{i}(~isnan(datamat{i}))}, 'alpha', 0.05);
     line([i,i], [Y(1), Y(2)], 'linewidth', 0.5, 'color', 'r');
 end
@@ -782,7 +900,7 @@ for i = 1:length(datamat)
     line([i,i], [Y(1), Y(2)], 'linewidth', 0.5, 'color', 'r');
 end
 set(gca, 'XTick', [1:length(datamat)])
-set(gca, 'XTickLabel', {'New Sp. vs. Mvmnt', 'Move Sp. vs. Mvmnt', 'Coactive vs. Mvmnt'})
+set(gca, 'XTickLabel', {'New Sp. vs. Mvmnt', 'eMove Sp. vs. Mvmnt', 'Coactive vs. Mvmnt'})
 xtickangle(gca, 45)
 ylabel('Correlation')
 title('Correlation with Movement')
@@ -800,7 +918,7 @@ for i = 1:length(datamat2)
     line([i,i], [Y(1), Y(2)], 'linewidth', 0.5, 'color', 'r');
 end
 set(gca, 'XTick', [1:length(datamat2)])
-set(gca, 'XTickLabel', {'New Sp. vs. Success', 'Move Sp. vs. Success', 'Coactive vs. Success'})
+set(gca, 'XTickLabel', {'New Sp. vs. Success', 'eMove Sp. vs. Success', 'Coactive vs. Success'})
 xtickangle(gca, 45)
 ylabel('Correlation')
 title('Correlation with Rewarded Presses')
@@ -813,17 +931,17 @@ title('Correlation with Rewarded Presses')
 useabsval = 0;
 figure;hold on
 
-datamat = [{cell2mat(SuccessCentricClusterCorrelation)}, {cell2mat(SuccessCentricDistanceMatchedCorrelation)}];
+datamat = [{cell2mat(SuccessCentricClusterCorrelation)}, {cell2mat(SuccessCentricDistanceMatchedCorrelation)}, {cell2mat(SuccessCentricDistanceMatchedCorrelationforMRS)}, {cell2mat(SuccessCentricCorrelationofAllOtherSpines')}, {cell2mat(FailureCentricClusterCorrelation)}];
 
 bar(1:length(datamat), cell2mat(cellfun(@nanmedian, datamat, 'uni', false)), 'FaceColor', purple); hold on;
 
 for i = 1:length(datamat)
-    plot(i*ones(1,length(datamat{i})), datamat{i}, '.k', 'Markersize', 14)
+    plot(i-0.25:0.5/(length(datamat{i})-1):i+0.25, datamat{i}, '.k', 'Markersize', 14)
     Y = bootci(bootstrpnum, {@median, datamat{i}(~isnan(datamat{i}))}, 'alpha', 0.05);
     line([i,i], [Y(1), Y(2)], 'linewidth', 0.5, 'color', 'r');
 end
 set(gca, 'XTick', [1:length(datamat)])
-set(gca, 'XTickLabel', {'Clusters', 'Dist. Matched Ctrls'})
+set(gca, 'XTickLabel', {'Clusters', 'Dist. Matched to New Spine', 'Dist matched to MRS', 'All other spines', 'Clusters with failure'})
 xtickangle(gca, 45)
 ylabel('Correlation')
 title('Cluster Correlation During Successful Presses')
@@ -838,5 +956,119 @@ if p<0.05
 else
     text(1.4, maxline+0.05, ['ns, p = ', num2str(p)])
 end
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Figure 17: Combined reliability of clusters
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%% New Spines
+useabsval = 0;
+figure;hold on
+
+datamat = [{cell2mat(ClusterMovementReliability)},{cell2mat(ControlPairMovementReliability)}, {cell2mat(ClusterSuccessReliability)}, {cell2mat(ControlPairSuccessReliability)}];
+
+bar(1:length(datamat), cell2mat(cellfun(@nanmedian, datamat, 'uni', false)), 'FaceColor', purple); hold on;
+
+for i = 1:length(datamat)
+    plot(i-0.25:0.5/(length(datamat{i})-1):i+0.25, datamat{i}, '.k', 'Markersize', 14)
+    Y = bootci(bootstrpnum, {@median, datamat{i}(~isnan(datamat{i}))}, 'alpha', 0.05);
+    line([i,i], [Y(1), Y(2)], 'linewidth', 0.5, 'color', 'r');
+end
+set(gca, 'XTick', [1:length(datamat)])
+set(gca, 'XTickLabel', {'Clusters', 'Dist. Matched Ctrls', 'Success Clusters', 'Dist. Matched Ctrls'})
+xtickangle(gca, 45)
+ylabel('Correlation')
+title('Combined Cluster Reliability')
+
+maxline = max([nanmedian(datamat{1}), nanmedian(datamat{2})]);
+maxline2 = max([nanmedian(datamat{3}), nanmedian(datamat{4})]);
+plot(1:2, (maxline+0.01)*ones(1,2), 'k', 'Linewidth', 2)
+plot(3:4, (maxline+0.01)*ones(1,2), 'k', 'Linewidth', 2)
+
+[p,~] = ranksum(datamat{1},datamat{2});
+
+if p<0.05
+    text(1.4, maxline+0.05, ['* p =', num2str(p)])
+else
+    text(1.4, maxline+0.05, ['ns, p = ', num2str(p)])
+end
+
+[p,~] = ranksum(datamat{3},datamat{4});
+
+if p<0.05
+    text(3.4, maxline+0.05, ['* p =', num2str(p)])
+else
+    text(3.4, maxline+0.05, ['ns, p = ', num2str(p)])
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Figure 18: Correlation of movements during co-active cluster periods;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%% New Spines
+useabsval = 0;
+figure;hold on
+
+datamat = [{cell2mat(MovementCorrelationwithCoActiveClusters)}, {cell2mat(MovementCorrelationofAllOtherMovements)}];
+
+bar(1:length(datamat), cell2mat(cellfun(@nanmedian, datamat, 'uni', false)), 'FaceColor', purple); hold on;
+
+for i = 1:length(datamat)
+    plot(i-0.25:0.5/(length(datamat{i})-1):i+0.25, datamat{i}, '.k', 'Markersize', 14)
+    Y = bootci(bootstrpnum, {@median, datamat{i}(~isnan(datamat{i}))}, 'alpha', 0.05);
+    line([i,i], [Y(1), Y(2)], 'linewidth', 0.5, 'color', 'r');
+end
+set(gca, 'XTick', [1:length(datamat)])
+set(gca, 'XTickLabel', {'With CoActive Clusters', 'Without'})
+xtickangle(gca, 45)
+ylabel('Correlation')
+title('Correlation of Movements during CoActive Cluster Periods')
+
+maxline = max([nanmedian(datamat{1}), nanmedian(datamat{2})]);
+plot(1:2, (maxline+0.01)*ones(1,2), 'k', 'Linewidth', 2)
+
+[p,~] = ranksum(datamat{1},datamat{2});
+
+if p<0.05
+    text(1.4, maxline+0.05, ['* p =', num2str(p)])
+else
+    text(1.4, maxline+0.05, ['ns, p = ', num2str(p)])
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Figure 19: New spine-HCP features
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%% New Spines
+useabsval = 0;
+figure;hold on
+
+datamat = [{cell2mat(MovementCorrelationwithCoActiveHCPClusters)}, {cell2mat(MovementCorrelationofAllOtherNonHCPMovements)}];
+
+bar(1:length(datamat), cell2mat(cellfun(@nanmedian, datamat, 'uni', false)), 'FaceColor', purple); hold on;
+
+for i = 1:length(datamat)
+    plot(i-0.25:0.5/(length(datamat{i})-1):i+0.25, datamat{i}, '.k', 'Markersize', 14)
+    Y = bootci(bootstrpnum, {@median, datamat{i}(~isnan(datamat{i}))}, 'alpha', 0.05);
+    line([i,i], [Y(1), Y(2)], 'linewidth', 0.5, 'color', 'r');
+end
+set(gca, 'XTick', [1:length(datamat)])
+set(gca, 'XTickLabel', {'With CoActive Clusters', 'Without'})
+xtickangle(gca, 45)
+ylabel('Correlation')
+title('Correlation of Movements during CoActive Cluster Periods')
+
+maxline = max([nanmedian(datamat{1}), nanmedian(datamat{2})]);
+plot(1:2, (maxline+0.01)*ones(1,2), 'k', 'Linewidth', 2)
+
+[p,~] = ranksum(datamat{1},datamat{2});
+
+if p<0.05
+    text(1.4, maxline+0.05, ['* p =', num2str(p)])
+else
+    text(1.4, maxline+0.05, ['ns, p = ', num2str(p)])
+end
+
 
 end

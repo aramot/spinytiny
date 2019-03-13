@@ -13,4 +13,4 @@ count = count+1;
 catch
 end
 end
-figure; patch('Faces', f, 'Vertices', v, 'Facecolor', 'r', 'FaceAlpha', 0.2, 'EdgeColor', 'none')
+patch('Faces', f, 'Vertices', v, 'Facecolor', 'k', 'FaceAlpha', 0.2, 'EdgeColor', 'none')

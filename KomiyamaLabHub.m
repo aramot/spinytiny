@@ -1140,10 +1140,12 @@ function PCA_PushButton_Callback(hObject, eventdata, handles)
 
 cd('C:\Users\Komiyama\Desktop\Output Data')
 
-datafile = fastdir(cd, 'TrialDataSummary');
+sensor = 'GCaMP';
+
+datafile = fastdir(cd, [sensor, '_TrialDataSummary']);
 load(datafile{1})
 
-featuresfile = fastdir(cd, 'TrialFeatures');
+featuresfile = fastdir(cd, [sensor, '_TrialFeatures']);
 load(featuresfile{1})
 
 TrialActivityPCA(TrialDataSummary, TrialFeatures);

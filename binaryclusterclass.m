@@ -3,7 +3,7 @@ function [HCSs, Clustered, CorrelationofClusters, FarClustered, CausalClustered]
 
 %%% Find all values that are greater than the cluster threshold
 
-ClusterThresh = 0.2;       %%% BASED ON THE 75th PERCENTILE OF CORRELATIONS OF MOVEMENT-RELATED SPINES (considering all data together); UPDATE AS NECESSARY
+ClusterThresh = 0.5;       %%% BASED ON THE 75th PERCENTILE OF CORRELATIONS OF MOVEMENT-RELATED SPINES (considering all data together); UPDATE AS NECESSARY
 
 HCSnum = 0;
 Clustnum = 0;
