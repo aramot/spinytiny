@@ -3,6 +3,8 @@ function NewSpineAnalysis(varargin)
 for animal = 1:length(varargin)
     
     experimentnames = varargin{animal}; 
+    FilterforMovementDends = 0;
+    FilterforPersistentMRSs = 0;
     
     %%%%%%%%%%%% Load Spine Dynamics Registry for a given animal
     if strcmpi(getenv('computername'), 'Nathan-Lab-PC')
@@ -24,15 +26,14 @@ for animal = 1:length(varargin)
     for f = 1:NumFields
         FieldChanges{f} = diff(FieldData{f}.Data,1,2);
     end
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %%%%%%%%%%%% Load calcium imaging data for the animal
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%% Load calcium imaging data for the animal %%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     if strcmpi(getenv('computername'), 'Nathan-Lab-PC')
         cd('E:\ActivitySummary')
     end
-
     activitydata = fastdir(cd, [experimentnames, '.+_Summary']);
-
     for f = 1:length(activitydata)
         load(activitydata{f})
     end
@@ -98,7 +99,7 @@ for animal = 1:length(varargin)
     end
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %%%%%%%%%%%% Load Correlation data
+    %%%%%%%%%%%%%%%%%%%% Load Correlation data  %%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     corrdata = fastdir(cd, [experimentnames, '_Correlations']);
@@ -119,12 +120,11 @@ for animal = 1:length(varargin)
             end
         end
     end
-
     currentanimal = varargin{animal};
     load([currentanimal, '_Aligned'])
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %%%%%%%%%%%%  Determine data type to use
+    %%%%%%%%%%%%%%%%%%%% Determine data type to use %%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
     global gui_KomiyamaLabHub
@@ -137,13 +137,27 @@ for animal = 1:length(varargin)
         AnalysisType = 'Exclude';
     end
     
+    clear gui_KomiyamaLabHub
+    
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
+    
     %% New spine analysis section
     %%%%%%%%%%%%
-    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%% Initiatilize variables to be used
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    NewSpines = cell(1,NumFields);
+    MiddleSessionNewSpines = cell(1,NumFields);
+    LateSessionNewSpines = cell(1,NumFields);
+    persistentNewSpines = cell(1,NumFields);
+    ClusteredNewSpines = cell(1,NumFields);
+    ClusteredEarlyMoveSpines = cell(1,NumFields);
+    ClusteredLateMoveSpines = cell(1,NumFields);
+    AntiClusteredEarlyMoveSpines = cell(1,NumFields);
+    
     NumberofEarlyMovementRelatedSpines = 0;
     NumberofLateMovementRelatedSpines = 0;
     NumberofPersistentMovementRelatedSpines = cell(1,NumFields);
@@ -157,7 +171,8 @@ for animal = 1:length(varargin)
     NumberofNewSpinesThatAreSR = 0;                     %%% Successful-press-related
     NumberofNewSpinesThatAreRR = 0;                     %%% Reward-related
     NumberofElimSpinesThatWereMR = 0;
-    NumberofClusteredMoveSpines = 0;
+    NewSpineswithNoMoveSpinePartner = 0;
+    NumberofClusteredMoveSpines = cell(1,NumFields);
     NumberofMovementClusteredNewSpines = 0;             %%% New spines that form near movement-related spines
     NumberofMovementClusteredNewSpinesThatAreMR = 0;    %%% New spines that form near movement-related spines AND are themselves movement-related
     NewSpinesMaxCorr = cell(1,NumFields);
@@ -230,6 +245,7 @@ for animal = 1:length(varargin)
     
     MovementCorrelationwithCoActiveClusters = cell(1,NumFields);
     MovementCorrelationofAllOtherMovements = cell(1,NumFields);
+    MovementCorrelationofFrequencyMatchedPairs = cell(1,NumFields);
     
     HCPClusteredNewSpineCorrwithMovement = cell(1,NumFields);
     HCPClusteredNewSpineCorrwithSuccess = cell(1,NumFields);
@@ -239,9 +255,13 @@ for animal = 1:length(varargin)
     CoActiveHCPClusterCorrwithSuccess = cell(1,NumFields);
     MovementCorrelationwithCoActiveHCPClusters = cell(1,NumFields);
     MovementCorrelationofAllOtherNonHCPMovements = cell(1,NumFields);
+    MovementCorrelationofHCPComparatorSpines = cell(1,NumFields);
     SuccessCentricHCPClusterCorrelation = cell(1,NumFields);
-
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
+    
+    
     %%
     for f = 1:NumFields
         %%%%%%%%%%%%% 
@@ -331,16 +351,31 @@ for animal = 1:length(varargin)
         end
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %%%%%%%%%%% Find and index any new spines from each field %%%%%%%%%
         if size(FieldChanges{f},2) >1
             NewSpines{f} = find(sum(FieldChanges{f},2)>0);
+            MiddleSessionNewSpines{f}  = find(FieldChanges{f}(:,1)>0);
+            LateSessionNewSpines{f} = find(FieldChanges{f}(:,2)>0);
+            if ~isempty(MiddleSessionNewSpines{f})
+                persistentNewSpines{f} = MiddleSessionNewSpines{f}(ismember(MiddleSessionNewSpines{f}, find(FieldData{f}.Data(:,3))));
+            else
+                persistentNewSpines{f} = [];
+            end
+            isThreeSessions = 1;
         else
             NewSpines{f} = find(FieldChanges{f}>0);
+            MiddleSessionNewSpines{f} = [];
+            LateSessionNewSpines{f} = NewSpines{f};
+            isThreeSessions = 0;
         end
         NumberofNewSpines = NumberofNewSpines+length(NewSpines{f});
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         persistentclustercount = 0;
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %%% Find and index spines that aren't new or movement related at
+        %%% any point, then describe the activity of these spines
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         AllOtherSpines = setdiff(1:NumberofLateSpines, union(NewSpines{f}, union(AllMovementSpinesOnEarlySession,AllMovementSpinesOnLateSession)));
         switch AnalysisType
@@ -358,8 +393,15 @@ for animal = 1:length(varargin)
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
+        
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
         %% Analyze dendrites that show new spines
-        if ~isempty(NewSpines{f})    %%% If there are new spines, find out whether they are close to a nearby movement spine, have a highly correlated partner, etc.
+        if ~isempty(NewSpines{f})    %%% If there are new spines, characterize each
+            
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            %%%% First, characterize the classification of any new spines
             switch AnalysisType
                 case 'Subtract'
                     NumberofNewSpinesThatAreMR = NumberofNewSpinesThatAreMR+sum(FieldData{f}.StatClass{end}.DendSub_MovementSpines(NewSpines{f}));
@@ -376,9 +418,21 @@ for animal = 1:length(varargin)
             end
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            %% Compare new spines to EARLY session features
-            if ~isempty(AllMovementSpinesOnEarlySession)
-                for ns = 1:length(NewSpines{f})
+            %% Compare new spines to EARLY SESSION movement related spines
+            if ~isempty(AllMovementSpinesOnEarlySession)    %%% NOTE: THIS SECTION ONLY CONSIDERS NEW SPINES THAT ARE ON THE SAME DENDRITES AS AT LEAST MOVEMENT-RELATED SPINE; DO NOT CONFUSE THIS FOR ALL NEW SPINES
+                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                for ns = 1:length(NewSpines{f})             %%% FOR EACH NEW SPINE THAT IS ON A DENDRITE WITH AT LEAST ONE MOVEMENT RELATED SPINE
+                    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                    %%%% Categorize New Spine based on when it was formed
+                    if isThreeSessions %%% Only accurate when there is actually 3 sessions of data
+                        if ismember(NewSpines{f}(ns), MiddleSessionNewSpines{f})
+                            isMidorLate = 'Mid';
+                        elseif ismember(NewSpines{f}(ns), LateSessionNewSpines{f})
+                            isMidorLate = 'Late';
+                        end
+                    else
+                    end
+                    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                     switch AnalysisType
                         case 'Subtract'
                             NewSpineActivity = FieldData{f}.CalciumData{end}.SynapseOnlyBinarized_DendriteSubtracted(NewSpines{f}(ns),:);
@@ -387,11 +441,13 @@ for animal = 1:length(varargin)
                             NewSpineActivity = FieldData{f}.CalciumData{end}.SynapseOnlyBinarized(NewSpines{f}(ns),:);
                             eval(['NewSpineActivityAligned = ', currentanimal, '_Aligned{', num2str(latesession),'}.SynapseOnlyBinarized(', num2str(NewSpines{f}(ns)), ',:).*', currentanimal, '_Aligned{', num2str(latesession), '}.DendSubSynapseOnlyBinarized(', num2str(NewSpines{f}(ns)), ',:);'])
                     end
+                    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                    %%% Initialize temporary/counting variables for each
+                    %%% new spine 
                     NewSpinestoEarlyMovementSpines = NaN;
                     NewSpinesEarlyMovementSpinesLateCorr = NaN;
                     NewSpinesCorrwithCloseEarlyMRS = NaN;
                     MovementSpineDistanceMatchedControlCorr = NaN;
-                    ClusteredMoveSpineList = []; ClusteredNewSpineList = []; NearbyMRSlist = [];
                     DistMatchedNonEarlyMRPartnersCorr = NaN;
                     NewSpinestoShuffledEarlyMovementSpines = NaN;
                     DendCorrNewSpineOnly = NaN;
@@ -404,50 +460,76 @@ for animal = 1:length(varargin)
                     combined_activity_move_corr = NaN;combined_activity_success_corr = NaN;
                     clustermovementreliability = NaN; clustersuccessreliability = NaN; controlpairmovereliability = NaN; controlpairsuccreliability = NaN;
                     CoActiveMovementCorr = NaN;
-                    OtherMovementCorr = NaN;
+                    OtherMovementCorr = NaN; Comp_CoActiveClusterMovementCorr = NaN;
                     count = 1;
                     closecount = 1;
                     controlcount = 1;
-                    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                    %%% Vouch to use only MR dends
-                    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                    %%% Vouch to use only MR dends !!!!!
+                    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                     ParentDend =  find(~cell2mat(cellfun(@(x) isempty(find(x == NewSpines{f}(ns),1)), FieldData{f}.CalciumData{1}.SpineDendriteGrouping, 'Uni', false)));
-%                     if ~ismember(ParentDend, find(FieldData{f}.StatClass{end}.MovementDends))
-%                         continue
-%                     end           
-                    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                    for ms = 1:length(AllMovementSpinesOnEarlySession)
-                        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                    if FilterforMovementDends
+                        if ~ismember(ParentDend, find(FieldData{f}.StatClass{end}.MovementDends))
+                            continue
+                        end
+                    else
+                    end
+                    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                    for ms = 1:length(AllMovementSpinesOnEarlySession)  %%% FOR ALL MOVEMENT RELATED SPINES THAT FIT THE ABOVE CRITERIA (i.e. THOSE THAT ARE ON A DENDRITE WITH NEW SPINES)
+                        
                         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                         %%%% Choose to filter for persistent movement
                         %%%% related spines!
-%                         if ~ismember(AllMovementSpinesOnEarlySession(ms), AllMovementSpinesOnLateSession)
-%                             continue
-%                         end
+                        if FilterforPersistentMRSs
+                            if ~ismember(AllMovementSpinesOnEarlySession(ms), AllMovementSpinesOnLateSession)
+                                continue
+                            end
+                        else
+                        end
                         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                         switch AnalysisType
                             case 'Subtract'
                                 eval(['MoveSpineActivityAligned = ', currentanimal, '_Aligned{',num2str(latesession),'}.DendSubSynapseOnlyBinarized(', num2str(AllMovementSpinesOnEarlySession(ms)), ',:);'])
+                                eval(['AllOtherSpineActivityAligned = ', currentanimal, '_Aligned{', num2str(latesession), '}.DendSubSynapseOnlyBinarized([', num2str(setdiff(1:NumberofLateSpines, union(NewSpines{f}(ns), AllMovementSpinesOnEarlySession(ms)))), '],:);'])
                             case 'Exclude'
                                 eval(['MoveSpineActivityAligned = ', currentanimal, '_Aligned{',num2str(latesession),'}.SynapseOnlyBinarized(', num2str(AllMovementSpinesOnEarlySession(ms)), ',:).*', currentanimal, '_Aligned{',num2str(latesession),'}.DendSubSynapseOnlyBinarized(', num2str(AllMovementSpinesOnEarlySession(ms)), ',:);'])
                         end
+                        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                        
                         bothactivity = logical(NewSpineActivityAligned+MoveSpineActivityAligned);
                         [val, ~] = sort([NewSpines{f}(ns), AllMovementSpinesOnEarlySession(ms)]);
                         NewSpinestoEarlyMovementSpines(1,count) = AllDendriteDistances{f}(val(1),val(2));
                         NewSpinesEarlyMovementSpinesLateCorr(1,count) = AllLateSpineCorrelations(val(1), val(2));   %%% Find the correlation of new spines with the movement spines from early sessions (they might not be movement-related at the late sessions, but are they highly correlated with the new spine?)                        
+                        
+                        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                        %%%%%%%%%%% Clustering Section 
+                        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                         if NewSpinestoEarlyMovementSpines(1,count)<clusterdistance
-                            NewSpinesCorrwithCloseEarlyMRS(1,closecount) = NewSpinesEarlyMovementSpinesLateCorr(1,count);
-                            ClusteredNewSpineList = NewSpines{f}(ns);
-                            NumberofClusteredMoveSpines = NumberofClusteredMoveSpines+1;
-                            NearbyMRSlist = [NearbyMRSlist,AllMovementSpinesOnEarlySession(ms)];
+                            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                            %%% First, count spines that meet criteria %%%%
+                            ClusteredNewSpines{f} = [ClusteredNewSpines{f}, NewSpines{f}(ns)];
+                            ClusteredEarlyMoveSpines{f} = [ClusteredEarlyMoveSpines{f},AllMovementSpinesOnEarlySession(ms)];
                             if ismember(AllMovementSpinesOnEarlySession(ms), AllMovementSpinesOnLateSession)
                                 persistentclustercount = persistentclustercount+1;
                             end
+                            NewSpinesCorrwithCloseEarlyMRS(1,closecount) = NewSpinesEarlyMovementSpinesLateCorr(1,count);
+                            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                            %%%% Find spines with similar frequencies for best comparisons
+                            OtherSpFreq = [];
+                            for spf = 1:size(AllOtherSpineActivityAligned,1)
+                                OtherSpFreq(1,spf) = numel(find(diff(AllOtherSpineActivityAligned(spf,:))>0));
+                            end
+                            NewSpFreq = numel(find(diff(NewSpineActivityAligned)));
+                                [~, CompSpFreqMatchedtoNS] = min(abs(OtherSpFreq-NewSpFreq));
+                            CMRSFreq = numel(find(diff(MoveSpineActivityAligned)));   %%% Clustered MRS frequency
+                                [~, CompSpFreqMatchedtoCMRS] = min(abs(OtherSpFreq(setdiff(1:length(OtherSpFreq), CompSpFreqMatchedtoNS))-CMRSFreq)); %%% The spine that was found to be freq-matched to the new spine is excluded to prevent the same spine being matched for both
+                            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                             %%% Compare Activity of Clustered (both new and
                             %%% MRS) Spines with Dendrite
+                            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                             MoveSpineActivity = FieldData{f}.CalciumData{end}.SynapseOnlyBinarized_DendriteSubtracted(AllMovementSpinesOnEarlySession(ms),:);
                             CoActiveCluster =  logical(FieldData{f}.CalciumData{end}.SynapseOnlyBinarized_DendriteSubtracted(NewSpines{f}(ns),:) & FieldData{f}.CalciumData{end}.SynapseOnlyBinarized_DendriteSubtracted(AllMovementSpinesOnEarlySession(ms), :));
                             DendAct = FieldData{f}.CalciumData{end}.Dendrite_Binarized(ParentDend,:);
@@ -457,6 +539,7 @@ for animal = 1:length(varargin)
                             DendCorrMoveSpineOnly(1,closecount) = temp(1,2);
                             temp = corrcoef([CoActiveCluster', DendAct']);
                             DendCorrCoactiveCluster(1,closecount) = temp(1,2);
+                            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                             %%% Compare coactive clusters with movement
                             %%%% Make sure to use activity traces
                             %%%% consistent with the rest of the data being
@@ -469,6 +552,8 @@ for animal = 1:length(varargin)
                             MoveSpineOnlywithMovement(1,closecount) = moveonly(1,2);
                             NewSpineOnlywithMovement(1,closecount) = newonly(1,2);
                             CoactiveClusterwithMovement(1,closecount) = coactive(1,2);
+                            %%%
+                            comp_coactivetrace = AllOtherSpineActivityAligned(CompSpFreqMatchedtoNS,:).*AllOtherSpineActivityAligned(CompSpFreqMatchedtoCMRS,:);
                             %%%
                             moveonly = corrcoef([successtrace, MoveSpineActivityAligned']);
                             newonly = corrcoef([successtrace, NewSpineActivityAligned']);
@@ -489,7 +574,7 @@ for animal = 1:length(varargin)
                             failure_centric_movespineactivity = MoveSpineActivityAligned.*failuretrace';
                             failure_centric_correlations = corrcoef([failure_centric_newspineactivity', failure_centric_movespineactivity']);
                             failure_centric_cluster_correlation(1,closecount) = failure_centric_correlations(1,2);
-                            %%%
+                            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                             %%% The goal of this section is to determine
                             %%% whether the combined activity of two
                             %%% clustered spines covers more
@@ -539,6 +624,26 @@ for animal = 1:length(varargin)
                             movementcorr(1:1+size(movementcorr,1):numel(movementcorr)) = nan;
                             OtherMovementCorr(closecount) = nanmedian(movementcorr(:));
                             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                            comp_coactive_separated = mat2cell(comp_coactivetrace', diff(boundS));    %%% Separate the coactive trace according to the bounds of the successful/rewarded lever press trace
+                            comp_coactive_trace_during_success = comp_coactive_separated(cell2mat(cellfun(@(x) ~isempty(find(x,1)), allperiodsS, 'uni', false))); %%% First, find the cases when the lever is actually being pressed (where 'allperiodsS' is nonzero), and extract the activity traces DURING THESE PERIODS
+                            comp_CoActiveAddresses = find(cell2mat(cellfun(@(x,y) ~isempty(find(x,1))&~isempty(find(y,1)), successperiods, comp_coactive_trace_during_success, 'uni', false)));
+                            framesofinterest = frames_during_success(comp_CoActiveAddresses);
+                            if ~isempty(framesofinterest)
+                                MovementswithCompCoActivity = ExtractMovementswithKnownBounds(levertrace, framesofinterest, rewardperiods);
+                                if size(MovementswithCompCoActivity,2)>1
+                                    movementcorr = corrcoef(MovementswithCompCoActivity);
+                                    movementcorr(1:1+size(movementcorr,1):numel(movementcorr)) = nan;
+                                    Comp_CoActiveClusterMovementCorr(closecount) = nanmedian(movementcorr(:));
+                                else
+                                    Comp_CoActiveClusterMovementCorr(closecount) = NaN;
+                                end
+                            else
+                                Comp_CoActiveClusterMovementCorr(closecount) = NaN;
+                            end
+                            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                            
+                            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                             DistanceMatchedNonMRPartners = find(AllDendriteDistances{f}(NewSpines{f}(ns),:)<clusterdistance);
                             DistanceMatchedNonMRPartners = setdiff(DistanceMatchedNonMRPartners, union(union(AllMovementSpinesOnLateSession, AllMovementSpinesOnEarlySession), NewSpines{f}));
                             DistMatchedNonEarlyMRPartnersCorr = nanmedian(AllLateSpineCorrelations(NewSpines{f}(ns), DistanceMatchedNonMRPartners));
@@ -551,10 +656,11 @@ for animal = 1:length(varargin)
                             success_centric_distmatched_activity = DistanceMatchedActivity'.*(repmat(successtrace,1,length(DistanceMatchedNonMRPartners)));
                             success_centric_distmatched_correlation = corrcoef([NewSpineActivityAligned', success_centric_distmatched_activity]);
                             SuccessCentricDistMatchedCorrelation(1,closecount) = nanmedian(success_centric_distmatched_correlation(1,2:end));
-                            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                             %%% Find the analogous features of the movement
                             %%% spine with another nearby spine (as a control
                             %%% for the clustered new spine)
+                            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                             DistanceMatchedNonNewPartners = find(AllDendriteDistances{f}(AllMovementSpinesOnEarlySession(ms), :)<clusterdistance);
                             DistanceMatchedNonNewPartners = setdiff(DistanceMatchedNonNewPartners, NewSpines{f});
                             switch AnalysisType
@@ -632,16 +738,17 @@ for animal = 1:length(varargin)
                     ControlPairSuccessReliability{f}{ns} = controlpairsuccreliability;
                     MovementCorrelationwithCoActiveClusters{f}{ns} = CoActiveMovementCorr;
                     MovementCorrelationofAllOtherMovements{f}{ns} = OtherMovementCorr;
+                    MovementCorrelationofFrequencyMatchedPairs{f}{ns} = Comp_CoActiveClusterMovementCorr;
                 end
             else
-                ClusteredNewSpineList= [];
-                NearbyMRSlist = [];
+                NewSpineswithNoMoveSpinePartner = NewSpineswithNoMoveSpinePartner+1;
             end
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             NumberofPersistentMovementSpinesClustered{f} = persistentclustercount;
-            TaskCorrelationofNearbyEarlyMRSs{f} = behaviorcorrdataearly(:,NearbyMRSlist);
-            TaskCorrelationofClusteredNewSpines{f} = behaviorcorrdataearly(:,unique(ClusteredNewSpineList));
-            MovementReliabilityofNearbyEarlyMRSs{f} = FieldData{f}.StatClass{1}.AllSpineReliability(NearbyMRSlist);
+            TaskCorrelationofNearbyEarlyMRSs{f} = behaviorcorrdataearly(:,ClusteredEarlyMoveSpines{f});
+            NumberofClusteredMoveSpines{f} = length(unique(ClusteredNewSpines{f}));
+            TaskCorrelationofClusteredNewSpines{f} = behaviorcorrdataearly(:,unique(ClusteredNewSpines{f}));
+            MovementReliabilityofNearbyEarlyMRSs{f} = FieldData{f}.StatClass{1}.AllSpineReliability(ClusteredEarlyMoveSpines{f});
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             %% Compare new spines to LATE session features
@@ -652,7 +759,6 @@ for animal = 1:length(varargin)
                     NewSpinestoLateMovementSpines = [];
                     NewSpinesLateMovementSpinesLateCorr = [];
                     NewSpinesCorrwithCloseMRS = nan;
-                    NearbyMRSlist = [];
                     NewSpinestoRandomSpines = [];
                     DistMatchedNonLateMRPartnersCorr = [];
                     NewSpinestoShuffledMovementSpines = [];
@@ -670,7 +776,7 @@ for animal = 1:length(varargin)
                         NewSpinesLateMovementSpinesLateCorr(1,count) = AllLateSpineCorrelations(val(1), val(2));
                         if NewSpinestoLateMovementSpines(1,count)<clusterdistance
                             NewSpinesCorrwithCloseMRS(1,closecount) = NewSpinesLateMovementSpinesLateCorr(1,count);
-                            NearbyMRSlist = [NearbyMRSlist,lateMRStouse(os)];
+                            ClusteredLateMoveSpines{f} = [ClusteredLateMoveSpines{f},lateMRStouse(os)];
                             closecount = closecount+1;
                         end
                         ParentDend =  find(~cell2mat(cellfun(@(x) isempty(find(x == NewSpines{f}(ns),1)), FieldData{f}.CalciumData{1}.SpineDendriteGrouping, 'Uni', false)));
@@ -702,14 +808,14 @@ for animal = 1:length(varargin)
                     DistancesBetweenNewSpinesandShuffledMovementSpines{f}(ns) = nanmean(NewSpinestoShuffledMovementSpines);
                 end
             else
-                NearbyMRSlist = [];
             end %%% End "late" variable section
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            TaskCorrelationofNearbyLateMRSs{f} = behaviorcorrdatalate(:,NearbyMRSlist);
-            MovementReliabilityofNearbyLateMRSs{f} = FieldData{f}.StatClass{end}.AllSpineReliability(NearbyMRSlist);
+            TaskCorrelationofNearbyLateMRSs{f} = behaviorcorrdatalate(:,ClusteredLateMoveSpines{f});
+            MovementReliabilityofNearbyLateMRSs{f} = FieldData{f}.StatClass{end}.AllSpineReliability(ClusteredLateMoveSpines{f});
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            %%%%%%
+                          %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             %%%%%%%%%%%%% Highly Correlated Partner Section %%%%%%%%%%%%%%%
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             [NewSpinesMaxCorr{f}, NewSpineMaxInd] = nanmax(AllLateSpineCorrelations(NewSpines{f},:),[],2); %%% Find the spine that has the highest correlation with each new spine
             allotherspines = setdiff(1:NumberofLateSpines,union(NewSpineMaxInd, NewSpines{f})); %%% For comparison, find the spine that has the maximum correlation value with every other spine ("every other" can exclude either just new spines or new spines AND their highly correlated partners)
             DistanceToMaxCorrPartner{f} = AllDendriteDistances{f}(NewSpineMaxInd);
@@ -728,19 +834,31 @@ for animal = 1:length(varargin)
             HCPOnlywithMovement = []; NewSpineOnlywithMovement = []; CoactiveHCPClusterwithMovement = [];
             HCPOnlywithSuccess = []; NewSpineOnlywithSuccess = []; CoactiveHCPClusterwithSuccess = [];
             success_centric_HCPcluster_correlation = [];
-            CoActiveHCPMovementCorr = []; OtherMovementCorr= [];
+            CoActiveHCPMovementCorr = []; OtherMovementCorr= []; Comp_CoActiveHCPMovementCorr = [];
             %%%%%%%%%%%%%%%%%%%%%%%%%% End initialization for HCP section
             highcorrcount = 1;
-            for hcp = 1:length(NewSpineMaxInd) %%% Not: every new should should have a corresponding max correlated partner, so you can use "hcp" as an index for new spines;
+            for hcp = 1:length(NewSpineMaxInd) %%% Note: every new spine should should have a corresponding max correlated partner, so you can use "hcp" as an index for new spines;
                 if NewSpinesMaxCorr{f}(hcp) >= 0.2
                     switch AnalysisType
                         case 'Subtract'
                             eval(['NewSpineActivityAligned = ', currentanimal, '_Aligned{', num2str(latesession),'}.DendSubSynapseOnlyBinarized(', num2str(NewSpines{f}(hcp)), ',:);'])
                             eval(['HCPActivityAligned = ', currentanimal, '_Aligned{',num2str(latesession),'}.DendSubSynapseOnlyBinarized(', num2str(NewSpineMaxInd(hcp)), ',:);'])
+                            eval(['AllOtherSpineActivityAligned = ', currentanimal, '_Aligned{', num2str(latesession), '}.DendSubSynapseOnlyBinarized([', num2str(setdiff(1:NumberofLateSpines, union(NewSpines{f}(hcp), NewSpineMaxInd(hcp)))), '],:);'])
                         case 'Exclude'
                             eval(['NewSpineActivityAligned = ', currentanimal, '_Aligned{', num2str(latesession),'}.SynapseOnlyBinarized(', num2str(NewSpines{f}(hcp)), ',:).*', currentanimal, '_Aligned{', num2str(latesession), '}.DendSubSynapseOnlyBinarized(', num2str(NewSpines{f}(hcp)), ',:);'])
                             eval(['HCPActivityAligned = ', currentanimal, '_Aligned{',num2str(latesession),'}.SynapseOnlyBinarized(', num2str(NewSpineMaxInd(hcp)), ',:).*', currentanimal, '_Aligned{',num2str(latesession),'}.DendSubSynapseOnlyBinarized(', num2str(NewSpineMaxInd(hcp)), ',:);'])
                     end
+                    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                    %%%% Find spines with similar frequencies for best comparisons
+                    OtherSpFreq = [];
+                    for spf = 1:size(AllOtherSpineActivityAligned,1)
+                        OtherSpFreq(1,spf) = numel(find(diff(AllOtherSpineActivityAligned(spf,:))>0));
+                    end
+                    NewSpFreq = numel(find(diff(NewSpineActivityAligned)));
+                        [~, CompSpFreqMatchedtoNS] = min(abs(OtherSpFreq-NewSpFreq));
+                    HCPFreq = numel(find(diff(HCPActivityAligned)));
+                        [~, CompSpFreqMatchedtoHCP] = min(abs(OtherSpFreq(setdiff(1:length(OtherSpFreq), CompSpFreqMatchedtoNS))-HCPFreq)); %%% The spine that was found to be freq-matched to the new spine is excluded to prevent the same spine being matched for both
+                    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                     coactivetrace = HCPActivityAligned.*NewSpineActivityAligned;
                     HCPonly = corrcoef([binarizedlever, HCPActivityAligned']);
                     newonly = corrcoef([binarizedlever, NewSpineActivityAligned']);
@@ -748,6 +866,8 @@ for animal = 1:length(varargin)
                     HCPOnlywithMovement(1,highcorrcount) = HCPonly(1,2);
                     NewSpineOnlywithMovement(1,highcorrcount) = newonly(1,2);
                     CoactiveHCPClusterwithMovement(1,highcorrcount) = coactive(1,2);
+                    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                    comp_coactivetrace = AllOtherSpineActivityAligned(CompSpFreqMatchedtoNS,:).*AllOtherSpineActivityAligned(CompSpFreqMatchedtoHCP,:);
                     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                     HCPonly = corrcoef([successtrace, HCPActivityAligned']);
                     newonly = corrcoef([successtrace, NewSpineActivityAligned']);
@@ -764,10 +884,10 @@ for animal = 1:length(varargin)
                     lever_separated = mat2cell(levertrace, diff(boundS));
                     frames = 1:length(levertrace);
                     frames_separated = mat2cell(frames', diff(boundS));
-                    coactive_separated = mat2cell(coactivetrace', diff(boundS));
-                    coactive_trace_during_success = coactive_separated(cell2mat(cellfun(@(x) ~isempty(find(x,1)), allperiodsS, 'uni', false)));
-                    lever_trace_during_success = lever_separated(cell2mat(cellfun(@(x) ~isempty(find(x,1)), allperiodsS, 'uni', false)));
-                    frames_during_success = frames_separated(cell2mat(cellfun(@(x) ~isempty(find(x,1)), allperiodsS, 'uni', false)));
+                    coactive_separated = mat2cell(coactivetrace', diff(boundS));    %%% Separate the coactive trace according to the bounds of the successful/rewarded lever press trace
+                    coactive_trace_during_success = coactive_separated(cell2mat(cellfun(@(x) ~isempty(find(x,1)), allperiodsS, 'uni', false))); %%% First, find the cases when the lever is actually being pressed (where 'allperiodsS' is nonzero), and extract the activity traces DURING THESE PERIODS
+                    lever_trace_during_success = lever_separated(cell2mat(cellfun(@(x) ~isempty(find(x,1)), allperiodsS, 'uni', false)));   %%% Extract the actual lever trace during these periods
+                    frames_during_success = frames_separated(cell2mat(cellfun(@(x) ~isempty(find(x,1)), allperiodsS, 'uni', false)));       %%% Extract the frames of interest during these periods
                     CoActiveAddresses = find(cell2mat(cellfun(@(x,y) ~isempty(find(x,1))&~isempty(find(y,1)), successperiods, coactive_trace_during_success, 'uni', false)));
                     SuccessfulPresseswithCoactivity = lever_trace_during_success(CoActiveAddresses);
                     framesofinterest = frames_during_success(CoActiveAddresses);
@@ -788,6 +908,23 @@ for animal = 1:length(varargin)
                     movementcorr = corrcoef(SuccessfulPresseswithoutCoactivity);
                     movementcorr(1:1+size(movementcorr,1):numel(movementcorr)) = nan;
                     OtherMovementCorr(highcorrcount) = nanmedian(movementcorr(:));
+                    %%%%%%%%%%%%%
+                    comp_coactive_separated = mat2cell(comp_coactivetrace', diff(boundS));    %%% Separate the coactive trace according to the bounds of the successful/rewarded lever press trace
+                    comp_coactive_trace_during_success = comp_coactive_separated(cell2mat(cellfun(@(x) ~isempty(find(x,1)), allperiodsS, 'uni', false))); %%% First, find the cases when the lever is actually being pressed (where 'allperiodsS' is nonzero), and extract the activity traces DURING THESE PERIODS
+                    comp_CoActiveAddresses = find(cell2mat(cellfun(@(x,y) ~isempty(find(x,1))&~isempty(find(y,1)), successperiods, comp_coactive_trace_during_success, 'uni', false)));
+                    framesofinterest = frames_during_success(comp_CoActiveAddresses);
+                    if ~isempty(framesofinterest)
+                        MovementswithCompCoActivity = ExtractMovementswithKnownBounds(levertrace, framesofinterest, rewardperiods);
+                        if size(MovementswithCompCoActivity,2)>1
+                            movementcorr = corrcoef(MovementswithCompCoActivity);
+                            movementcorr(1:1+size(movementcorr,1):numel(movementcorr)) = nan;
+                            Comp_CoActiveHCPMovementCorr(highcorrcount) = nanmedian(movementcorr(:));
+                        else
+                            Comp_CoActiveHCPMovementCorr(highcorrcount) = NaN;
+                        end
+                    else
+                        Comp_CoActiveHCPMovementCorr(highcorrcount) = NaN;
+                    end
                     highcorrcount = highcorrcount+1;
                 end
             end
@@ -803,6 +940,7 @@ for animal = 1:length(varargin)
             SuccessCentricHCPClusterCorrelation{f} = success_centric_HCPcluster_correlation;
             MovementCorrelationwithCoActiveHCPClusters{f} = CoActiveHCPMovementCorr;
             MovementCorrelationofAllOtherNonHCPMovements{f} = OtherMovementCorr;
+            MovementCorrelationofHCPComparatorSpines{f} = Comp_CoActiveHCPMovementCorr;
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             for ns = 1:length(NewSpines{f})
                 NewSpinesBehaviorCorrelation{f}(ns,1:9) = behaviorcorrdatalate(:,ns);
@@ -828,7 +966,6 @@ for animal = 1:length(varargin)
                     ElimSpinestoEarlyMovementSpines = [];
                     ElimSpinestoShuffledEarlyMovementSpines = [];
                     ElimSpinesCorrwithCloseMRS = nan;
-                    NearbyMRSlist = [];
                     count = 1;
                     closecount = 1;
                     for ms = 1:length(AllMovementSpinesOnEarlySession) 
@@ -837,7 +974,7 @@ for animal = 1:length(varargin)
                         CorrElimSpinestoEarlyMovementSpines(1,count) = AllEarlySpineCorrelations(val(1), val(2));
                         if ElimSpinestoEarlyMovementSpines(1,count)<clusterdistance 
                             ElimSpinesCorrwithCloseMRS(1,closecount) = CorrElimSpinestoEarlyMovementSpines(1,count);
-                            NearbyMRSlist = [NearbyMRSlist,AllMovementSpinesOnEarlySession(ms)];
+                            AntiClusteredEarlyMoveSpines{f} = [AntiClusteredEarlyMoveSpines{f},AllMovementSpinesOnEarlySession(ms)];
                             closecount = closecount+1;
                         end
                         count = count+1;
@@ -857,11 +994,10 @@ for animal = 1:length(varargin)
                     DistancesBetweenElimSpinesandShuffledEarlyMovementSpines{f}(es) = nanmean(ElimSpinestoShuffledEarlyMovementSpines);
                 end
             else
-                NearbyMRSlist = [];
             end
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            TaskCorrelationofNearbyEarlyMRSsforElimSp{f} = behaviorcorrdataearly(:,NearbyMRSlist);
-            MovementReliabilityofNearbyEarlyMRSsforElimSp{f} = FieldData{f}.StatClass{end}.AllSpineReliability(NearbyMRSlist);
+            TaskCorrelationofNearbyEarlyMRSsforElimSp{f} = behaviorcorrdataearly(:,AntiClusteredEarlyMoveSpines{f});
+            MovementReliabilityofNearbyEarlyMRSsforElimSp{f} = FieldData{f}.StatClass{end}.AllSpineReliability(AntiClusteredEarlyMoveSpines{f});
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             %%% Compare eliminated spines to late session features
             if ~isempty(AllMovementSpinesOnLateSession) && ~isempty(OtherMovementSpinesThatArentElim)
@@ -913,7 +1049,7 @@ for animal = 1:length(varargin)
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     end
     
-    FractionofNewSpinesClustered = NumberofMovementClusteredNewSpinesThatAreMR/NumberofNewSpinesThatAreMR;
+    FractionofNewMovementSpinesThatAreClustered = NumberofMovementClusteredNewSpinesThatAreMR/NumberofNewSpinesThatAreMR;
     FractionofPersistentMovementRelatedSpinesClustered = cellfun(@(x,y) x/y, NumberofPersistentMovementSpinesClustered,NumberofPersistentMovementRelatedSpines, 'uni', false);
     %%%%%%%%%%%%
     %% Dendrites Section
@@ -1070,11 +1206,19 @@ for animal = 1:length(varargin)
     
     a.NewSpines = NewSpines;
     a.NumberofNewSpines = NumberofNewSpines;
+    a.MiddleSessionNewSpines = MiddleSessionNewSpines;
+    a.LateSessionNewSpines = LateSessionNewSpines;
+    a.PersistentNewSpines = persistentNewSpines;
+    a.ClusteredNewSpines = cellfun(@unique, ClusteredNewSpines, 'uni', false);
+    a.ClusteredEarlyMoveSpines = cellfun(@unique, ClusteredEarlyMoveSpines, 'uni', false);
+    a.AntiClusteredMoveSpines = cellfun(@unique, AntiClusteredEarlyMoveSpines, 'uni', false);
+    
     a.NumberofElimSpines = NumberofElimSpines;
+    a.NewSpineswithNoMoveSpinePartner = NewSpineswithNoMoveSpinePartner;
     a.NumberofClusteredMoveSpines = NumberofClusteredMoveSpines;
     a.NumberofMovementClusteredNewSpines = NumberofMovementClusteredNewSpines;
     a.NumberofMovementClusteredNewSpinesThatAreMR = NumberofMovementClusteredNewSpinesThatAreMR;
-    a.FractionofNewSpinesClustered = FractionofNewSpinesClustered;
+    a.FractionofNewMovementSpinesThatAreClustered = FractionofNewMovementSpinesThatAreClustered;
     a.FractionofPersistentMovementRelatedSpinesClustered = FractionofPersistentMovementRelatedSpinesClustered;
     a.NumberofEarlyMovementRelatedSpines = NumberofEarlyMovementRelatedSpines;
     a.NumberofLateMovementRelatedSpines = NumberofLateMovementRelatedSpines;
@@ -1161,6 +1305,7 @@ for animal = 1:length(varargin)
     a.SuccessCentricHCPClusterCorrelation = SuccessCentricHCPClusterCorrelation;
     a.MovementCorrelationwithCoActiveHCPClusters = MovementCorrelationwithCoActiveHCPClusters;
     a.MovementCorrelationofAllOtherNonHCPMovements = MovementCorrelationofAllOtherNonHCPMovements;
+    a.MovementCorrelationofHCPComparatorSpines = MovementCorrelationofHCPComparatorSpines;
 
     
     a.SessionsbyField = SessionsbyField;
@@ -1168,6 +1313,7 @@ for animal = 1:length(varargin)
     
     a.MovementCorrelationwithCoActiveClusters = MovementCorrelationwithCoActiveClusters;
     a.MovementCorrelationofAllOtherMovements = MovementCorrelationofAllOtherMovements;
+    a.MovementCorrelationofFrequencyMatchedPairs = MovementCorrelationofFrequencyMatchedPairs;
 
     eval([experimentnames, '_SpineDynamicsSummary = a'])
     fname = [experimentnames, '_SpineDynamicsSummary'];

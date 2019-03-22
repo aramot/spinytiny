@@ -1,6 +1,6 @@
 function [Movements] = ExtractMovementswithKnownBounds(levertrace, framesofinterest, rewardperiods)
 
-startbufferwindow = 10;
+startbufferwindow = 0;
 stopbufferwindow = 90;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

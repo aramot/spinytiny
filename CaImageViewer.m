@@ -1270,6 +1270,7 @@ if isfield(glovar, 'PolyROI') && ~isempty(coordinates)
                     glovar.PolyROI{i} = drawellipse('Center', savedFile.PolyROI{i}.Center,'RotationAngle', savedFile.PolyROI{i}.RotationAngle, 'SemiAxes', savedFile.PolyROI{i}.SemiAxes,...
                         'AspectRatio', savedFile.PolyROI{i}.AspectRatio, 'Tag', ['Dendrite ', num2str(currDend), ' PolyROI ', num2str(polycount)], 'FaceAlpha', 0, 'Color', 'g', 'DrawingArea',...
                         'unlimited', 'HandleVisibility', 'on','InteractionsAllowed', 'none', 'Linewidth', 1);
+                    glovar.polyListener(i) = listener(glovar.PolyROI{i}, 'ROIMoved', @RefreshPolyLine);
                     x = [x,savedFile.PolyROI{i}.Center(1)];
                     y = [y,savedFile.PolyROI{i}.Center(2)];
             end
@@ -1508,7 +1509,7 @@ else
         experiment = regexp(gui_CaImageViewer.filename, '[A-Z]{2,3}\d+', 'match');
         fname = [experiment{1}, '_zStackSavedROIs', '_DrawnBy', drawer];
     else
-        experiment = regexp(gui_CaImageViewer.filename, '[A-Z]\d+[_]\d+', 'match');
+        experiment = regexp(gui_CaImageViewer.filename, '[A-Z]{2,3}\d+[_]\d+', 'match');
         if isempty(experiment)
             experiment = regexp(gui_CaImageViewer.filename, '\w+\d+[_]\d+', 'match');
         end

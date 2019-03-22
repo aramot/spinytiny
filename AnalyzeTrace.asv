@@ -66,7 +66,7 @@ fornoise = raw;
 roundnum = 1;
 switch Options.ImagingSensor
     case 'GCaMP'
-        roundstodo = 1;
+        roundstodo = 2;
         multiplier = 1.5;
         windowsize = 30;
         stepforKDE = 20;
@@ -186,16 +186,17 @@ if traceoption == 1
     filterorder = 3;        %%% Polynomial order with which to filter the final signal. This will depend on the imaging frequency as well as the noise of the signal. 
     filterwindow = smoothwindow;
     
-    if ~mod(filterwindow,2)
-        filterwindow = filterwindow+1;
-    else
-    end
-    
+
     switch Options.ImagingSensor
         case 'GCaMP'
+            if ~mod(filterwindow,2)
+                filterwindow = filterwindow+1;
+                else
+            end
             processed_dFoF = sgolayfilt(dFoF,filterorder,filterwindow);
         case 'GluSnFR'
-            [tpv
+            processed_dFoF = smooth(dFoF, filterwindow);
+    end
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

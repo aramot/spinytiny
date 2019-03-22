@@ -231,7 +231,7 @@ else
         spinesmoothwindow = 15;
     elseif strcmpi(ImagingSensor, 'GluSnFR')
         ImagingFrequency = 60;
-        spinesmoothwindow = 15;
+        spinesmoothwindow = 30;
     end 
     polythreshmultiplier = 2*ones(1,length(File.Poly_Fluorescence_Measurement));
     Dendthreshmultiplier = 2*ones(1,File.NumberofDendrites);
@@ -262,21 +262,28 @@ analyzed.dendsmoothwindow = dendsmoothwindow;
 analyzed.ClusterThresh = ClusterThresh;
 analyzed.SpectralLengthConstant = SpectralLengthConstant;
 
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Select which spine to plot %%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                  %%% Select which spine to plot %%%
+                  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 if File.NumberofSpines ==  0 || File.NumberofSpines ~= length(File.deltaF)
     File.NumberofSpines = length(File.deltaF);
     analyzed.NumberofSpines = length(File.deltaF);
 end
 % 
-% SpineNo = randi(File.NumberofSpines,1); %%% Will choose a random spine from the available ones for this file
-SpineNo = 2;  %%% Manually select spine to be considered
+SpineNo = randi(File.NumberofSpines,1); %%% Will choose a random spine from the available ones for this file
+% SpineNo = 2;  %%% Manually select spine to be considered
 
 
 DendNum = File.NumberofDendrites;
@@ -284,7 +291,12 @@ DendNum = File.NumberofDendrites;
 % DendriteChoice = randi(DendNum,1);
 DendriteChoice =  find(~cell2mat(cellfun(@(x) isempty(find(x == SpineNo,1)), File.SpineDendriteGrouping, 'Uni', false))); %% Get the dendrite on which the chosen spine is located
 
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -952,16 +964,16 @@ if DendNum ~= length(File.DendritePolyPointNumber)
 end
 counter = 1;
 
-if length(File.PolyLinePos{1})>2
-    method = 'old';    
-elseif length(File.PolyLinePos{1}) == 2
-    method = 'new';
-else
-    error('Could not determine method used to draw ROIs')
-end
+% if length(File.PolyLinePos{1})>2
+%     method = 'old';    
+% elseif length(File.PolyLinePos{1}) == 2
+%     method = 'new';
+% else
+%     error('Could not determine method used to draw ROIs')
+% end
 
-switch method 
-    case 'new'
+% switch method 
+%     case 'new'
         ROIfile = fastdir(targetdir, 'DrawnBy');
         if length(ROIfile)>1
             filesdrawnbyuser = find(~cellfun(@isempty, cellfun(@(x) regexp(x, Analyzer, 'once'), ROIfile, 'uni', false)));
@@ -982,8 +994,14 @@ switch method
         end
         load([targetdir, '\', ROIfile])
         eval(['ROIfile = ', ROIfile(1:end-4), ';']);
-    case 'old'
-        ROIfile = [];
+%     case 'old'
+%         ROIfile = [];
+% end
+
+if isstruct(ROIfile.ROIPosition{1})
+    method = 'new';
+else
+    method = 'old';
 end
         
 for i = 1:File.NumberofDendrites
