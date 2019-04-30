@@ -101,14 +101,19 @@ for i = 1:length(D)
     if ~isempty(strfind(D(i).name, '.tif'))
         timecourse_image_number = timecourse_image_number + 1;
         feat_sep = regexp(D(i).name, '_');
-%         acquisition_step = [acquisition_step; D(i).name(feat_sep(2)+1:feat_sep(3)-1)];
-        acquisition_step = [acquisition_step; D(i).name(feat_sep(2)+1:feat_sep(3)-1)];
-        if length(feat_sep)>3
-            frame_bin_count = [frame_bin_count; D(i).name(feat_sep(3)+1:feat_sep(4)-1)];
-        else
-%             frame_bin_count = [frame_bin_count; D(i).name(feat_sep(3)+1:end)];
-            frame_bin_count = [frame_bin_count; D(i).name(feat_sep(2)+1:feat_sep(3)-1)];
+        for f = 1:length(feat_sep)-1
+            findacqpattern{f} = regexp(D(i).name(feat_sep(f)+1:feat_sep(f+1)-1), '[0]{2,5}\d');
         end
+        first_acquisition_delimiter = find(~cell2mat(cellfun(@isempty, findacqpattern, 'uni', false)),1,'first');
+%         acquisition_step = [acquisition_step; D(i).name(feat_sep(2)+1:feat_sep(3)-1)];
+        acquisition_step = [acquisition_step; D(i).name(feat_sep(first_acquisition_delimiter)+1:feat_sep(first_acquisition_delimiter+1)-1)];
+        bin_acquisition_delimiter = find(~cell2mat(cellfun(@isempty, findacqpattern, 'uni', false)),1,'last');
+%         if length(feat_sep)>3
+%             frame_bin_count = [frame_bin_count; D(i).name(feat_sep(3)+1:feat_sep(4)-1)];
+%         else
+%             frame_bin_count = [frame_bin_count; D(i).name(feat_sep(3)+1:end)];
+            frame_bin_count = [frame_bin_count; D(i).name(feat_sep(bin_acquisition_delimiter)+1:feat_sep(bin_acquisition_delimiter+1)-1)];
+%         end
     else
     end
 end

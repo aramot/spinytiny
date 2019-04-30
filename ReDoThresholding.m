@@ -1,4 +1,5 @@
-function RedoSubtraction(varargin)
+function ReDoThresholding(varargin)
+
 
 if isempty(varargin)
     foldertouse = 'E:\ActivitySummary';
@@ -13,7 +14,8 @@ if isempty(varargin)
             cd(foldertouse)
             load(files(i).name);
             eval(['current_session = ', mouse, '_', date, '_Summary.Session;'])
-            eval(['DendriteSubtraction(', mouse, '_', date, '_Summary, num2str(date), ''Redo'')']);
+            eval(['File = ', mouse, '_', date, '_Summary;'])
+            MoveThreshold(usersearch,[mouse, '_', date]);
             clear(files(i).name(1:end-4))
             close all
         end
@@ -26,9 +28,9 @@ else
         for f = 1:length(files)
             load(files{f})
             fname = files{f}(1:end-4);
-            eval(['File = DendriteSubtraction(',fname, ',''Redo'');']);
-            disp([fname, ' Dendrite Subtracted Redone Successfully'])
-            eval([fname ' = File;'])
+            eval(['File = MoveThreshold(', fname, ');'])
+            eval([fname, ' = File;'])
+            disp([fname, ' Threshold Shifted Successfully'])
             save(fname, fname)
             clear(fname)
         end

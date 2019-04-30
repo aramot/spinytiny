@@ -69,6 +69,8 @@ elseif strcmpi(choice, 'Dendrites')
     glovar.PolyLineVertices = [];
     glovar.PolyLine = [];
     glovar.DendritePolyPointNumber = 0;
+    
+    delete(findobj(glovar.figure.handles.GreenGraph, 'Type', 'rectangle'))
 
 elseif strcmpi(choice, 'Both')  
     twochannels = get(glovar.figure.handles.TwoChannels_CheckBox);

@@ -1,7 +1,12 @@
-function [Movements] = ExtractMovementswithKnownBounds(levertrace, framesofinterest, rewardperiods)
+function [Movements] = ExtractMovementswithKnownBounds(levertrace, framesofinterest, rewardperiods, secondspostmovement,ImagingFrequency)
 
-startbufferwindow = 0;
-stopbufferwindow = 90;
+PreMovementTimeBuffer = 0.2; %%% When looking at just behavior, I move back 0.4s before the start of the movement period;
+
+% startbufferwindow = round(60*0.5);
+% stopbufferwindow = round(60*secondspostmovement); 
+
+startbufferwindow = round(ImagingFrequency*PreMovementTimeBuffer); 
+stopbufferwindow = round(ImagingFrequency*secondspostmovement);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % %%%%%%%%%%%% Aligned to actual rewarded press
@@ -28,10 +33,10 @@ for i = 1:length(framesofinterest)
     else
         start = framesofinterest{i}(1)-startbufferwindow;
     end
-    if framesofinterest{i}(end)+stopbufferwindow >length(levertrace)
+    if start+stopbufferwindow >length(levertrace)
         stop = length(levertrace);
     else
-        stop = framesofinterest{i}(end)+stopbufferwindow;
+        stop = start+stopbufferwindow;
     end
     ExtractedMovements{i} = levertrace(start:stop);
 end
@@ -53,7 +58,7 @@ for i = 1:length(ExtractedMovements)
     end
     if length(ExtractedMovements{i})<maxlength
         lengthdiff = maxlength-length(ExtractedMovements{i});
-        ExtractedMovements{i} = [ExtractedMovements{i}; max(ExtractedMovements{i})*ones(lengthdiff,1)];
+        ExtractedMovements{i} = [ExtractedMovements{i}; nan(lengthdiff,1)];
     end
 end
 

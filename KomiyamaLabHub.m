@@ -22,7 +22,7 @@ function varargout = KomiyamaLabHub(varargin)
 
 % Edit the above text to modify the response to help KomiyamaLabHub
 
-% Last Modified by GUIDE v2.5 02-Mar-2019 13:15:57
+% Last Modified by GUIDE v2.5 21-Mar-2019 21:44:10
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -540,7 +540,7 @@ if length(listpos) ==1
     end
     sessioncounter = 0;
     behfiles = fastdir(behaviordir, animal, 'Summarized');
-    actfiles = fastdir(activitydir, animal, 'Poly');
+    actfiles = fastdir(activitydir, animal, {'ZSeries', 'Poly'});
 %     actual_sessions = [];
     if length(sessions)~=length(behfiles)
         sessions = [];
@@ -561,6 +561,14 @@ if length(listpos) ==1
                     sessions = 1;
                 end
             end
+        end
+        if length(unique(sessions))~=length(sessions)
+            [~, ind] = unique(sessions);
+            temp_session = sessions(ind);
+            prob = find(diff([temp_session])>1);
+            temp_session = [temp_session(1:prob),NaN, temp_session(prob+1:end)];
+            temp_session = fillmissing(temp_session, 'linear');
+            sessions = temp_session;
         end
     end
     for i = 1:length(behfiles)
@@ -608,8 +616,16 @@ if length(listpos) ==1
     title('Reaction Time')
     xlabel('Session')
     legend({'Cue to movement', 'Cue to reward'})
+    
+    for i = sessions
+        reducedMovementMat = MovementMat{i}(any(~isnan(MovementMat{i}),2),:);
+        [coeffs{i}, scores{i}, ~, ~, explained{i}] = pca(reducedMovementMat');
+    end
 
     [r_lever] = SummarizeLeverPressCorrelations(MovementMat, sessions);
+    
+    valid_pca_sessions = find(~cellfun(@isempty, explained));
+    plot(sessions(ismember(sessions, valid_pca_sessions)), cellfun(@(x) x(1)./100, explained(valid_pca_sessions)), 'r', 'linewidth', 2)
     
     subplot(2,2,2); plot(MoveDurationBeforeIgnoredTrials);
     xlabel('Session')
@@ -626,10 +642,14 @@ if length(listpos) ==1
     ylabel('Fraction of ITI Spent Moving')
     
     a.rewards = Rewards;
+    a.MovementMat = MovementMat;
     a.ReactionTime = ReactionTime;
     a.MovingAtTrialStartFaults = MovingAtTrialStartFaults;
     a.MovementAverages = MovementAverages;
     a.MovementCorrelation = r_lever;
+    a.PCA_Coefficients = coeffs;
+    a.PCA_Scores = scores;
+    a.PCA_VarianceExplained = explained;
     a.UsedSessions = UsedSessions;
     a.CuetoReward = CuetoReward;
     a.MoveDurationBeforeIgnoredTrials = MoveDurationBeforeIgnoredTrials;
@@ -653,7 +673,7 @@ else
     end
     filetoanalyze = [];
     animal = list(listpos);
-    for i = 1:length(folder);
+    for i = 1:length(folder)
         rightanimal = regexp(folder(i).name, animal);
         rightfile = strfind(folder(i).name, 'Summarized');
         if sum(cell2mat(rightanimal)) ~= 0 && ~isempty(rightfile)
@@ -1024,7 +1044,16 @@ function AllAnalysis_DropDown_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-RedoAnalysis
+listpos = get(handles.AnimalName_ListBox, 'Value');
+fulllist = get(handles.AnimalName_ListBox, 'String');
+animals = fulllist(listpos);
+filestoanalyze = [];
+for i = 1:length(animals)
+    filestoanalyze =[filestoanalyze, ',''',animals{i}, ''''];
+end
+filestoanalyze =  filestoanalyze(2:end);
+
+eval(['RedoAnalysis(', filestoanalyze, ')']);
 
 % --------------------------------------------------------------------
 function DendSub_DropDown_Callback(hObject, eventdata, handles)
@@ -1032,7 +1061,17 @@ function DendSub_DropDown_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-RedoSubtraction
+
+listpos = get(handles.AnimalName_ListBox, 'Value');
+fulllist = get(handles.AnimalName_ListBox, 'String');
+animals = fulllist(listpos);
+filestoanalyze = [];
+for i = 1:length(animals)
+    filestoanalyze =[filestoanalyze, ',''',animals{i}, ''''];
+end
+filestoanalyze =  filestoanalyze(2:end);
+
+eval(['RedoSubtraction(', filestoanalyze, ')']);
 
 % --------------------------------------------------------------------
 function CorrShuff_DropDown_Callback(hObject, eventdata, handles)
@@ -1160,3 +1199,22 @@ function FitwithMLR_CheckBox_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 % Hint: get(hObject,'Value') returns toggle state of FitwithMLR_CheckBox
+
+
+% --------------------------------------------------------------------
+function Thresholding_DropDown_Callback(hObject, eventdata, handles)
+% hObject    handle to Thresholding_DropDown (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+
+listpos = get(handles.AnimalName_ListBox, 'Value');
+fulllist = get(handles.AnimalName_ListBox, 'String');
+animals = fulllist(listpos);
+filestoanalyze = [];
+for i = 1:length(animals)
+    filestoanalyze =[filestoanalyze, ',''',animals{i}, ''''];
+end
+filestoanalyze =  filestoanalyze(2:end);
+
+eval(['ReDoThresholding(', filestoanalyze, ')']);

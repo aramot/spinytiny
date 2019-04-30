@@ -4,6 +4,7 @@ global gui_CaImageViewer
 global zStack_Interface
 
 ImageNum = ceil(get(gui_CaImageViewer.figure.handles.ImageSlider_Slider, 'Value'));
+SliderMax = get(gui_CaImageViewer.figure.handles.ImageSlider_Slider, 'Max');
 
 twochannels = get(gui_CaImageViewer.figure.handles.TwoChannels_CheckBox, 'Value');
 
@@ -33,7 +34,7 @@ end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-if gui_CaImageViewer.NewSpineAnalysis && ~(ImageNum>3)
+if gui_CaImageViewer.NewSpineAnalysis && ~(SliderMax>3) %%% If a full image series is loaded, then SliderMax will be the number of images; If, on the other hand, multiple-session image comparisons are laoded, then SliderMax will typically be 2-3 
     animal = regexp(gui_CaImageViewer.filename, '[A-Z]{2,3}[0-9]*', 'match');
     animal = animal{1};
     experimenter = regexp(gui_CaImageViewer.save_directory, ['People.\w+'], 'match');

@@ -25,10 +25,10 @@ failuretrialaverage = cell(1,14);
 failuretrialaveragebyanimal = cell(1,14);
 MovementLengthDistribution = repmat({cell(1,animalnumber)},1,14);
 
-startwindow = 60;   %%% Time (in frames) to subtract from the initiation of movement for inspection of beginning of trace
+startwindow = 15;   %%% Time (in frames) to subtract from the initiation of movement for inspection of beginning of trace
 stopwindow = 60;    %%% Time (in frames) to add to the initiation of movement for inspection of end of trace
 
-centermovement = 220;   %%% Trials are of different lengths, so to compare them with a chosen t = 0, you must chose a value about which to center them (cannot actually be zero in an array with indices of positive, real values)
+centermovement = 120;   %%% Trials are of different lengths, so to compare them with a chosen t = 0, you must chose a value about which to center them (cannot actually be zero in an array with indices of positive, real values)
                         %%% Note: the entire movement period is assumed to
                         %%% be fewer than 2*(centermovement) frames. If you
                         %%% increase the start or stop window above, you

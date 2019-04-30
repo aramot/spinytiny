@@ -57,66 +57,66 @@ NumberofMovementsDuringITIPreRewardedTrials = [];
 FractionITISpentMovingPreRewardedTrials = [];
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-if ~isempty(File.Behavior_Frames)
-    trials = length(File.Behavior_Frames);
-    movements_only = File.lever_force_smooth.*File.lever_active;
-    boundary_frames = find(diff([Inf; File.lever_active;Inf])~=0);
-    for trialnumber = 1:length(File.Behavior_Frames)
-        if trialnumber>maxtrialnum
-            continue
-        end
-        if trialnumber==1
-            if File.Behavior_Frames{trialnumber}.states.state_0(1,2)>1000
-                continue
-            end
-        end
-        if ~isempty(File.Behavior_Frames{trialnumber}.states.reward)
-            rewards = rewards+1;
-            reward_time = round(File.Frame_Times(round(File.Behavior_Frames{trialnumber}.states.reward(1)))*1000);
-            result_time(trialnumber) = reward_time;
-            if result_time(trialnumber) == 0
-                result_time(trialnumber) = 1;
-            end
-            cue_start = round(File.Frame_Times(round(File.Behavior_Frames{trialnumber}.states.cue(1)))*1000);
-            if trialnumber ~= length(File.Behavior_Frames)         %%% The last behavioral trial must be treated differently, since there is no future cue to use as a reference
-                next_cue = round(File.Frame_Times(round(File.Behavior_Frames{trialnumber+1}.states.cue(1)))*1000);
-            else
-                next_cue = round(File.Frame_Times(end))*1000;
-            end
-            end_trial(trialnumber) = next_cue;
-            File.movement{rewards} = File.lever_force_smooth(cue_start:next_cue);
-            File.PastThreshRewTrials{rewards} = File.lever_force_smooth(cue_start:next_cue).*File.lever_active(cue_start:next_cue);  %%% Binarizes lever motion for a particular cue period
-
-            %%%%%%%%%%%%%%%%%%%%%%%%%
-            %%%%
-            [File,UsedTrialInfo, fault,IgnoredTrialInfo] = ProfileRewardedMovements(File, boundary_frames,session, trialnumber, rewards,cue_start, result_time, end_trial);
-            if fault == 1
-                moveatstartfault = moveatstartfault+1;
-                movedurationbeforecue(rewards,1) = IgnoredTrialInfo.movedurationbeforecue;
-                NumberofMovementsDuringITIPreIgnoredTrials(rewards,1) = IgnoredTrialInfo.numberofmovementssincelasttrial;
-                FractionITISpentMovingPreIgnoredTrials(rewards,1) = IgnoredTrialInfo.FractionITISpentMoving;
-                NumberofMovementsDuringITIPreRewardedTrials(rewards,1) = NaN;
-                FractionITISpentMovingPreRewardedTrials(rewards,1) = NaN;
-            else
-                movedurationbeforecue(rewards,1) = 0;
-                NumberofMovementsDuringITIPreIgnoredTrials(rewards,1) = NaN;
-                FractionITISpentMovingPreIgnoredTrials(rewards,1) = NaN;
-                NumberofMovementsDuringITIPreRewardedTrials(rewards,1) = UsedTrialInfo.numberofmovementssincelasttrial;
-                FractionITISpentMovingPreRewardedTrials(rewards,1) = UsedTrialInfo.FractionITISpentMoving;
-            end
-            if fault
-                continue
-            end
-            %%%%
-            %%%%%%%%%%%%%%%%%%%%%%%%%
-
-            trial_length(rewards,1) = UsedTrialInfo.trial_length;
-            rxnTime(rewards,1) = UsedTrialInfo.rxnTime;
-            CuetoRew(rewards,1) = UsedTrialInfo.cs2r;
-        else
-        end
-    end
-else  %%% This section is for using data that is not aligned to imaging frames
+% if ~isempty(File.Behavior_Frames)
+%     trials = length(File.Behavior_Frames);
+%     movements_only = File.lever_force_smooth.*File.lever_active;
+%     boundary_frames = find(diff([Inf; File.lever_active;Inf])~=0);
+%     for trialnumber = 1:length(File.Behavior_Frames)
+%         if trialnumber>maxtrialnum
+%             continue
+%         end
+%         if trialnumber==1
+%             if File.Behavior_Frames{trialnumber}.states.state_0(1,2)>1000
+%                 continue
+%             end
+%         end
+%         if ~isempty(File.Behavior_Frames{trialnumber}.states.reward)
+%             rewards = rewards+1;
+%             reward_time = round(File.Frame_Times(round(File.Behavior_Frames{trialnumber}.states.reward(1)))*1000);
+%             result_time(trialnumber) = reward_time;
+%             if result_time(trialnumber) == 0
+%                 result_time(trialnumber) = 1;
+%             end
+%             cue_start = round(File.Frame_Times(round(File.Behavior_Frames{trialnumber}.states.cue(1)))*1000);
+%             if trialnumber ~= length(File.Behavior_Frames)         %%% The last behavioral trial must be treated differently, since there is no future cue to use as a reference
+%                 next_cue = round(File.Frame_Times(round(File.Behavior_Frames{trialnumber+1}.states.cue(1)))*1000);
+%             else
+%                 next_cue = round(File.Frame_Times(end))*1000;
+%             end
+%             end_trial(trialnumber) = next_cue;
+%             File.movement{rewards} = File.lever_force_smooth(cue_start:next_cue);
+%             File.PastThreshRewTrials{rewards} = File.lever_force_smooth(cue_start:next_cue).*File.lever_active(cue_start:next_cue);  %%% Binarizes lever motion for a particular cue period
+% 
+%             %%%%%%%%%%%%%%%%%%%%%%%%%
+%             %%%%
+%             [File,UsedTrialInfo, fault,IgnoredTrialInfo] = ProfileRewardedMovements(File, boundary_frames,session, trialnumber, rewards,cue_start, result_time, end_trial);
+%             if fault == 1
+%                 moveatstartfault = moveatstartfault+1;
+%                 movedurationbeforecue(rewards,1) = IgnoredTrialInfo.movedurationbeforecue;
+%                 NumberofMovementsDuringITIPreIgnoredTrials(rewards,1) = IgnoredTrialInfo.numberofmovementssincelasttrial;
+%                 FractionITISpentMovingPreIgnoredTrials(rewards,1) = IgnoredTrialInfo.FractionITISpentMoving;
+%                 NumberofMovementsDuringITIPreRewardedTrials(rewards,1) = NaN;
+%                 FractionITISpentMovingPreRewardedTrials(rewards,1) = NaN;
+%             else
+%                 movedurationbeforecue(rewards,1) = 0;
+%                 NumberofMovementsDuringITIPreIgnoredTrials(rewards,1) = NaN;
+%                 FractionITISpentMovingPreIgnoredTrials(rewards,1) = NaN;
+%                 NumberofMovementsDuringITIPreRewardedTrials(rewards,1) = UsedTrialInfo.numberofmovementssincelasttrial;
+%                 FractionITISpentMovingPreRewardedTrials(rewards,1) = UsedTrialInfo.FractionITISpentMoving;
+%             end
+%             if fault
+%                 continue
+%             end
+%             %%%%
+%             %%%%%%%%%%%%%%%%%%%%%%%%%
+% 
+%             trial_length(rewards,1) = UsedTrialInfo.trial_length;
+%             rxnTime(rewards,1) = UsedTrialInfo.rxnTime;
+%             CuetoRew(rewards,1) = UsedTrialInfo.cs2r;
+%         else
+%         end
+%     end
+% else  %%% This section is for using data that is not aligned to imaging frames
     ch = find(strcmp(File.xsg_data.channel_names,'Trial_number'));
     bitcode = parse_behavior_bitcode(File.xsg_data.channels(:,ch), 10000, session);
     trials = File.DispatcherData.saved.ProtocolsSection_n_done_trials;
@@ -138,7 +138,7 @@ else  %%% This section is for using data that is not aligned to imaging frames
     end
     movements_only = File.lever_force_smooth.*File.lever_active;
     boundary_frames = find(diff([Inf; File.lever_active;Inf])~=0);
-    if boundary_frames(1) == 1;
+    if boundary_frames(1) == 1
         boundary_frames = boundary_frames(2:end);
     end
 
@@ -219,7 +219,7 @@ else  %%% This section is for using data that is not aligned to imaging frames
             end
         end
     end
-end
+% end
 AveRxnTime = nanmean(rxnTime);
 AveCueToRew = nanmean(CuetoRew);
 trial_length(trial_length == 0) = NaN;
@@ -253,7 +253,7 @@ for rewardedtrial = 1:rewards
 end
 
 %%%%
-MinMovementNumContingency = numtrackedmovements > 5;
+MinMovementNumContingency = numtrackedmovements > 0;
 %%%%
 
 if rewards ~= 0 && MinMovementNumContingency

@@ -149,7 +149,7 @@ radius = 3;
 axes(axes1)
 
 %%% Correction Factor may change depending on zoom
-correctionfactor = 2;
+correctionfactor = 1;
 x = x-correctionfactor;
 y = y-correctionfactor;
 %%%

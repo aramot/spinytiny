@@ -1,4 +1,5 @@
-function [analyzed, poly] = SummarizeCaData(Experimenter, ImagingSensor, File, currentsession, showFig)
+function [analyzed, poly] = SummarizeCaData(File, varargin)
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% This function takes ROI information extracted using CaImageViewer and
@@ -7,35 +8,56 @@ function [analyzed, poly] = SummarizeCaData(Experimenter, ImagingSensor, File, c
 %%% function handles file loading, parameter setting, and all basic signal
 %%% processing post-extraction (including event detection). 
 
+%%% Inputs: "Experimenter" and "File" are required, as they direct this
+%%% function to the appropriate directory. "Experimenter" should be the
+%%% user's first name as it appears on the server. "File" should be the
+%%% filename structure: AA0DD_YYMMDD where AA = user itials, 0DD = animal
+%%% number, and YYMMDD is the date of the experiment (example:
+%%% NH052_190315).
+%%%
+%%% Other input arguments:
+%%% currentsession: The session of the experiment; critical for
+%%% longitudinal experiments;
+%%% 
+%%% ImagingSensor: when using a sensor other than GCaMP, it must be
+%%% indicated here
+%%%
+%%% Opto: When using optogenetics, indicate "true"
+%%%
+%%% showFig: Indicate whether figures should be made to visualize data
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-if(~exist('Experimenter','var'))
-    Experimenter = 'Nathan'; % User defaults to 'Nathan' if not defined
-end
+p = inputParser;
 
-if(~exist('ImagingSensor','var'))
-    ImagingSensor = 'GCaMP'; % default to show figure
-end
+defaultExperimenter = 'Nathan';
+defaultAnalyzer = 'Nathan';
+validScalarPosNum = @(x) isnumeric(x) && isscalar(x) && (x>0);
+defaultsession = 1;
+defaultsensor = 'GCaMP';
+defaultOpto = false;
+defaultshowFigoption = false;
 
-if(~exist('File', 'var'))
-    error('No file specified; either enter a filename, or use the variable itself as the input')
-end
+addRequired(p, 'File',@ischar);
 
-if(~exist('currentsession', 'var'))
-    currentsession = 1;
-    warning('Session was not specified. Defaulting to 1');
-end
+addParameter(p, 'Experimenter', defaultExperimenter, @ischar);
+addParameter(p, 'Analyzer', defaultAnalyzer, @ischar);
+addParameter(p, 'currentsession',defaultsession, validScalarPosNum)
+addParameter(p, 'ImagingSensor', defaultsensor, @ischar);
+addParameter(p, 'Opto', defaultOpto, @islogical);
+addParameter(p, 'showFig', defaultshowFigoption, @islogical);
 
-if(~exist('showFig','var'))
-    showFig = 1; % default to show figure
-end
+parse(p, File, varargin{:})
 
-if strcmpi(getenv('computername'), 'Nathan-Lab-PC')
-    Analyzer = 'Nathan';
-else
-    Analyzer = Experimenter;
-end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+Experimenter = p.Results.Experimenter;
+Analyzer = p.Results.Analyzer;
+ImagingSensor = p.Results.ImagingSensor;
+currentsession = p.Results.currentsession;
+showFig = p.Results.showFig;
+isOpto = p.Results.Opto;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%% Color Information %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -72,7 +94,7 @@ if isstruct(File)
     Date = regexp(File.Filename, '_\d+_', 'match');
     Date = Date{1};
 else
-    experimenter_initials = regexp(File, '[ABCDEFGHIJKLMNOPQRSTUVWXYZ]{2}', 'match');
+    experimenter_initials = regexp(File, '[A-Z]{2}', 'match');
     experimenter_initials = experimenter_initials{1};
     folder = regexp(File, [experimenter_initials, '\d+[^_]'], 'match');
     folder = folder{1};
@@ -91,7 +113,11 @@ else
         case 'Pantong'
             targetdir = [filestart, filesep, Experimenter, filesep, 'Data', filesep, folder, filesep, Date, filesep, 'Snfr', filesep, 'summed'];
         otherwise
-            targetdir = [filestart, filesep, Experimenter, filesep, 'Data', filesep, folder, filesep, Date, filesep, 'summed'];
+            if isOpto
+                targetdir = [filestart, filesep, Experimenter, filesep, 'Data', filesep, folder, filesep, Date, filesep,'Optoping',filesep, 'summed'];
+            else
+                targetdir = [filestart, filesep, Experimenter, filesep, 'Data', filesep, folder, filesep, Date, filesep, 'summed'];
+            end
     end
     if isfolder(targetdir)
         cd(targetdir)
@@ -111,7 +137,8 @@ else
                 for i = 1:length(files)
                     searchpattern1 = regexp(files(i),['_summed_50_Analyzed_By', Analyzer], 'once');
                     searchpattern2 = regexp(files(i),['_summed_50Analyzed_By', Analyzer], 'once');
-                    if ~isempty(searchpattern1{1}) || ~isempty(searchpattern2{1})
+                    searchpattern3 = regexp(files(i),['_summed_50_Longitudinal_Analyzed_By', Analyzer], 'once');
+                    if ~isempty(searchpattern1{1}) || ~isempty(searchpattern2{1}) || ~isempty(searchpattern3{1})
                         load(files{i})
                         check = 1;
                     end
@@ -204,7 +231,6 @@ if analyzed.UsePreviousPreferences
     catch
         return
     end
-    
     spinethreshmultiplier = SummaryFile.spinethresholdmultiplier;
     spinevalueslimitforbaseline = SummaryFile.spinevalueslimitforbaseline;
     spinevalueslimitfornoise = SummaryFile.spinevalueslimitfornoise;
@@ -216,10 +242,8 @@ if analyzed.UsePreviousPreferences
     Dendvalueslimitfornoise = SummaryFile.Dendvalueslimitfornoise;
     dendbaselinesmoothwindow = SummaryFile.dendbaselinesmoothwindow;
     dendsmoothwindow = SummaryFile.dendsmoothwindow;  
-%     ClusterThresh = SummaryFile.ClusterThresh;
     ClusterThresh = 0.5;
     SpectralLengthConstant = SummaryFile.SpectralLengthConstant;
-%     SpectralLengthConstant = 10;
 else
     spinethreshmultiplier = 2*ones(1,length(File.dF_over_F));       %%% multiplier to binarize events
     spinevalueslimitforbaseline = 2;                                %%% for capping values to estimate baseline
@@ -330,7 +354,6 @@ end
 %%% Initialize variables
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-truebaseline = zeros(length(File.Fluorescence_Measurement),length(File.Fluorescence_Measurement{1}));
 spinedriftbaseline = zeros(length(File.Fluorescence_Measurement),length(File.Fluorescence_Measurement{1}));
 processed_dFoF = zeros(length(File.Fluorescence_Measurement),length(File.Fluorescence_Measurement{1}));
 all = zeros(length(File.Fluorescence_Measurement),length(File.Fluorescence_Measurement{1}));
@@ -355,7 +378,6 @@ Options.ValuesLimitforNoise = spinevalueslimitfornoise;
 Options.ImagingSensor = ImagingSensor; 
 Options.BeingAnalyzed = 'Spine';
 
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -368,7 +390,8 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
+riderthresh = 1;
+riderthresh2 = 2;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -379,54 +402,14 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%% Variable initiation
-floored = zeros(numberofSpines, length(spinedatatouse{1}));
-thresh = spine_thresh;
-riderthresh = 1;
-riderthresh2 = 2;
+
+[square, floored,trueeventcount, riders, both] =  DetectEvents(processed_dFoF, spine_thresh);
 
 for i = 1:numberofSpines
-    temp = processed_dFoF(i,:); %%% This value will be used as a "floored" term, which has zeros below the threshold. It will subsequenctly be used as a binarized term by setting all threshold values to 1.
-
-    temp(temp<spine_thresh(i,1)) = 0;
-    floored(i,:) = temp;
-    temp(temp<thresh(i,1)) = nan;
-    tamp = temp;
-    tamp(isnan(tamp)) = 0;
-    tamp = smooth(tamp,30);
-    dtamp = diff(tamp);     %%% first derivative of the binarized data
-    dtamp = [0;dtamp];
-    dtamp(dtamp>0) = 1; dtamp(dtamp<0) = -1;
-    d2tamp = diff(dtamp);
-    d2tamp = [0;d2tamp];    %%% Second derivative of the binarized data (concavity)
-    d2tamp(d2tamp>0) = 1; d2tamp(d2tamp<0) = -1;
-    temp(d2tamp>0) = nan; %% For plateau spikes, when the 2nd derivative is positive (concave up, corresponding to dips), punch a 'hole' in the data, so that multiple peaks will be counted
-    riders(i,:) = temp;
+    frequency(i,1) = (nnz(diff(trueeventcount(i,:)>0.5)>0)/((length(File.Time)/ImagingFrequency)/60))';
 end
 
-%%% Set all events = 1, making square pulses corresponding to
-%%% activity
-
-square = [];
-ternarized = riders;
-
-ternarized(isnan(ternarized)) = 0;
-ternarized(ternarized~=0) = riderthresh2-1.5;
-
-for i = 1:numberofSpines
-    temp = floored(i,:);   %%% This value will eventually be used to define "synapse only" events, which only requires knowledge of when spines are above a threshold (e.g. spikes riding on top of activity need not be considered)
-    temp(temp>0)= 1;
-    square(i,:) = temp;
-    temp = [];
-    temp = square(i,:)+ternarized(i,:); %% Can remove 'ternarized' to get rid of plateau spike summing
-    both(i,:) = temp;
-    temp2 = (diff(temp)>0.1)>0;
-    temp3 = [0, temp2];          %%% Any use of 'diff' shortens the vector by 1
-    smeared = smooth(temp3, 5);  %%% Smoothing factor is taken from the reported decay constant of GCaMP6f (~150ms), converted to frames 
-    smeared(smeared>0) = 1;
-    trueeventcount(i,:) = smeared;
-end
-
-analyzed.SpineThreshold = thresh;
+analyzed.SpineThreshold = spine_thresh;
 analyzed.StandardDeviationofNoise = spread;
 
 
@@ -442,7 +425,7 @@ analyzed.StandardDeviationofNoise = spread;
 
 if showFig
     k = zeros(1,length(File.Time));
-    k(1:end) = thresh(SpineNo,1);
+    k(1:end) = spine_thresh(SpineNo,1);
     m = ones(1,length(File.Time))*med(SpineNo,1);
     figure('Position', [10, Scrsz(4)/2.5,Scrsz(3)/2,Scrsz(4)/2]); 
     rawplot = subplot(2,2,1:2);
@@ -463,17 +446,13 @@ if showFig
     linkaxes([rawplot,procplot], 'x');
     topspikes = riders(SpineNo,:);
     plot(1:length(File.Time), topspikes, 'Color', dred, 'LineWidth', 2);
-    plot(File.Time, both(SpineNo,:)*(med(SpineNo,1)+thresh(SpineNo,1)), 'Color', yellow, 'LineWidth', 2)
-    plot(File.Time, trueeventcount(SpineNo,:)*(med(SpineNo,1)+thresh(SpineNo,1)),'Color', lblue, 'LineWidth', 2);
+    plot(File.Time, both(SpineNo,:)*(med(SpineNo,1)+spine_thresh(SpineNo,1)), 'Color', yellow, 'LineWidth', 2)
+    plot(File.Time, trueeventcount(SpineNo,:)*(med(SpineNo,1)+spine_thresh(SpineNo,1)),'Color', lblue, 'LineWidth', 2);
     plot(File.Time, k', '--', 'Color', lgreen, 'LineWidth', 2)
     plot(File.Time, m, '--', 'Color', purple)
     xlabel('Frames')
     ylabel(['Smoothed dF/F for spine no. ', num2str(SpineNo)])
 else
-end
-
-for i = 1:numberofSpines
-    frequency(i,1) = (nnz(diff(trueeventcount(i,:)>0.5)>0)/((length(File.Time)/ImagingFrequency)/60))';
 end
 
 %%%%%%%%%%%%%%%%
@@ -596,7 +575,7 @@ for i = 1:DendNum
         
         %%% Binarization    
         floored_Poly{i}(j-polyptstouse(1)+1,:) = zeros(1,length(processed_PolyROI{j}));
-        
+                
         temp = processed_PolyROI{j};
             
         temp(temp<Pthresh(j,1)) = 0;
@@ -604,10 +583,11 @@ for i = 1:DendNum
         floored_Poly{i}(j-polyptstouse(1)+1,:) = temp;
         temp(temp>0) = 1;
         
-        square_Poly{i}(j-polyptstouse(1)+1,:) = temp;
-        poly.PolyROI_Binarized{i}(j-polyptstouse(1)+1,:) = square_Poly;        
+        square_Poly{i}(j-polyptstouse(1)+1,:) = temp;     
     end
-    
+    poly.PolyROI_Binarized{i} = square_Poly; 
+    poly.Processed_PolyROI{i} = cell2mat(processed_PolyROI');
+
     compiledDendData(i,:) = nanmean(cell2mat(rawpoly(polyptstouse)'));
     compiledProcessedDendData(i,:) = nanmean(cell2mat(processed_PolyROI(polyptstouse)),2);
     
@@ -805,7 +785,7 @@ if length(File.dF_over_F) ~= File.SpineDendriteGrouping{end}(end)
 end
 % 
 
-analyzed = DendriteSubtraction(analyzed, [], 'Initial');
+analyzed = DendriteSubtraction(analyzed, 'Initial');
 
 if showFig
     axes(procplot)
@@ -859,7 +839,12 @@ for i = 1:numberofSpines
             %%% This is the last decision variable on whether to use
             %%% dendrite-corrected or dendrite-removed data!!!
             %%%
-            synapticEvents(i,:) = analyzed.SynapseOnlyBinarized_DendriteSubtracted(i,:)-Dglobal(onDend,:);
+            switch ImagingSensor
+                case 'GCaMP'
+                    synapticEvents(i,:) = analyzed.SynapseOnlyBinarized_DendriteSubtracted(i,:)-Dglobal(onDend,:);
+                case 'GluSnFR'
+                    synapticEvents(i,:) = square(i,:);
+            end
             synapseOnlyActivity(i,:) = processed_dFoF(i,:).*synapticEvents(i,:);
 %             synapticEvents(i,:) = square_Ds(i,:);
             %%%
@@ -1112,6 +1097,8 @@ analyzed.SpinewithAP_PValues = SpwAP_PValue;
 analyzed.CausalCorrelations = CausalCorrelations;
 analyzed.CausalPValues = CausalPValues;
 
+analyzed.ImagingSensor = ImagingSensor;
+
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%% Analysis of individual clusters %%%%%%%%%
@@ -1330,7 +1317,7 @@ for i = 1:DendNum
         L{i} = D{i}-AM{i};                                     %%% Laplacian matrix
         Dinv{i} = inv(D{i});                                  %%% Determine the inverse Degree matrix
         nL{i}= Dinv{i} * L{i};
-        [eVecs eVals] = eig(nL{i});                           %%% Find the eigenvectors and eigenvalues for the Laplacian
+        [eVecs, eVals] = eig(nL{i});                           %%% Find the eigenvectors and eigenvalues for the Laplacian
         DistanceEigenVectors{i} = eVecs;
         DistanceEigenValues{i} = eVals;
         e = diag(eVals);
@@ -1408,26 +1395,6 @@ analyzed.FarSpineToSpineCorrelation = FarCorrelations;
 
 %%%%
 analyzed.Session = currentsession;
-if ispc
-    if spinetraceoption == 1
-        cd('E:\ActivitySummary')
-    else
-        cd('C:\Users\Komiyama\Desktop\ActivitySummary')
-    end
-elseif isunix
-    cd('/usr/local/lab/People/Nathan/Data/ActivitySummaryFromSuperComputer')
-end
-%%%%
-
-savefile = [folder, '_' Date, '_Summary'];
-polyfile = [folder, '_',Date, '_PolySummary'];
-eval([savefile, '= analyzed;']);
-eval([polyfile, '= poly;']);
-
-% save(savefile, savefile, '-v7.3')
-save(savefile, savefile);
-save(polyfile, polyfile, '-v7.3');
-
 if showFig == 1
     figure('Position', [Scrsz(3)/2, 50 ,Scrsz(3)/2,Scrsz(4)/2]); 
     subplot(1,3,1)
@@ -1478,6 +1445,35 @@ if showFig
         end
     end
 end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Save Section %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+cd('E:\ActivitySummary')
+
+if isOpto
+    savefile = [folder, '_' Date, '_OptoSummary'];
+    polyfile = [folder, '_',Date, '_OptoPolySummary'];
+    eval([savefile, '= analyzed;']);
+    eval([polyfile, '= poly;']);
+else
+    savefile = [folder, '_' Date, '_Summary'];
+    polyfile = [folder, '_',Date, '_PolySummary'];
+    eval([savefile, '= analyzed;']);
+    eval([polyfile, '= poly;']);
+end
+
+% save(savefile, savefile, '-v7.3')
+save(savefile, savefile);
+save(polyfile, polyfile, '-v7.3');
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 disp([folder, '_', Date, ' (session ', num2str(analyzed.Session),')',' analysis complete'])
 

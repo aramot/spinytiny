@@ -63,12 +63,8 @@ end
 numberofTrials = length(firsttrial:length(Behavior.Behavior_Frames));
 lasttrial = length(Behavior.Behavior_Frames);
 numberofSpines = length(Fluor.dF_over_F);
-numberofDendrites = size(Fluor.Dendrite_dFoF,1);
-
 imagingframestouse = [];
-behaviorframestouse = [];
 trialstouse = zeros(numberofTrials,1);
-
 ch = find(strcmp(Behavior.xsg_data.channel_names,'Trial_number'));
 bitcode = parse_behavior_bitcode(Behavior.xsg_data.channels(:,ch),10000,Fluor.Session);
 bitcode_offset = [bitcode.behavior_trial_num]-(1:length(bitcode));
@@ -87,11 +83,8 @@ end
  
 reward = 0;
 punish = 0;
-
 used_trial = [];
-
 countedasfirsttrial = find([bitcode.behavior_trial_num]==1);
-
 if length(countedasfirsttrial) > 1 && firsttrial == 1 && countedasfirsttrial(end)<100 
     if countedasfirsttrial(end)<20
         firsttrial = countedasfirsttrial(end);
@@ -183,7 +176,7 @@ for i = firsttrial:lasttrial
     cuemat = zeros(1,length(start_trial:end_trial));
     cuemat(startcue:endcue) = 1;
     
-    if endcue-startcue > 60 || (Behavior.Behavior_Frames{i}.states.state_0(1,2)-60) < 0 %%% You want at least two seconds of data preceeding each movement, so the duration of cuestart;cueend should be > 60. If this is not the case, then move the "trial start" back 2 seconds (unless it's the first trial, in which case this is impossible). 
+    if endcue-startcue > 60 || (Behavior.Behavior_Frames{i}.states.state_0(1,2)-60) < 0 %%% You want at least two seconds of data preceeding each movement, so the duration of cuestart:cueend should be > 60. If this is not the case, then move the "trial start" back 2 seconds (unless it's the first trial, in which case this is impossible). 
         trial_binary_cue{i} = cuemat;
         Trial{i}.trialactivity = Trial_Processed_dFoF{i}(:,1:end);
         Trial{i}.synapseonlyactivity = Trial_SynapseOnlyActivity{i}(:,1:end);
@@ -218,10 +211,12 @@ for i = firsttrial:lasttrial
     
     [n, d] = rat(numimframes/length(trial_lever_force{i}));
     DownsampleRatios{i} = [n,d];
-    trial_movement_downsampled{i} = resample(trial_lever_force{i},n,d);
+    trial_lever_force_shifted = trial_lever_force{i}-nanmedian(trial_lever_force{i});   %%% Resampling always works better when the baseline is zero; otherwise, you get weird
+    trial_movement_downsampled{i} = resample(trial_lever_force_shifted,n,d)+nanmedian(trial_lever_force{i});
     trial_binary_behavior_downsampled{i} = resample(double(trial_binary_behavior{i}),n,d);
     trial_cue_downsampled{i} = resample(trial_binary_cue{i},n,d);
-    %%% Correct edge-effects of resampling
+    %%% Correct edge-effects of resampling (Note, this strategy works ONLY
+    %%% because this is a very long trace)
     trial_movement_downsampled{i}(1:10) = repmat(median(Behavior.lever_force_smooth),1,10); %%% Cannot assume that the baseline is zero for the raw lever data
     trial_movement_downsampled{i}(end-9:end) = repmat(median(Behavior.lever_force_smooth),1,10);
     trial_binary_behavior_downsampled{i}(trial_binary_behavior_downsampled{i}>=0.5) = 1;
@@ -400,6 +395,7 @@ premovement = temp1';
 %%% choose starting matrix (all behavior or just successful behavior, e.g.)
 
 b = binary_behavior;
+unaltered_behavior = binary_behavior;
 if b(end)==1
     b(end)=0;
 end
@@ -429,20 +425,21 @@ binary_behavior = temp1;
 
 %%% choose starting matrix (all behavior or just successful behavior, e.g.)
 
-b = binary_behavior;
+b = unaltered_behavior;
 if b(end)==1
     b(end)=0;
 end
 
-window_frame = 30;   
+pre_movement_frame = 15;
+post_movement_frame = 15;
 
 temp1 = b;
 temp2 = find(diff(b)>0); 
-temp3 = temp2-round(window_frame); 
+temp3 = temp2-round(pre_movement_frame); 
 temp3(temp3<=0)= 1;
 temp3(temp3==0) = 1;
 temp4 = find(diff(b)<0); 
-temp5 = temp4+round(window_frame);
+temp5 = temp4+round(post_movement_frame);
     
 for i = 1:length(temp2)
     temp1(temp3(i):temp5(i)) = 1;
@@ -506,12 +503,17 @@ Aligned.DendSubSynapseOnlyBinarized = DendSubspinedatatouse;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-SpineActMovePeriods = spinedatatouse'.*repmat(binary_behavior,1,size(DendSubspinedatatouse,1));
-SpineActStillPeriods = spinedatatouse'.*~repmat(binary_behavior,1,size(DendSubspinedatatouse,1));
+SpineActMovePeriods = spinedatatouse'.*repmat(binary_behavior,1,size(spinedatatouse,1));
+SpineActStillPeriods = spinedatatouse'.*~repmat(binary_behavior,1,size(spinedatatouse,1));
+DendSubSpineActMovePeriods = DendSubspinedatatouse'.*repmat(binary_behavior,1,size(spinedatatouse,1));
+DendSubSpineActStillPeriods = DendSubspinedatatouse'.*~repmat(binary_behavior,1,size(spinedatatouse,1));
+
 
 [r_mov, ~] = corrcoef(SpineActMovePeriods);
 [r_still, ~] = corrcoef(SpineActStillPeriods);
 [r_causal, p_causal] = corrcoef([binarycue', binary_behavior,wide_window, premovement', successful_behavior,wide_succ_window,movementduringcue', reward_delivery, punishment, causal_Data', Dend']);
+[Ds_r_mov,~] = corrcoef(DendSubSpineActMovePeriods);
+[Ds_r_still,~] = corrcoef(DendSubSpineActStillPeriods);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%% Save Correlation Variables in Structure %%%%%%%%%%%%%%%%%%%%%
@@ -524,6 +526,8 @@ Correlations.DendSubtractedSpineCorrelations = r_DSspine;
 Correlations.DendSubtractedSpinePValues = p_DSspine;
 Correlations.SpineDuringMovePeriods = r_mov;
 Correlations.SpineDuringStillPeriods = r_still;
+Correlations.DendriteSubtractedSpineDuringMovePeriods = Ds_r_mov;
+Correlations.DendriteSubtractedSpineDuringStillPeriods = Ds_r_still;
 Correlations.LeverMovement = lever_movement;
 Correlations.BinarizedBehavior = binary_behavior;
 Correlations.CausalCorrelations = r_causal;

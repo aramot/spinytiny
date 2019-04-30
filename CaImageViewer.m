@@ -22,7 +22,7 @@ function varargout = CaImageViewer(varargin)
 
 % Edit the above text to modify the response to help CaImageViewer
 
-% Last Modified by GUIDE v2.5 08-Oct-2018 17:07:25
+% Last Modified by GUIDE v2.5 25-Apr-2019 11:23:35
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -326,136 +326,6 @@ set(gui_CaImageViewer.figure.handles.output, 'WindowButtonDownFcn', [])
 
 gui_CaImageViewer.LoadedFile = 1;
 
-
-% --- Executes on button press in MaxProjection_CheckBox.
-function MaxProjection_CheckBox_Callback(hObject, eventdata, handles)
-% hObject    handle to MaxProjection_CheckBox (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of MaxProjection_CheckBox
-
-global gui_CaImageViewer
-global zStack_Interface
-
-val = get(handles.MaxProjection_CheckBox, 'Value');
-set(handles.Frame_EditableText, 'String',1);
-
-ImageNum = str2num(get(gui_CaImageViewer.figure.handles.Frame_EditableText, 'String'));
-twochannels = get(gui_CaImageViewer.figure.handles.TwoChannels_CheckBox, 'Value');
-filterwindow = str2num(get(gui_CaImageViewer.figure.handles.SmoothingFactor_EditableText, 'String'));
-merged = get(gui_CaImageViewer.figure.handles.Merge_ToggleButton, 'Value');
-
-if ishandle(zStack_Interface.figure)
-    SliceFocus = regexp(zStack_Interface.CurrentSliceEdit.String, '[0-9]+_*', 'match');
-    if zStack_Interface.LimittoSlice
-        numslices = str2num(zStack_Interface.SlicesEdit.String);
-        currentslice = str2double(SliceFocus{1});
-        allmults = [currentslice:numslices:length(gui_CaImageViewer.GCaMP_Image)];       
-        if isempty(find(allmults==ImageNum))
-            [~, ind] = min(abs(allmults-ImageNum));
-            ImageNum = allmults(ind);
-        end
-    else
-        allmults = 1:length(gui_CaImageViewer.GCaMP_Image);
-    end
-    if length(SliceFocus)>1
-        z_diff = str2double(SliceFocus{2})-str2double(SliceFocus{1});
-    else
-        z_diff = 0;
-    end
-end
-
-if val
-    set(handles.AveProjection_CheckBox, 'Value', 0);
-    if ishandle(zStack_Interface.figure)
-        im = gui_CaImageViewer.GCaMP_Image(allmults);
-    else
-        im = gui_CaImageViewer.GCaMP_Image;
-    end
-    im = cat(3, im{:});
-    immax = max(im, [], 3); 
-    
-    if twochannels
-        if ishandle(zStack_Interface.figure)
-            overlim = (allmults+z_diff>length(gui_CaImageViewer.GCaMP_Image));
-            if any(overlim)
-                allmults = allmults(~overlim);
-            end
-            Rim = gui_CaImageViewer.GCaMP_Image(allmults+z_diff);
-        else
-            Rim = gui_CaImageViewer.Red_Image;
-        end
-        Rim = cat(3,Rim{:});
-        Rimmax = max(Rim, [], 3);
-    end
-    
-    
-    if filterwindow == 1
-    
-        channel1 = immax;
-        if twochannels && ~merged
-            channel2 = Rimmax;
-        elseif twochannels && merged
-            channel1 = repmat(double(channel1)/max(max(double(channel1))),[1 1 3]);
-            channel1(:,:,1) = zeros(size(channel1,1), size(channel1,2));
-            channel1(:,:,3) = zeros(size(channel1,1), size(channel1,2));
-            channel1(:,:,1) = double(Rimmax)/max(max(double(Rimmax)));
-            channel2 = [];
-        else
-            channel2 = [];
-        end
-
-        CommandSource = 'Slider';
-
-        %%%%%%%%%
-        PlaceImages(channel1,channel2, CommandSource);
-        %%%%%%%%%
-    
-    else
-        smoothing_green = filter2(ones(filterwindow, filterwindow)/filterwindow^2, immax);
-        channel1 = smoothing_green;
-        if twochannels  && ~merged
-            smoothing_red = filter2(ones(filterwindow, filterwindow)/filterwindow^2, Rimmax);
-            channel2 = smoothing_red;
-        elseif twochannels && merged
-            channel1 = repmat(double(channel1)/max(max(double(channel1))),[1 1 3]);
-            channel1(:,:,1) = zeros(size(channel1,1), size(channel1,2));
-            channel1(:,:,3) = zeros(size(channel1,1), size(channel1,2));
-            smoothing_red = filter2(ones(filterwindow, filterwindow)/filterwindow^2, Rimmax);
-            channel1(:,:,1) = double(smoothing_red)/max(max(double(smoothing_red)));
-            channel2 = [];
-        else
-            channel2 = [];
-        end
-
-        CommandSource = 'Slider';
-
-        %%%%%%%%%
-        PlaceImages(channel1,channel2, CommandSource);
-        %%%%%%%%%
-    end
-else
-    channel1 = gui_CaImageViewer.GCaMP_Image{ImageNum};
-    
-    if twochannels && ~merged
-        if ishandle(zStack_Interface.figure)
-            channel2 = gui_CaImageViewer.GCaMP_Image{ImageNum+z_diff};
-        else
-            channel2 = gui_CaImageViewer.Red_Image{ImageNum};
-        end
-    elseif twochannels && merged
-            channel1 = repmat(double(channel1)/max(max(double(channel1))),[1 1 3]);
-            channel1(:,:,1) = zeros(size(channel1,1), size(channel1,2));
-            channel1(:,:,3) = zeros(size(channel1,1), size(channel1,2));
-            channel1(:,:,1) = double(gui_CaImageViewer.Red_Image{ImageNum})/max(max(double(gui_CaImageViewer.Red_Image{ImageNum})));
-            channel2 = [];
-        else
-            channel2 = [];
-    end
-        
-    CaImageSlider(ImageNum);
-end
 
 % --- Executes on slider movement.
 function ImageSlider_Slider_Callback(hObject, eventdata, handles)
@@ -1071,6 +941,26 @@ catch
     end
 end
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%% Gather ROI Prefereces %%%%%%%%%
+
+
+ColorOptions = get(handles.ROIColor_PopUpMenu, 'String');
+ColorSelection = get(handles.ROIColor_PopUpMenu, 'Value');
+ROIColor = ColorOptions{ColorSelection};
+
+if strcmpi(ROIColor, 'ROI Color')
+    ROIColor = 'white';
+end
+
+PolyColorOptions = get(handles.PolyColor_PopUpMenu, 'String');
+PolyColorSelection = get(handles.PolyColor_PopUpMenu, 'Value');
+PolyColor = PolyColorOptions{PolyColorSelection};
+
+if strcmpi(PolyColor, 'Poly Color')
+    PolyColor = 'cyan';
+end
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%% Draw loaded ROIs %%%%%%%%%%%
@@ -1130,7 +1020,7 @@ axes(axes1);
 for a = 1:length(ROIs)
     ROInum = a-1;
     glovar.ROI(a) = drawellipse('Center', ROIs(a).Center, 'SemiAxes', ROIs(a).SemiAxes, 'RotationAngle', ROIs(a).RotationAngle,...
-        'AspectRatio', ROIs(a).AspectRatio, 'Tag', ['ROI', num2str(ROInum)], 'Color', [0.2 0.4 0.9],...
+        'AspectRatio', ROIs(a).AspectRatio, 'Tag', ['ROI', num2str(ROInum)], 'Color', ROIColor,...
         'HandleVisibility', 'on', 'Label', '', 'Linewidth', 1, 'FaceAlpha', 0, 'InteractionsAllowed', 'none');
     roiget = get(glovar.ROI(a));
     c = roiget.UIContextMenu;
@@ -1215,6 +1105,19 @@ if glovar.NewSpineAnalysis
         load([pname, fname])
     end
     instanceofappearance = find(logical(strcmpi(SpineRegistry.DatesAcquired, gui_CaImageViewer.NewSpineAnalysisInfo.CurrentDate)));
+    while isempty(instanceofappearance)
+        cf = inputdlg('No field number found; Enter field number:', '1', 1);
+        currentfield = str2num(cf{1});
+        glovar.NewSpineAnalysisInfo.CurrentImagingField = currentfield; 
+            try
+            load([targ_folder, filesep,userspecificpart,'Imaging Field ', num2str(currentfield), ' Spine Registry'])
+        catch
+            warning('No Spine Registry file found... make sure to make a new one or check if it was saved somewhere else!')
+            [fname, pname] = uigetfile();
+            load([pname, fname])
+        end
+        instanceofappearance = find(logical(strcmpi(SpineRegistry.DatesAcquired, gui_CaImageViewer.NewSpineAnalysisInfo.CurrentDate)));
+    end
     glovar.NewSpineAnalysisInfo.SpineList = ones(1,length(ROIs)-1); %%% Don't forget the first ROI is always the background ROI!
 %     if size(SpineRegistry.Data,2)>=find(instanceofappearance) %% && find(instanceofappearance)~=1 %%% ZL commentm, it is possible need to set another category of spines specifying the "true new spines"
         if ~isempty(SpineRegistry.Data) && size(SpineRegistry.Data,2)>=instanceofappearance
@@ -1234,7 +1137,10 @@ end
 DendNum = savedFile.NumberofDendrites; glovar.Dendrite_Number = DendNum;
 coordinates = savedFile.PolyLinePosition;
 PPnum = cumsum(savedFile.DendritePolyPointNumber);
-glovar.SpineDendriteGrouping = savedFile.SpineDendriteGrouping;
+try
+    glovar.SpineDendriteGrouping = savedFile.SpineDendriteGrouping;
+catch
+end
 
 radius = 3;
 x = [];
@@ -1268,7 +1174,7 @@ if isfield(glovar, 'PolyROI') && ~isempty(coordinates)
                 case 'new'
                     glovar.PolyLinePos{i} = savedFile.PolyROI{i}.Center;
                     glovar.PolyROI{i} = drawellipse('Center', savedFile.PolyROI{i}.Center,'RotationAngle', savedFile.PolyROI{i}.RotationAngle, 'SemiAxes', savedFile.PolyROI{i}.SemiAxes,...
-                        'AspectRatio', savedFile.PolyROI{i}.AspectRatio, 'Tag', ['Dendrite ', num2str(currDend), ' PolyROI ', num2str(polycount)], 'FaceAlpha', 0, 'Color', 'g', 'DrawingArea',...
+                        'AspectRatio', savedFile.PolyROI{i}.AspectRatio, 'Tag', ['Dendrite ', num2str(currDend), ' PolyROI ', num2str(polycount)], 'FaceAlpha', 0, 'Color', PolyColor, 'DrawingArea',...
                         'unlimited', 'HandleVisibility', 'on','InteractionsAllowed', 'none', 'Linewidth', 1);
                     glovar.polyListener(i) = listener(glovar.PolyROI{i}, 'ROIMoved', @RefreshPolyLine);
                     x = [x,savedFile.PolyROI{i}.Center(1)];
@@ -1502,6 +1408,18 @@ if gui_CaImageViewer.NewSpineAnalysis
             gui_CaImageViewer.NewSpineAnalysisInfo.SpineList(SpineRegistry.Data(:,currentsession) == 0) = 0;
             a.SpineStatusList = gui_CaImageViewer.NewSpineAnalysisInfo.SpineList;
         end
+        if ~isfield(SpineRegistry, 'DatesAcquired')
+            prompt = 'Spine Registry File not set up appropriately; indicate dates:';
+            name = 'Enter dates acquired for field';
+            numlines = 1;
+            defaultanswer = date;
+            dateslist = inputdlg(prompt, name, numlines, defaultanswer);
+            seperators = regexp(dateslist, ',', 'split');
+            SpineRegistry.DatesAcquired = seperators{1};
+            SpineRegistry.ColumnEditable = ones(1,length(seperators{1}));
+            SpineRegistry.RowName = [];
+            SpineRegistry.ColumnFormat = repmat({'logical'}, 1, length(seperators{1}));
+        end
         save([drawer, '_Imaging Field ', num2str(currentimagingfield), ' Spine Registry'], 'SpineRegistry');
 else
     global zStack_Interface
@@ -1686,6 +1604,15 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
     set(hObject,'BackgroundColor','white');
 end
 
+% --- Executes on button press in MaxProjection_CheckBox.
+function MaxProjection_CheckBox_Callback(hObject, eventdata, handles)
+% hObject    handle to MaxProjection_CheckBox (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of MaxProjection_CheckBox
+
+DisplayProjection('Max')
 
 % --- Executes on button press in AveProjection_CheckBox.
 function AveProjection_CheckBox_Callback(hObject, eventdata, handles)
@@ -1695,129 +1622,7 @@ function AveProjection_CheckBox_Callback(hObject, eventdata, handles)
 
 % Hint: get(hObject,'Value') returns toggle state of AveProjection_CheckBox
 
-global gui_CaImageViewer
-global zStack_Interface
-
-val = get(handles.AveProjection_CheckBox, 'Value');
-
-ImageNum = str2num(get(gui_CaImageViewer.figure.handles.Frame_EditableText, 'String'));
-twochannels = get(gui_CaImageViewer.figure.handles.TwoChannels_CheckBox, 'Value');
-filterwindow = str2num(get(gui_CaImageViewer.figure.handles.SmoothingFactor_EditableText, 'String'));
-merged = get(gui_CaImageViewer.figure.handles.Merge_ToggleButton, 'Value');
-
-if ishandle(zStack_Interface.figure)
-    SliceFocus = regexp(zStack_Interface.CurrentSliceEdit.String, '[0-9]+_*', 'match');
-    if zStack_Interface.LimittoSlice
-        numslices = str2num(zStack_Interface.SlicesEdit.String);
-        currentslice = str2double(SliceFocus{1});
-        allmults = [currentslice:numslices:length(gui_CaImageViewer.GCaMP_Image)];       
-        if isempty(find(allmults==ImageNum,1))
-            [~, ind] = min(abs(allmults-ImageNum));
-            ImageNum = allmults(ind);
-        end
-    else
-        allmults = 1:length(gui_CaImageViewer.GCaMP_Image);
-    end
-    if length(SliceFocus)>1
-        z_diff = str2double(SliceFocus{2})-str2double(SliceFocus{1});
-    else
-        z_diff = 0;
-    end
-end
-
-if val
-    set(handles.MaxProjection_CheckBox, 'Value', 0);
-    if ishandle(zStack_Interface.figure)
-        im = gui_CaImageViewer.GCaMP_Image(allmults);
-    else
-        im = gui_CaImageViewer.GCaMP_Image;
-    end
-    im = cat(3, im{:});
-    immean = mean(im, 3);
-    
-    
-    if twochannels
-        if ishandle(zStack_Interface.figure)
-            overlim = (allmults+z_diff>length(gui_CaImageViewer.GCaMP_Image));
-            if any(overlim)
-                allmults = allmults(~overlim);
-            end
-            Rim = gui_CaImageViewer.GCaMP_Image(allmults+z_diff);
-        else
-            Rim = gui_CaImageViewer.Red_Image;
-        end
-        Rim = cat(3,Rim{:});
-        Rimmax = std(Rim, 3);
-    end
-    
-    
-    if filterwindow
-    
-        channel1 = immean;
-        if twochannels && ~merged
-            channel2 = Rimmax;
-        elseif twochannels && merged
-            channel1 = repmat(double(channel1)/max(max(double(channel1))),[1 1 3]);
-            channel1(:,:,1) = zeros(size(channel1,1), size(channel1,2));
-            channel1(:,:,3) = zeros(size(channel1,1), size(channel1,2));
-            channel1(:,:,1) = double(Rimmax)/max(max(double(Rimmax)));
-            channel2 = [];
-        else
-            channel2 = [];
-        end
-
-        CommandSource = 'Slider';
-
-        %%%%%%%%%
-        PlaceImages(channel1,channel2, CommandSource);
-        %%%%%%%%%
-    
-    else
-        smoothing_green = filter2(ones(filterwindow, filterwindow)/filterwindow^2, immean);
-        channel1 = smoothing_green;
-        if twochannels  && ~merged
-            smoothing_red = filter2(ones(filterwindow, filterwindow)/filterwindow^2, Rimmax);
-            channel2 = smoothing_red;
-        elseif twochannels && merged
-            channel1 = repmat(double(channel1)/max(max(double(channel1))),[1 1 3]);
-            channel1(:,:,1) = zeros(size(channel1,1), size(channel1,2));
-            channel1(:,:,3) = zeros(size(channel1,1), size(channel1,2));
-            smoothing_red = filter2(ones(filterwindow, filterwindow)/filterwindow^2, Rimmax);
-            channel1(:,:,1) = double(smoothing_red)/max(max(double(smoothing_red)));
-            channel2 = [];
-        else
-            channel2 = [];
-        end
-
-        CommandSource = 'Slider';
-
-        %%%%%%%%%
-        PlaceImages(channel1,channel2, CommandSource);
-        %%%%%%%%%
-    end
-else
-    channel1 = gui_CaImageViewer.GCaMP_Image{ImageNum};
-    
-    if twochannels && ~merged
-        if ishandle(zStack_Interface.figure)
-            channel2 = gui_CaImageViewer.GCaMP_Image{ImageNum+z_diff};
-        else
-            channel2 = gui_CaImageViewer.Red_Image{ImageNum};
-        end
-    elseif twochannels && merged
-            channel1 = repmat(double(channel1)/max(max(double(channel1))),[1 1 3]);
-            channel1(:,:,1) = zeros(size(channel1,1), size(channel1,2));
-            channel1(:,:,3) = zeros(size(channel1,1), size(channel1,2));
-            channel1(:,:,1) = double(gui_CaImageViewer.Red_Image{ImageNum})/max(max(double(gui_CaImageViewer.Red_Image{ImageNum})));
-            channel2 = [];
-    else
-            channel2 = [];
-    end
-    
-    PlaceImages(channel1, channel2, 'Slider');
-    
-    CaImageSlider(ImageNum);
-end
+DisplayProjection('Ave')
 
 
 % --------------------------------------------------------------------
@@ -2576,3 +2381,12 @@ zStack_Interface.LimittoSlice = 0;
 % zStack_Interface.AssigntoFrame
 
 
+
+
+% --- Executes on button press in CalcSpineVol_PushButton.
+function CalcSpineVol_PushButton_Callback(hObject, eventdata, handles)
+% hObject    handle to CalcSpineVol_PushButton (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+CalcSpineVolume
