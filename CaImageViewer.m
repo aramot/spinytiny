@@ -1029,6 +1029,7 @@ for a = 1:length(ROIs)
     uimenu(c, 'Label', 'Set as eliminated', 'Callback', @CategorizeSpines);
     uimenu(c, 'Label', 'Set as active', 'Callback', @CategorizeSpines);
     set(glovar.figure.handles.ShowLabels_ToggleButton, 'Value', 1)
+    ShowLabels_ToggleButton_Callback
     glovar.ROIlistener{ROInum+1} = listener(findobj(glovar.ROI(a)), 'DeletingROI', @DeleteROI);
     addlistener(findobj(glovar.ROI(a)), 'ROIClicked', @DeclareROI);
     switch usesurroundBGchoice
@@ -1123,7 +1124,10 @@ if glovar.NewSpineAnalysis
         if ~isempty(SpineRegistry.Data) && size(SpineRegistry.Data,2)>=instanceofappearance
             r = find(SpineRegistry.Data(:,instanceofappearance)==0);
             for i = 1:length(r)
-                set(findobj(glovar.figure.handles.GreenGraph, 'Type', 'rectangle', 'Tag', ['ROI', num2str(r(i))]), 'FaceColor', [1 0 0])
+                ROIobject = findobj(glovar.figure.handles.GreenGraph, 'Type', 'images.roi.ellipse', 'Tag', ['ROI', num2str(r(i))]);
+                ROIobject.FaceAlpha = 1;
+                ROIobject.Color = 'r';
+                ROIobject.StripeColor = 'w';      
             end
             glovar.NewSpineAnalysisInfo.SpineList(r) = 0;
         end
@@ -2089,7 +2093,7 @@ for i = 1:length(ROIs_original)
         uimenu(c, 'Label', 'Set as eliminated', 'Callback', @CategorizeSpines);
         uimenu(c, 'Label', 'Set as active', 'Callback', @CategorizeSpines);
         gui_CaImageViewer.ROIlistener{ROInum+1} = listener(findobj(gui_CaImageViewer.ROI(ROInum+1)), 'DeletingROI', @DeleteROI);
-        addlistener(findobj(gui_CaImageViewer.ROI(ROInum+1)), 'ROIClicked', @DeclareROI)
+        addlistener(findobj(gui_CaImageViewer.ROI(ROInum+1)), 'ROIClicked', @DeclareROI);
         continue
     end
     newpos(i,1:2) = stats.Centroid;
@@ -2110,6 +2114,10 @@ for i = 1:length(ROIs_original)
 
     end
 end
+
+ROInumber = size(ROIs_original,1)-1;
+gui_CaImageViewer.Spine_Number = ROInumber;
+gui_CaImageViewer.NewSpineAnalysisInfo.SpineList = ones(1,ROInumber);
 
 if isfield(gui_CaImageViewer, 'ROIother')
     if ~isempty(gui_CaImageViewer.ROIother)
@@ -2271,7 +2279,7 @@ global gui_CaImageViewer
 
 ROIs = findobj('Type', 'images.ROI.Ellipse', '-and', '-not', {'-regexp', 'Tag', 'Dendrite'}, '-and', '-not', {'-regexp', 'Tag', 'Background'});
 
-choice = get(handles.ShowLabels_ToggleButton, 'Value');
+choice = get(gui_CaImageViewer.figure.handles.ShowLabels_ToggleButton, 'Value');
 
 if choice 
     for i = 1:length(ROIs)

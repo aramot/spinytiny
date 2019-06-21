@@ -50,7 +50,7 @@ a.Imaged_Trials = imaged_trials;
 a.Frame_Times = frame_times;
 
 if isOptoSession
-    a.OptoStim = 
+%     a.OptoStim = 
     exp = regexp(fname, ['[A-Z]{2,3}\d{3,4}'], 'match');
     Date = regexp(fname, '\d{6}', 'match');
     experiment_name = regexp(fname,[exp{1}, '_OPTO_', Date{1}], 'match')

@@ -1,12 +1,12 @@
-function [Movements] = ExtractMovementswithKnownBounds(levertrace, framesofinterest, rewardperiods, secondspostmovement,ImagingFrequency)
+function [Movements] = ExtractMovementswithKnownBounds(levertrace, framesofinterest, rewardperiods, secondspostmovementstart ,ImagingFrequency)
 
-PreMovementTimeBuffer = 0.2; %%% When looking at just behavior, I move back 0.4s before the start of the movement period;
+PreMovementTimeBuffer = 0.5; %%% When looking at just behavior, I move back 0.4s before the start of the movement period;
 
 % startbufferwindow = round(60*0.5);
 % stopbufferwindow = round(60*secondspostmovement); 
 
 startbufferwindow = round(ImagingFrequency*PreMovementTimeBuffer); 
-stopbufferwindow = round(ImagingFrequency*secondspostmovement);
+stopbufferwindow = round(ImagingFrequency*secondspostmovementstart);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % %%%%%%%%%%%% Aligned to actual rewarded press
@@ -38,7 +38,12 @@ for i = 1:length(framesofinterest)
     else
         stop = start+stopbufferwindow;
     end
-    ExtractedMovements{i} = levertrace(start:stop);
+    if length(start:stop)< stopbufferwindow+1   %%% For when the movements are near the end of the recording session
+        windowdiff = (stopbufferwindow+1)-length(start:stop);
+        ExtractedMovements{i} = [levertrace(start:stop); levertrace(stop)*ones(windowdiff,1)];
+    else
+        ExtractedMovements{i} = levertrace(start:stop);
+    end
 end
 
 

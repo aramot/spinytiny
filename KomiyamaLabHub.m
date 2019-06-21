@@ -1179,7 +1179,7 @@ function PCA_PushButton_Callback(hObject, eventdata, handles)
 
 cd('C:\Users\Komiyama\Desktop\Output Data')
 
-sensor = 'GCaMP';
+sensor = 'GluSNFR';
 
 datafile = fastdir(cd, [sensor, '_TrialDataSummary']);
 load(datafile{1})

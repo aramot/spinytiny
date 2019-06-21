@@ -202,6 +202,7 @@ for session = sessionstouse
                 NewSpinesPC2Coefficients{session} = [NewSpinesPC2Coefficients{session}; NaN];
                 NonNewSpinePC2Coefficients{session} = [NonNewSpinePC2Coefficients{session}; NaN];
             end
+        end
     end
 end
 

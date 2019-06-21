@@ -177,9 +177,28 @@ for i = 1:DendNum
         end
     else
         for j = File.SpineDendriteGrouping{i}(1):File.SpineDendriteGrouping{i}(end)
+            if ~any(File.Processed_dFoF(j,:))
+                File.Processed_dFoF_DendriteSubtracted(j,:) = nan(1,length(File.Processed_dFoF(j,:)));
+                continue
+            end
             if alpha{i}(2,counter) <= 0
                 disp(['Spine ', num2str(j), ' was not fit properly'])
-                File.Processed_dFoF_DendriteSubtracted(j,:) = nan(1,length(File.Processed_dFoF));
+                if isfield(File, 'QuestionableSpines')
+                    File.QuestionableSpines = [File.QuestionableSpines, j];
+                else
+                    File.QuestionableSpines = j;
+                end
+                %%% CHOOSE HOW TO HANDLE THESE DATA!!! 
+                %%% If the dendrite is active AND the fit is bad, then this
+                %%% probably means the spine should not be considered. If,
+                %%% however, the dendrite is NOT active, then this should
+                %%% be kept, as an active spine on a silent dendrite would
+                %%% also lead to this...
+                if sum(logical(diff([Inf, File.Dendrite_Binarized(i,:), Inf])>0)) < 5
+                    File.Processed_dFoF_DendriteSubtracted(j,:) = File.Processed_dFoF(j,:);
+                else
+                    File.Processed_dFoF_DendriteSubtracted(j,:) = nan(1,length(File.Processed_dFoF(j,:)));
+                end
                 counter = counter+1;
                 continue
             end
@@ -191,7 +210,8 @@ for i = 1:DendNum
             end
             betatouse = alpha{i}(1,counter);
             denddatatouse = File.Processed_Dendrite_dFoF(i,:); denddatatouse(denddatatouse<0) = 0;
-            signaltosubtract = betatouse+alphatouse*denddatatouse;
+            signaltosubtract = alphatouse*denddatatouse;
+            signaltosubtract(signaltosubtract~=0) = signaltosubtract(signaltosubtract~=0)+betatouse;
             File.Processed_dFoF_DendriteSubtracted(j,:) = File.Processed_dFoF(j,:)-(signaltosubtract);   %%% Subtract all individual points  %             processed_dFoF_Dendsubtracted(j,:) = processed_dFoF(j,:)-(alpha{i}(2,counter)*floored_Dend(i,:));%.*Dglobal(i,:);           %%% Use Dglobal to only subtract times when the ENTIRE dendrite is active
             counter = counter + 1;
         end
@@ -204,7 +224,7 @@ end
 %% Binarize Data
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-[square_Ds,floored_Dsubtracted,trueeventcount_Dsubtracted, ~, ~] =  DetectEvents(File.Processed_dFoF_DendriteSubtracted, File.SpineThreshold);
+[square_Ds,floored_Dsubtracted,trueeventcount_Dsubtracted, ~, ~] =  DetectEvents2(File.Processed_dFoF_DendriteSubtracted, 2);
 
 for i = 1:numberofSpines
     frequency_Dsubtracted(i,1) = (nnz(diff(trueeventcount_Dsubtracted(i,:)>0.5)>0)/((length(File.Time)/30.49)/60))';

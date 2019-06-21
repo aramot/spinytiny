@@ -24,6 +24,9 @@ trialdendriteaveragebyanimal = cell(1,14);
 failuretrialaverage = cell(1,14);
 failuretrialaveragebyanimal = cell(1,14);
 MovementLengthDistribution = repmat({cell(1,animalnumber)},1,14);
+NewSpines = cell(1,14);
+NewSpinesByAnimal = cell(1,14);
+
 
 startwindow = 15;   %%% Time (in frames) to subtract from the initiation of movement for inspection of beginning of trace
 stopwindow = 60;    %%% Time (in frames) to add to the initiation of movement for inspection of end of trace
@@ -81,7 +84,6 @@ for sample = 1:animalnumber
     for session = 1:length(currentfile)
         statspines{session} = [];
         statdends{session} = [];
-        NewSpines{session} = [];
         locator = 0;
         if session>14
             continue
@@ -104,15 +106,7 @@ for sample = 1:animalnumber
                 statdends{session} = find(spinestatclass{session}.MovementDends);
                 
                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-                
-                if UseLongitudinalInfo
-                    fieldfind = logical(cell2mat(cellfun(@(x) ismember(session,x), spinedynamicssummary.SessionsbyField, 'uni', false)));
-                    if any(fieldfind)
-                        NewSpines{session} = find(spinedynamicssummary.NewSpines{fieldfind});
-                    else
-                        continue
-                    end
-                end
+
                 
                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -121,7 +115,6 @@ for sample = 1:animalnumber
                 numdends(sample, session) = size(currentfile{session}{trialscounted(1)}.DendriteActivity,1);
                 ClusteredSpinesByAnimal{session}{sample} = cell2mat(ClusteredSpinesAll{session}');
                 StatSpinesByAnimal{session}{sample} = statspines{session};
-                NewSpinesByAnimal{session}{sample} = NewSpines{session};
                 if sample > 1
                     ClusteredSpinesAll{session} = cell2mat(ClusteredSpinesAll{session}') + sum(numspines(1,session):numspines(sample-1,session));
                     statspines{session} = statspines{session} + sum(numspines(1,session):numspines(sample-1,session));
@@ -206,10 +199,23 @@ for sample = 1:animalnumber
         trialdendriteaveragebyanimal{1,session}{sample} = nanmean(dendritealignedtomovement{1,session},3);
 %         failuretrialaverage{1,session} = [failuretrialaverage{1,session}; nanmean(alignedtofailure{1,session},3)];
 %         failuretrialaveragebyanimal{1,session} = nanmean(alignedtofailure{1,session},3);
-        if UseLongitudinalInfo
-            sessionNewSpines{1,session} = [sessionNewSpines{1,session}; NewSpines{session}];
-        end
     end
+                    
+    if UseLongitudinalInfo
+%         fieldfind = logical(cell2mat(cellfun(@(x) ismember(session,x), spinedynamicssummary.SessionsbyField, 'uni', false)));
+%         if any(fieldfind)
+%             NewSpines{session} = spinedynamicssummary.NewSpines{fieldfind};
+%         else
+%             continue
+%         end
+        latesession_at_field = cell2mat(cellfun(@(x) x(end), spinedynamicssummary.SessionsbyField, 'uni', false));
+        if latesession_at_field >14
+            latesession_at_field = 14;
+        end
+        NewSpines(cell2mat(cellfun(@(x) x(end), spinedynamicssummary.SessionsbyField, 'uni', false))) = cellfun(@(x,y) [x;y], NewSpines(latesession_at_field), spinedynamicssummary.NewSpines, 'uni', false);
+        NewSpinesByAnimal = NewSpines;
+        sessionNewSpines = NewSpines;
+    end    
     clear([varargin{sample}, '_TrialInformation'])
 end
 
@@ -224,8 +230,10 @@ TrialDataSummary.TrialDendriteAverageAll = trialdendriteaverage;
 TrialDataSummary.TrialDendriteAverageByAnimal = trialdendriteaveragebyanimal;
 TrialFeatures.MovementLengthDistribution = MovementLengthDistribution;
 
-save('TrialDataSummary', 'TrialDataSummary')
-save('TrialFeatures', 'TrialFeatures')
+sensorused = inputdlg('Enter sensor used', 'Sensor', 1,{'GCaMP'});
+
+save([sensorused{1}, 'TrialDataSummary'], 'TrialDataSummary')
+save([sensorused{1}, 'TrialFeatures'], 'TrialFeatures')
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

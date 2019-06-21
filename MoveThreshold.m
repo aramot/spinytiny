@@ -1,13 +1,13 @@
 function File = MoveThreshold(File)
 
 NumberofSpines = File.NumberofSpines;
-ShiftValue = 0;   %%% Choose the value by which you want to change the threshold;
+ShiftValue = 0.25;   %%% Choose the value by which you want to change the threshold;
 ImagingFrequency = 60;
 
 for s = 1:NumberofSpines
     ParentDend =  logical(~cell2mat(cellfun(@(x) isempty(find(x == s,1)), File.SpineDendriteGrouping, 'Uni', false))); 
     OldSpineThreshold = File.SpineThreshold(s);
-    NewSpineThreshold = OldSpineThreshold-(ShiftValue*OldSpineThreshold);
+    NewSpineThreshold = ShiftValue;
     File.ModifiedSpineThreshold = NewSpineThreshold;
     CurrentSpineActivity = File.Processed_dFoF(s,:);
     [square, ~,trueeventcount, ~, ~] = DetectEvents(CurrentSpineActivity, NewSpineThreshold);

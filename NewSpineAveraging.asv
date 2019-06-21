@@ -687,7 +687,6 @@ text(4.5, max([Y{4}; Y{5}])+2, num2str((shuffnum-sum(NewSpineLateMoveSpinesNullD
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 allmovementspinedistances = [];
 for animal = 1:length(AllMovementSpines)
     for field = 1:length(AllMovementSpines{animal})
@@ -733,7 +732,7 @@ allmovementspinedistancesshuffled = [];
 for animal = 1:length(AllMovementSpines)
     for field = 1:length(AllMovementSpines{animal})
         for session = 1:size(AllMovementSpines{animal}{field},2)
-            for shuff = 1:10
+            for shuff = 1:100
                 sessionmovespines = find(shake(AllMovementSpines{animal}{field}(:,session)));
                 if length(sessionmovespines)>1
                     spinecombos = nchoosek(sessionmovespines,2);
@@ -746,7 +745,6 @@ for animal = 1:length(AllMovementSpines)
         end
     end
 end
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Figure 9: Dynamic Spines Max Correlation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

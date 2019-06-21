@@ -427,7 +427,7 @@ for animal = 1:length(varargin)
             ShuffledLateMovementLabels{shuff} = randi(NumberofLateSpines,[length(AllMovementSpinesOnLateSession),1]);
             if length(ShuffledEarlyMovementLabels{shuff})>length(AllMovementSpinesOnEarlySession)/2
                 replimit = 1;
-                while any(ismember(ShuffledEarlyMovementLabels{shuff}, AllMovementSpinesOnEarlySession))>length(AllMovementSpinesOnLateSession)/2 && replimit<1000  %%% Attempt to exclude actual movement related spines from being included
+                while any(ismember(ShuffledEarlyMovementLabels{shuff}, AllMovementSpinesOnEarlySession))>length(AllMovementSpinesOnLateSession)/2 && replimit<1000
                     ShuffledEarlyMovementLabels{shuff} = randi(NumberofEarlySpines, [length(AllMovementSpinesOnEarlySession),1]);
                     replimit = replimit+1;
                 end
@@ -486,11 +486,6 @@ for animal = 1:length(varargin)
             case 'Exclude'
                 OtherSpineActivity = FieldData{f}.CalciumData{end}.SynapseOnlyBinarized(AllOtherSpines,:);
                 eval(['OtherSpineActivityAligned = ', currentanimal, '_Aligned{', num2str(latesession),'}.SynapseOnlyBinarized([', num2str(AllOtherSpines), '],:);'])
-        end
-        for oth = 1:size(OtherSpineActivityAligned,1)
-            if ~any(OtherSpineActivityAligned(oth,:)==0)
-                OtherSpineActivityAligned(oth,:) = zeros(1,length(OtherSpineActivityAligned(oth,:)));
-            end
         end
         success_centric_otherspine_activity = OtherSpineActivityAligned.*successtraceLate';
         success_centric_otherspine_correlation = corrcoef(success_centric_otherspine_activity');
@@ -774,8 +769,8 @@ for animal = 1:length(varargin)
                             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                             %%% Find the same features for freq-matched
                             %%% spine pairs
-                            comp_coactive_separated = mat2cell(comp_coactivetrace', diff(boundstouse));    %%% Separate the coactive trace according to the bounds of the successful/rewarded lever press trace
-                            comp_coactive_trace_during_success = comp_coactive_separated(cell2mat(cellfun(@(x) ~isempty(find(x,1)), allperiodblocks, 'uni', false))); %%% First, find the cases when the lever is actually being pressed (where 'allperiodblocks' is nonzero), and extract the activity traces DURING THESE PERIODS
+                            comp_coactive_separated = mat2cell(comp_coactivetrace', diff(boundSLate));    %%% Separate the coactive trace according to the bounds of the successful/rewarded lever press trace
+                            comp_coactive_trace_during_success = comp_coactive_separated(cell2mat(cellfun(@(x) ~isempty(find(x,1)), allperiodsSLate, 'uni', false))); %%% First, find the cases when the lever is actually being pressed (where 'allperiodsS' is nonzero), and extract the activity traces DURING THESE PERIODS
                             comp_CoActiveAddresses = logical(cell2mat(cellfun(@(x,y) ~isempty(find(x,1))&~isempty(find(y,1)), targetperiods, comp_coactive_trace_during_success, 'uni', false)));
                             framesofinterest = frames_during_allperiods(comp_CoActiveAddresses);
                             if ~isempty(framesofinterest)
@@ -848,11 +843,10 @@ for animal = 1:length(varargin)
                     count = 1;
                     for shuff = 1:shuffnum
                         for sh = 1:length(ShuffledEarlyMovementLabels{shuff})
-                            [val, ~] = sort([NewSpines{f}(ns),ShuffledEarlyMovementLabels{shuff}(sh)]); %%% Sort for consistent indexing in the distance matrix
+                            [val, ~] = sort([NewSpines{f}(ns),ShuffledEarlyMovementLabels{shuff}(sh)]);
                             shuffleddistances(1,sh) = AllDendriteDistances{f}(val(1),val(2));
                         end
                         NewSpinestoShuffledEarlyMovementSpines(1,count) = nanmin(shuffleddistances);
-                        shuffleddistances = [];
                         count = count+1;
                     end
                     if ~any(~isnan(NewSpinestoEarlyMovementSpines))
@@ -873,7 +867,7 @@ for animal = 1:length(varargin)
                     NewSpinesCorrwithNearbyEarlyMRSs{f}(ns) = nanmax(NewSpinesCorrwithCloseEarlyMRS);
                     MovementSpineDistanceMatchedControlCorrelation{f}{ns} = MovementSpineDistanceMatchedControlCorr;
                     NewSpinesCorrwithDistanceMatchedNonEarlyMRSs{f}(ns) = nanmean(DistMatchedNonEarlyMRPartnersCorr);
-                    DistancesBetweenNewSpinesandShuffledEarlyMovementSpines{f}{ns} = NewSpinestoShuffledEarlyMovementSpines;
+                    DistancesBetweenNewSpinesandShuffledEarlyMovementSpines{f}(ns) = nanmean(NewSpinestoShuffledEarlyMovementSpines);
                     ClusteredNewSpineCorrwithDendrite{f}{ns} = DendCorrNewSpineOnly;
                     ClusteredNewSpineCorrwithMovement{f}{ns} = NewSpineOnlywithMovement;
                     ClusteredNewSpineCorrwithSuccess{f}{ns} = NewSpineOnlywithSuccess;
@@ -905,8 +899,6 @@ for animal = 1:length(varargin)
                 end
             else
                 NewSpineswithNoMoveSpinePartner = NewSpineswithNoMoveSpinePartner+1;
-                DistancesBetweenNewSpinesandEarlyMovementSpines{f} = nan(1,length(NewSpines{f}));
-                LateCorrfNewSpinesandNearestMovementSpinefromEarlySessions{f} = nan(1,length(NewSpines{f}));
             end
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             NumberofPersistentMovementSpinesClustered{f} = persistentclustercount;
@@ -963,7 +955,6 @@ for animal = 1:length(varargin)
                             shuffleddistances(1,sh) = AllDendriteDistances{f}(val(1),val(2));
                         end
                         NewSpinestoShuffledMovementSpines(1,count) = nanmin(shuffleddistances);
-                        shuffleddistances = [];
                         count = count+1;
                     end
                     [DistancesBetweenNewSpinesandLateMovementSpines{f}(ns),ind] = nanmin(NewSpinestoLateMovementSpines);
@@ -974,8 +965,6 @@ for animal = 1:length(varargin)
                     DistancesBetweenNewSpinesandShuffledMovementSpines{f}(ns) = nanmean(NewSpinestoShuffledMovementSpines);
                 end
             else
-                DistancesBetweenNewSpinesandLateMovementSpines{f} = nan(1,length(NewSpines{f}));
-                LateCorrfNewSpinesandNearestMovementSpinefromLateSessions{f} = nan(1,length(NewSpines{f}));
             end %%% End "late" variable section
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             TaskCorrelationofNearbyLateMRSs{f} = behaviorcorrdatalate(:,ClusteredLateMoveSpines{f});

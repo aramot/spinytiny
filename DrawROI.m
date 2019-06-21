@@ -90,7 +90,7 @@ elseif strcmpi(Router, 'Spine') %%% First round drawing, just temporary while th
     axes(axes1)
     InsertOpt = get(glovar.figure.handles.InsertSpine_ToggleButton,'Value');
     if InsertOpt
-        allROIPos = get(gui_CaImageViewer.ROI, 'Position');
+        allROIPos = get(gui_CaImageViewer.ROI, 'Center');
         [~, ind] = min(sum(abs(cell2mat(cellfun(@(x) x(1:2)-Fl_ROI(1:2), allROIPos, 'uni', false))),2));
         ROInum = ind;
 %         ROInum = glovar.InsertPoint;

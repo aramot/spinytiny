@@ -11,6 +11,11 @@ function [fn, ffn,sort_keys] = fastdir(dir_name,expression,exclude,opt,sort_key)
     if(nargin<5)
         sort_key = '';
     end
+    if ~iscell(expression)
+        tempstore = expression;
+        expression = {};
+        expression{1} = tempstore;
+    end
     if ~iscell(exclude)
         tempstore = exclude; 
         exclude = {};
@@ -28,7 +33,7 @@ function [fn, ffn,sort_keys] = fastdir(dir_name,expression,exclude,opt,sort_key)
     selected = false(jifl.length(),1);
     for i=1:jifl.length()
         fn{i} = char(jifl(i).getName());
-        selected(i) = (isempty(expression) || ~isempty(regexp(fn{i},expression,'once','start'))&& (sum(cell2mat(cellfun(@(x) isempty(regexp(fn{i}, x, 'once')), exclude, 'uni', false))) == length(exclude)))...
+        selected(i) = (isempty(expression) || (sum(~cell2mat(cellfun(@(x) isempty(regexp(fn{i}, x, 'once')), expression, 'uni', false))) == length(expression))&& (sum(cell2mat(cellfun(@(x) isempty(regexp(fn{i}, x, 'once')), exclude, 'uni', false))) == length(exclude)))...
                     &&(isempty(opt) || (strcmp(opt,'d') && jifl(i).isDirectory()) ...
                     || (strcmp(opt,'f') && ~jifl(i).isDirectory()) );
     end

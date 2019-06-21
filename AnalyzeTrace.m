@@ -127,7 +127,7 @@ switch BeingAnalyzed
     case 'Soma'
     switch activitylevel
         case 'High'
-            [~,lo] = envelope(padded_data, 300, 'peak');
+            [~,lo] = envelope(padded_data, 250, 'peak');
             truebaseline = lo;
             truebaseline = truebaseline(padlength+1:end-padlength)';
             DriftBaseline = truebaseline;
@@ -137,9 +137,9 @@ switch BeingAnalyzed
             DriftBaseline = truebaseline;
     end
     otherwise
-        truebaseline = baseline_kde(padded_data',20,windowsize,stepforKDE);    %%% inputs = downsample ratio, window size, step
-        truebaseline = truebaseline(padlength+1:end-padlength);
-        DriftBaseline = truebaseline;
+        truebaseline_kde = baseline_kde(padded_data',20,windowsize,stepforKDE);    %%% inputs = data,downsample ratio, window size, step
+        truebaseline_kde = truebaseline_kde(padlength+1:end-padlength);
+        DriftBaseline = truebaseline_kde; 
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -159,21 +159,21 @@ end
 % end
 
 %     blsub = driftsub-truebaseline;                                                             %%% Baseline-subtracted value
-blsub = raw-truebaseline';
+blsub = raw-DriftBaseline';
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Baseline division (if using raw traces)
 
 if traceoption == 1 
-    if nanmedian(truebaseline)~= 0
-        dFoF = blsub./truebaseline';
+    if nanmedian(DriftBaseline)~= 0
+        dFoF = blsub./DriftBaseline';
 %             blsub(blsub<0) = 0;
         rawmed = nanmedian(dFoF);
         rawspread = nanstd(dFoF);
     else
         blsub = blsub+1;
-        truebaseline = truebaseline+1;
-        dFoF = blsub./truebaseline';
+        DriftBaseline = DriftBaseline+1;
+        dFoF = blsub./DriftBaseline';
 %             blsub(blsub<0) = 0;
         rawmed = nanmedian(dFoF);
         rawspread = nanstd(dFoF);

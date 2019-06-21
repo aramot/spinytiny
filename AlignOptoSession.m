@@ -55,6 +55,9 @@ for s = 1:numSpines
     for ot = 1:NumOptoTrials
         start = Beh.Behavior_Frames{ot}.states.iti2(1)-prestimwindow;
         stop = Beh.Behavior_Frames{ot}.states.iti2(2)+poststimwindow;
+        if mod(start,1)    %%% If the frame values for start and stop are not integers, skip this trial
+            continue
+        end
         stimduration =  Beh.Behavior_Frames{ot}.states.iti2(2)- Beh.Behavior_Frames{ot}.states.iti2(1);
         trialbytrial_raw{s}(ot,:) = zscored_rawtrace(s,start:stop);
         trialbytrial_dendsub{s}(ot,:) = zscored_dendsubtrace(s,start:stop);
@@ -90,7 +93,7 @@ sf.Excited_ROIs = Excited_ROIs;
 sf.Excited_ROI_Traces = Excited_ROI_traces;
 
 
-savefilename = [Filename, '_OptoSummary'];
+savefilename = [Filename, '_OptoClassification'];
 eval([savefilename, ' = sf;'])
 
 cd('C:\Users\Komiyama\Desktop\Output Data')

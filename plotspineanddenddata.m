@@ -73,7 +73,7 @@ else
         end
     else
         filechoice = varargin{1}{randi([1 length(varargin{1})], 1)};
-        filesearch = fastdir('E:\ActivitySummary', filechoice, 'Poly');
+        filesearch = fastdir('E:\ActivitySummary', filechoice, {'Poly', 'ZSeries'});
         randdate = randi([1 length(filesearch)]);
         load(filesearch{randdate});
         eval(['File = ', filesearch{randdate}(1:end-4), ';']);

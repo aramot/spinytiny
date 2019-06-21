@@ -1112,8 +1112,8 @@ for i = 1:length(varargin{firstdatainput})
                     spine_pos2 = [currentfile.ROIPosition{c(m)+1}(1)+currentfile.ROIPosition{c(m)+1}(3)/2, currentfile.ROIPosition{c(m)+1}(2)+currentfile.ROIPosition{c(m)+1}(4)/2];
                     FarDistanceMap(r(m),c(m)) = (sqrt((spine_pos1(1)-spine_pos2(1)).^2 +(spine_pos1(2)-spine_pos2(2)).^2))/pixpermicron;
                 case 'new'
-                    spine_pos1 = [currentfile.ROIPosition{r(m)}(1)+currentfile.ROIPosition{r(m)}(3)/2, currentfile.ROIPosition{r(m)}(2)+currentfile.ROIPosition{r(m)}(4)/2];
-                    spine_pos2 = [currentfile.ROIPosition{c(m)}(1)+currentfile.ROIPosition{c(m)}(3)/2, currentfile.ROIPosition{c(m)}(2)+currentfile.ROIPosition{c(m)}(4)/2];
+                    spine_pos1 = [currentfile.ROIPosition{r(m)+1}(1)+currentfile.ROIPosition{r(m)+1}(3)/2, currentfile.ROIPosition{r(m)+1}(2)+currentfile.ROIPosition{r(m)+1}(4)/2];
+                    spine_pos2 = [currentfile.ROIPosition{c(m)+1}(1)+currentfile.ROIPosition{c(m)+1}(3)/2, currentfile.ROIPosition{c(m)+1}(2)+currentfile.ROIPosition{c(m)+1}(4)/2];
                     FarDistanceMap(r(m),c(m)) = (sqrt((spine_pos1(1)-spine_pos2(1)).^2 +(spine_pos1(2)-spine_pos2(2)).^2))/pixpermicron;
             end
         end

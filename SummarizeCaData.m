@@ -4,7 +4,7 @@ function [analyzed, poly] = SummarizeCaData(File, varargin)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% This function takes ROI information extracted using CaImageViewer and
 %%% summarizes the intensity traces over the timecourse. The primary trace
-%%% extraction method is performed using function 'AnalyzeTrace'. This
+%%% extraction method is performed using function 'AnalyzeTrace2'. This
 %%% function handles file loading, parameter setting, and all basic signal
 %%% processing post-extraction (including event detection). 
 
@@ -63,18 +63,19 @@ isOpto = p.Results.Opto;
 %%%%%%%%%%%%%%%%%%%%%%%%% Color Information %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-    lgray = [0.50 0.51 0.52];   brown = [0.28 0.22 0.14];
-    gray = [0.50 0.51 0.52];    lbrown = [0.59 0.45 0.28];
-    yellow = [1.00 0.76 0.05];  orange = [0.95 0.40 0.13];
-    lgreen = [0.55 0.78 0.25];  green = [0.00 0.43 0.23];
-    lblue = [0.00 0.68 0.94];   blue = [0.00 0.33 0.65];
-    magenta = [0.93 0.22 0.55]; purple = [0.57 0.15 0.56];
-    pink = [0.9 0.6 0.6];       lpurple  = [0.7 0.15 1];
-    red = [0.85 0.11 0.14];     black = [0 0 0];
-    dred = [0.6 0 0];          dorange = [0.8 0.3 0.03];
-    bgreen = [0 0.6 0.7];
-    colorj = {red,lblue,green,lgreen,gray,brown,yellow,blue,purple,lpurple,magenta,pink,orange,brown,lbrown};
-    rnbo = {dred, red, dorange, orange, yellow, lgreen, green, bgreen, blue, lblue, purple, magenta, lpurple, pink}; 
+lgray = [0.50 0.51 0.52];               brown = [0.28 0.22 0.14];
+gray = [0.50 0.51 0.52];                lbrown = [0.59 0.45 0.28];
+yellow = [1.00 0.76 0.05];              orange = [0.95 0.40 0.13];
+lgreen = [0.55 0.78 0.25];              green = [0.00 0.43 0.23];
+lblue = [0.00 0.68 0.94];               blue = [0.00 0.33 0.65];
+magenta = [0.93 0.22 0.55];             purple = [0.57 0.15 0.56];
+pink = [0.9 0.6 0.6];                   lpurple  = [0.7 0.15 1];
+red = [0.85 0.11 0.14];                 black = [0 0 0];
+dred = [0.6 0 0];                       dorange = [0.8 0.3 0.03];
+bgreen = [0 0.6 0.7];
+
+colorj = {red,lblue,green,lgreen,gray,brown,yellow,blue,purple,lpurple,magenta,pink,orange,brown,lbrown};
+rnbo = {dred, red, dorange, orange, yellow, lgreen, green, bgreen, blue, lblue, purple, magenta, lpurple, pink}; 
     
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -121,7 +122,7 @@ else
     end
     if isfolder(targetdir)
         cd(targetdir)
-        files = fastdir(targetdir, 'Analyzed');
+        files = fastdir(targetdir, {'Analyzed', Analyzer});
         check = 0;    
         if isempty(files)
             disp('Raw data file not found; PULLING FROM PREVIOUS ANALYSIS!!')
@@ -133,16 +134,15 @@ else
                 end
             end
         else
-            if length(files)>1
+            if length(files)>1      %%%% INSERT NEW CODE FOR USING MOST RECENT FILE
                 for i = 1:length(files)
-                    searchpattern1 = regexp(files(i),['_summed_50_Analyzed_By', Analyzer], 'once');
-                    searchpattern2 = regexp(files(i),['_summed_50Analyzed_By', Analyzer], 'once');
-                    searchpattern3 = regexp(files(i),['_summed_50_Longitudinal_Analyzed_By', Analyzer], 'once');
-                    if ~isempty(searchpattern1{1}) || ~isempty(searchpattern2{1}) || ~isempty(searchpattern3{1})
-                        load(files{i})
-                        check = 1;
-                    end
+                    file_info = dir(files{i});
+                    filedate(i) = file_info.datenum;
                 end
+                [~,I] = max(filedate);
+                latestfile = files{I};
+                load(latestfile)
+                check = 1;
             else
                 load(files{1});
                 check = 1;
@@ -307,7 +307,7 @@ if File.NumberofSpines ==  0 || File.NumberofSpines ~= length(File.deltaF)
 end
 % 
 SpineNo = randi(File.NumberofSpines,1); %%% Will choose a random spine from the available ones for this file
-% SpineNo = 2;  %%% Manually select spine to be considered
+% SpineNo = 6;  %%% Manually select spine to be considered
 
 
 DendNum = File.NumberofDendrites;
@@ -376,6 +376,7 @@ Options.TraceOption = spinetraceoption;
 Options.ValuesLimitforBaseline = spinevalueslimitforbaseline;
 Options.ValuesLimitforNoise = spinevalueslimitfornoise;
 Options.ImagingSensor = ImagingSensor; 
+Options.ImagingFrequency = ImagingFrequency;
 Options.BeingAnalyzed = 'Spine';
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -383,15 +384,8 @@ Options.BeingAnalyzed = 'Spine';
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 for i = 1:numberofSpines
-    [spine_thresh(i,1), spinedriftbaseline(i,:), processed_dFoF(i,:)] = AnalyzeTrace(spinedatatouse{i}, Options);
+    [spine_thresh(i,1), spinedriftbaseline(i,:), processed_dFoF(i,:)] = AnalyzeTrace2(spinedatatouse{i}, Options);
 end
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-riderthresh = 1;
-riderthresh2 = 2;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -403,7 +397,7 @@ riderthresh2 = 2;
 
 %%% Variable initiation
 
-[square, floored,trueeventcount, riders, both] =  DetectEvents(processed_dFoF, spine_thresh);
+[square, floored,trueeventcount, topspikes, both] =  DetectEvents2(processed_dFoF, 2);
 
 for i = 1:numberofSpines
     frequency(i,1) = (nnz(diff(trueeventcount(i,:)>0.5)>0)/((length(File.Time)/ImagingFrequency)/60))';
@@ -424,8 +418,7 @@ analyzed.StandardDeviationofNoise = spread;
 %%% Raw data and estimated baseline
 
 if showFig
-    k = zeros(1,length(File.Time));
-    k(1:end) = spine_thresh(SpineNo,1);
+    k = ones(1,length(File.Time));
     m = ones(1,length(File.Time))*med(SpineNo,1);
     figure('Position', [10, Scrsz(4)/2.5,Scrsz(3)/2,Scrsz(4)/2]); 
     rawplot = subplot(2,2,1:2);
@@ -444,10 +437,10 @@ if showFig
     procplot = subplot(2,2,3:4);
     hold on; plot(File.Time, processed_dFoF(SpineNo,:), 'Color',[0.2 0.2 0.2], 'LineWidth', 1);
     linkaxes([rawplot,procplot], 'x');
-    topspikes = riders(SpineNo,:);
+    topspikes = topspikes(SpineNo,:);
     plot(1:length(File.Time), topspikes, 'Color', dred, 'LineWidth', 2);
-    plot(File.Time, both(SpineNo,:)*(med(SpineNo,1)+spine_thresh(SpineNo,1)), 'Color', yellow, 'LineWidth', 2)
-    plot(File.Time, trueeventcount(SpineNo,:)*(med(SpineNo,1)+spine_thresh(SpineNo,1)),'Color', lblue, 'LineWidth', 2);
+    plot(File.Time, both(SpineNo,:), 'Color', yellow, 'LineWidth', 2)
+    plot(File.Time, trueeventcount(SpineNo,:),'Color', lblue, 'LineWidth', 2);
     plot(File.Time, k', '--', 'Color', lgreen, 'LineWidth', 2)
     plot(File.Time, m, '--', 'Color', purple)
     xlabel('Frames')
@@ -574,28 +567,31 @@ for i = 1:DendNum
         %%%%%%%%%%%%%%
         
         %%% Binarization    
-        floored_Poly{i}(j-polyptstouse(1)+1,:) = zeros(1,length(processed_PolyROI{j}));
-                
-        temp = processed_PolyROI{j};
-            
-        temp(temp<Pthresh(j,1)) = 0;
-
-        floored_Poly{i}(j-polyptstouse(1)+1,:) = temp;
-        temp(temp>0) = 1;
         
-        square_Poly{i}(j-polyptstouse(1)+1,:) = temp;     
+%         [square_Poly{i}(j-polyptstouse(1)+1,:), floored_Poly{i}(j-polyptstouse(1)+1,:),~, ~, ~] =  DetectEvents2(processed_PolyROI{j}, Pthresh);
+        
+%         floored_Poly{i}(j-polyptstouse(1)+1,:) = zeros(1,length(processed_PolyROI{j}));
+%                 
+%         temp = processed_PolyROI{j};
+%             
+%         temp(temp<Pthresh(j,1)) = 0;
+% 
+%         floored_Poly{i}(j-polyptstouse(1)+1,:) = temp;
+%         temp(temp>0) = 1;
+%         
+%         square_Poly{i}(j-polyptstouse(1)+1,:) = temp;     
     end
-    poly.PolyROI_Binarized{i} = square_Poly; 
-    poly.Processed_PolyROI{i} = cell2mat(processed_PolyROI');
+%     poly.PolyROI_Binarized{i} = square_Poly; 
+    poly.Processed_PolyROI{i} = cell2mat(processed_PolyROI(polyptstouse));
 
     compiledDendData(i,:) = nanmean(cell2mat(rawpoly(polyptstouse)'));
     compiledProcessedDendData(i,:) = nanmean(cell2mat(processed_PolyROI(polyptstouse)),2);
     
-    globaldendevents = sum(square_Poly{i});
-    globaldendevents(globaldendevents<polypercentrequirement*size(square_Poly{i},1)) = 0;     %%% If > x% of the PolyROIs are active, it's probably a true global dendrite event
-    globaldendevents(globaldendevents~=0) = 1;
-        
-    globaldendriteevents{i} = globaldendevents;
+%     globaldendevents = sum(square_Poly{i});
+%     globaldendevents(globaldendevents<polypercentrequirement*size(square_Poly{i},1)) = 0;     %%% If > x% of the PolyROIs are active, it's probably a true global dendrite event
+%     globaldendevents(globaldendevents~=0) = 1;
+%         
+%     globaldendriteevents{i} = globaldendevents;
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%
@@ -618,89 +614,49 @@ for i = 1:DendNum
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
     floored_Dend = zeros(DendNum,length(processed_Dendrite(1,:)));
-    Driders = zeros(DendNum,length(processed_Dendrite(1,:)));
+    Dtopspikes = zeros(DendNum,length(processed_Dendrite(1,:)));
 
 end
 
 analyzed.DendriteThreshold = Dthresh;
 
-for i = 1:File.NumberofDendrites
-    temp = processed_Dendrite(i,:);
-    
-    temp(temp<Dthresh(i,1)) = 0;
-    
-    floored_Dend(i,:) = temp;
-    temp(temp<Dthresh(i,1)) = nan;
-    tamp = temp;
-    tamp(isnan(tamp)) = 0;
-    tamp = smooth(tamp,20);
-    dtamp = diff(tamp);
-    dtamp(dtamp>0) = 1; dtamp(dtamp<0) = -1;
-    d2tamp = diff(dtamp);
-    d2tamp(d2tamp>0) = 1; d2tamp(d2tamp<0) = -1;
-    temp(d2tamp>0) = nan;   %%% For plateau spikes, when the 1st derivative is negative (val. decreasing) and 2nd derivative is positive (concave up, corresponding to dips), punch a 'hole' in the data, so that multiple peaks will be counted
-    Driders(i,:) = temp;    %%% Used to determine when events start, NOT to indicate when the dendrite is active (i.e. represents event onsets, not active periods)
-end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+[square_Dend, floored_Dend ,Dendtrueeventcount, Dtopspikes, Dboth] =  DetectEvents(processed_Dendrite, 3);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-square_Dend = zeros(DendNum,length(processed_Dendrite(1,:)));
-Dboth = zeros(DendNum,length(processed_Dendrite(1,:)));
 Dglobal = zeros(DendNum,length(processed_Dendrite(1,:)));
-ternarized_Dend = Driders;
+ternarized_Dend = Dtopspikes;
 
-ternarized_Dend(isnan(ternarized_Dend)) = 0;
-ternarized_Dend(ternarized_Dend~=0) = riderthresh2-0.5;
-
-% Driderstop(~isnan(Driderstop)) = riderthresh2-1.5;
-% Driderstop(isnan(Driderstop)) = 0;
+dendtimebuffer = round(ImagingFrequency/4);
 
 for i = 1:File.NumberofDendrites
-    temp = floored_Dend(i,:);
-    temp(temp~=0) = 1;            
+%     bound = find(diff([Inf, square_Dend(i,:), Inf])~=0);
+%     epochs = mat2cell(square_Dend(i,:)', diff(bound));
+%     polyepoch = mat2cell(square_Poly{i}', diff(bound));
+%     Dglobal(i,:) = cell2mat(cellfun(@(x,y) x*y, cellfun(@(x) sum(x)>0.1*length(x), cellfun(@round, cellfun(@mean, polyepoch, 'UniformOutput', false), 'UniformOutput', false), 'UniformOutput', false), epochs, 'Uni', false));
+% %     Dglobal(i,:) = square_Dend(i,:).*globaldendriteevents{i};
     
-    square_Dend(i,:) = temp;
-    
-    bound = find(diff([Inf, square_Dend(i,:), Inf])~=0);
-    epochs = mat2cell(square_Dend(i,:)', diff(bound));
-    polyepoch = mat2cell(square_Poly{i}', diff(bound));
-    
-    Dglobal(i,:) = cell2mat(cellfun(@(x,y) x*y, cellfun(@(x) sum(x)>0.1*length(x), cellfun(@round, cellfun(@mean, polyepoch, 'UniformOutput', false), 'UniformOutput', false), 'UniformOutput', false), epochs, 'Uni', false));
-        
-%     Dglobal(i,:) = square_Dend(i,:).*globaldendriteevents{i};
-    
-    temp = ternarized_Dend(i,:);
-    temp(temp~=0) = 1;            
-        
-    ternarized_Dend(i,:) = temp;
-    
-    temp = square_Dend(i,:)+ternarized_Dend(i,:);
-    Dboth(i,:) = temp;
-    temp2 = (diff(Dboth(i,:))>0.1)>0;
-    temp3 = [0, temp2];          %%% Any use of 'diff' shortens the vector by 1; correct for this
-    Dsmeared = smooth(temp3, 5); %%% Smoothing factor is taken from the reported decay constant of GCaMP6f (~150ms), converted to frames 
-    Dsmeared(Dsmeared>0) = 1;
-    Dendtrueeventcount(i,:) = Dsmeared;
-    
-        dendtimebuffer = 0;
-    
-        rises = find(diff(Dglobal(i,:))>0);
-        falls = find(diff(Dglobal(i,:))<0);
+    Dglobal(i,:) = square_Dend(i,:);
+          
+    rises = find(diff(Dglobal(i,:))>0);
+    falls = find(diff(Dglobal(i,:))<0);
 
-        earlier_rises = rises-dendtimebuffer;
-            earlier_rises(earlier_rises<1) = 1;
-        later_falls = falls+dendtimebuffer;
-            later_falls(later_falls>length(Dglobal(i,:))) = length(Dglobal(i,:));
+    earlier_rises = rises-dendtimebuffer;
+        earlier_rises(earlier_rises<1) = 1;
+    later_falls = falls+dendtimebuffer;
+        later_falls(later_falls>length(Dglobal(i,:))) = length(Dglobal(i,:));
 
-        for p = 1:length(earlier_rises)
-            Dglobal(i,earlier_rises(p):rises(p)) = 1;
-        end
-        for p = 1:length(later_falls)
-            Dglobal(i,falls(p):later_falls(p)) = 1;
-        end
+    for p = 1:length(earlier_rises)
+        Dglobal(i,earlier_rises(p):rises(p)) = 1;
+    end
+    for p = 1:length(later_falls)
+        Dglobal(i,falls(p):later_falls(p)) = 1;
+    end
 end
 
 
 for i = 1:size(floored_Dend,1)
-    [Dpeaks, Dloc] = findpeaks(smooth(floored_Dend(i,:),10), 'MinPeakDistance', 5);   %%% The "floored" variable is used to count events, and so should be used to find the corresponding amplitude
+    [Dpeaks, ~] = findpeaks(smooth(floored_Dend(i,:),10), 'MinPeakDistance', 5);   %%% The "floored" variable is used to count events, and so should be used to find the corresponding amplitude
     Damp(i,1) = mean(Dpeaks);
     Dfreq(i,1) = length(peaks);
 end
@@ -731,13 +687,13 @@ if showFig
     
     procdend = subplot(2,2,3:4);
     plot(File.Time, processed_Dendrite(DendriteChoice,:), 'Color', [0.2 0.2 0.2]); hold on;
-    topspikes = Driders(DendriteChoice,:);
+    topspikes = Dtopspikes(DendriteChoice,:);
     plot(1:length(File.Time), topspikes, 'Color', dred, 'LineWidth', 2);
 %     plot(File.Time(Dend_Locations{DendriteChoice}), Dend_Peaks{DendriteChoice}+0.05, 'kv', 'markerfacecolor', lgreen);
-    plot(File.Time, Dboth(DendriteChoice,:)*Dthresh(DendriteChoice), 'Color', yellow, 'Linewidth', 2)
+    plot(File.Time, Dboth(DendriteChoice,:)*1.5, 'Color', yellow, 'Linewidth', 2)
 
     plot(File.Time, k, '--', 'Color', lgreen, 'Linewidth', 2)
-    plot(File.Time, Dglobal(DendriteChoice,:)*Dthresh(DendriteChoice,1), 'Color', orange, 'Linewidth', 2)
+    plot(File.Time, Dglobal(DendriteChoice,:)*1.5, 'Color', orange, 'Linewidth', 2)
     plot(File.Time, Dendtrueeventcount(DendriteChoice,:)*Dthresh(DendriteChoice,1),'Color', lblue, 'LineWidth', 2);
     
     legend({'Smoothed Data', 'Activity above Thresh', 'Binary Activity', 'Threshold', 'Global Event', 'Counted Events'}, 'Location', 'SouthEastOutside')        
@@ -959,7 +915,7 @@ counter = 1;
 
 % switch method 
 %     case 'new'
-        ROIfile = fastdir(targetdir, 'DrawnBy');
+        ROIfile = fastdir(targetdir, 'DrawnBy', 'Volume');
         if length(ROIfile)>1
             filesdrawnbyuser = find(~cellfun(@isempty, cellfun(@(x) regexp(x, Analyzer, 'once'), ROIfile, 'uni', false)));
             if length(filesdrawnbyuser) == 1
@@ -1022,7 +978,7 @@ for i = 1:File.NumberofDendrites
                 spine_pos{j} = [File.ROIPosition{j+1}(1)+File.ROIPosition{j+1}(3)/2, File.ROIPosition{j+1}(2)+File.ROIPosition{j+1}(4)/2]; %%% Don't forget that position 1 in this cell is actually ROI0/background ROI!!!! 
             case 'new'
                 spine_pos{j} = ROIfile.ROIPosition{j+1}.Center;
-                analyzed.ROIPosition{j} = [ROIfile.ROIPosition{j+1}.Center, 0, 0];
+                analyzed.ROIPosition{j+1} = [ROIfile.ROIPosition{j+1}.Center, 0, 0];
         end
         [~, index] = min(sqrt(((PolyX_center{i}-spine_pos{j}(1)).^2)+(PolyY_center{i}-spine_pos{j}(2)).^2)); %%% Find the closest ROI along the dendrite (usually spaced evenly and regularly enough that it should be right at the base of the spine, more or less)
 %         spine_address{j} = [PolyX_center{i}(1,index), PolyY_center{i}(1,index)]; %%% Set a spine's "address" as that point along the dendrite, found above
@@ -1032,7 +988,7 @@ for i = 1:File.NumberofDendrites
     if length(File.SpineDendriteGrouping{i})>1
         for j = File.SpineDendriteGrouping{i}(1):File.SpineDendriteGrouping{i}(end-1)
             for k = (j+1):File.SpineDendriteGrouping{i}(end)
-                [val, ind] = sort([spine_address{j}.Index,spine_address{k}.Index]);
+                [val, ~] = sort([spine_address{j}.Index,spine_address{k}.Index]);
                 lower = val(1);
                 higher = val(2);
                 SpineToSpineDistance(j,k) = abs(sum(Mic_Dist{spine_address{j}.Dendrite}(lower:higher))-Mic_Dist{spine_address{j}.Dendrite}(lower));  %%% Find the sum of linear distances from the current point to the nearby spine
