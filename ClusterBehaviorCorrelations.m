@@ -521,11 +521,11 @@ for i = 1:length(varargin{firstdatainput})
 
     NumberofImagedSpines(1,session) = currentfile.NumberofSpines;
 
-    if NumberofImagedSpines(1,session) ~= length(currentfile.dF_over_F);
+    if NumberofImagedSpines(1,session) ~= length(currentfile.dF_over_F)
         NumberofImagedSpines(1,session) = length(currentfile.dF_over_F);
     end
 
-    for d = 1:currentfile.NumberofDendrites;
+    for d = 1:currentfile.NumberofDendrites
         LengthofDendrites{session}(1,d) = sum(currentfile.DendriteLengthValues{d});
     end
 

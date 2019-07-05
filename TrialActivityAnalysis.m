@@ -31,7 +31,7 @@ NewSpinesByAnimal = cell(1,14);
 startwindow = 15;   %%% Time (in frames) to subtract from the initiation of movement for inspection of beginning of trace
 stopwindow = 60;    %%% Time (in frames) to add to the initiation of movement for inspection of end of trace
 
-centermovement = 120;   %%% Trials are of different lengths, so to compare them with a chosen t = 0, you must chose a value about which to center them (cannot actually be zero in an array with indices of positive, real values)
+centermovement = 90;   %%% Trials are of different lengths, so to compare them with a chosen t = 0, you must chose a value about which to center them (cannot actually be zero in an array with indices of positive, real values)
                         %%% Note: the entire movement period is assumed to
                         %%% be fewer than 2*(centermovement) frames. If you
                         %%% increase the start or stop window above, you
@@ -189,6 +189,8 @@ for sample = 1:animalnumber
                 end
                 MovementLengthDistribution{session}{sample}(MovementLengthDistribution{session}{sample}==0) = nan;
             end
+        else
+            ClusteredSpinesAll{session} = [];
         end
         sessionClusteredSpines{1,session} = [sessionClusteredSpines{1,session}; ClusteredSpinesAll{session}];
         trialaverage{1,session} = [trialaverage{1,session}; nanmean(alignedtomovement{1,session},3)];

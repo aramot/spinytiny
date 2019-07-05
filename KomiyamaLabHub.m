@@ -22,7 +22,7 @@ function varargout = KomiyamaLabHub(varargin)
 
 % Edit the above text to modify the response to help KomiyamaLabHub
 
-% Last Modified by GUIDE v2.5 21-Mar-2019 21:44:10
+% Last Modified by GUIDE v2.5 21-Jun-2019 17:59:59
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -1143,7 +1143,9 @@ for i = 1:length(animals)
 end
 filestoanalyze =  filestoanalyze(2:end);
 
-eval(['NewSpineAnalysis(', filestoanalyze, ')']);
+sensor = inputdlg('Enter Sensor', '', 1,{'GCaMP'});
+
+eval(['NewSpineAnalysis(', filestoanalyze,',', '''', sensor{1}, ''')']);
 
 
 
@@ -1218,3 +1220,23 @@ end
 filestoanalyze =  filestoanalyze(2:end);
 
 eval(['ReDoThresholding(', filestoanalyze, ')']);
+
+
+% --------------------------------------------------------------------
+function HistogramofAlphas_Callback(hObject, eventdata, handles)
+% hObject    handle to HistogramofAlphas (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+
+listpos = get(handles.AnimalName_ListBox, 'Value');
+fulllist = get(handles.AnimalName_ListBox, 'String');
+animals = fulllist(listpos);
+filestoanalyze = [];
+for i = 1:length(animals)
+    filestoanalyze =[filestoanalyze, ',''',animals{i}, ''''];
+end
+filestoanalyze =  filestoanalyze(2:end);
+
+eval(['AlphaHistogram(', filestoanalyze, ')']);
+

@@ -1279,15 +1279,15 @@ plot(1:3, (maxline2+0.01)*ones(1,3), 'k', 'Linewidth', 2)
 [p(2),~] = ranksum(datamat{1},datamat{3});
 
 if p(1)<0.05
-    text(1.4, maxline1+0.05, ['* p =', num2str(p(1))])
+    text(1.4, maxline1+0.075, ['* p =', num2str(p(1))])
 else
-    text(1.4, maxline1+0.05, ['ns, p = ', num2str(p(1))])
+    text(1.4, maxline1+0.075, ['ns, p = ', num2str(p(1))])
 end
 
 if p(2)<0.05
-    text(2.1, maxline2+0.05, ['* p = ', num2str(p(2))])
+    text(1.9, maxline2+0.125, ['* p = ', num2str(p(2))])
 else
-    text(1.4, maxline2+0.05, ['ns, p = ', num2str(p(2))])
+    text(1.9, maxline2+0.125, ['ns, p = ', num2str(p(2))])
 end
 
 %%% Correlation with model movement (i.e. average movement from final

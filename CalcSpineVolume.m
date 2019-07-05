@@ -65,6 +65,7 @@ if isfolder(repositing_folder)
     cd(repositing_folder)
 else
     mkdir(repositing_folder)
+    cd(repositing_folder)
 end
 
 save(savefilepattern, savefilepattern)

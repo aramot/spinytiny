@@ -88,6 +88,7 @@ if strcmpi(Router, 'Background') %%% For drawing the general background ROI
     glovar.ROI(ROInum+1) = drawellipse(axes1,'Tag', ['ROI', num2str(ROInum)], 'LineWidth', edgewidth, 'FaceAlpha', 0, 'Color', linecolor, 'DrawingArea', 'unlimited', 'HandleVisibility', 'on');
 elseif strcmpi(Router, 'Spine') %%% First round drawing, just temporary while the fine-select mode is initiated
     axes(axes1)
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     InsertOpt = get(glovar.figure.handles.InsertSpine_ToggleButton,'Value');
     if InsertOpt
         allROIPos = get(gui_CaImageViewer.ROI, 'Center');
@@ -95,6 +96,7 @@ elseif strcmpi(Router, 'Spine') %%% First round drawing, just temporary while th
         ROInum = ind;
 %         ROInum = glovar.InsertPoint;
     end
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     glovar.ROI(ROInum+1) = rectangle('Position', Fl_ROI, 'EdgeColor', linecolor, 'Curvature', [0 0], 'Tag', ['ROI', num2str(ROInum), ' Starter'], 'Linewidth', edgewidth);
     glovar.ROItext(ROInum+1) = text(Fl_ROI(1)-2, Fl_ROI(2)-2, num2str(ROInum), 'color', 'white', 'Tag', ['ROI', num2str(ROInum), ' Text Starter'], 'ButtonDownFcn', 'DeleteROI', 'FontSize', textsize);    
 elseif strcmpi(Router, 'FineSelect') && ROInum ~=0

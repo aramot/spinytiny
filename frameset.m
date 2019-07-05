@@ -16,14 +16,16 @@ if strcmpi(eventdata.Key, 'return')
         set(gui_CaImageViewer.figure.handles.Frame_EditableText, 'String', num2str(ImageNum));
     end
     merged = get(gui_CaImageViewer.figure.handles.Merge_ToggleButton, 'Value');
-%   
+    
+%   %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%% zStack Section
     if ishandle(zStack_Interface.figure)
         SliceFocus = regexp(zStack_Interface.CurrentSliceEdit.String, '[0-9]+_*', 'match');
         if zStack_Interface.LimittoSlice
             numslices = str2num(zStack_Interface.SlicesEdit.String);
             currentslice = str2double(SliceFocus{1});
             allmults = [currentslice:numslices:length(gui_CaImageViewer.GCaMP_Image)];       
-            if isempty(find(allmults==ImageNum))
+            if isempty(find(allmults==ImageNum,1))
                 [~, ind] = min(abs(allmults-ImageNum));
                 ImageNum = allmults(ind);
             end
@@ -36,7 +38,8 @@ if strcmpi(eventdata.Key, 'return')
         end
     end
     set(gui_CaImageViewer.figure.handles.ImageSlider_Slider, 'Value', ImageNum);
-
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    
     if aveproj || maxproj
         channel1 = gui_CaImageViewer.ch1image;
         if twochannels

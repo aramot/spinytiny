@@ -2077,7 +2077,7 @@ uimenu(c1, 'Label', 'Set as active', 'Callback', @CategorizeSpines);
 
 if length(warpmatrix)>2
     sessiontarget = inputdlg('What instance of the field is this?', '', 1,{'2'});
-    sessiontarget = str2num(sessiontarget{1});
+    sessiontarget = sessiontarget{1};
 else
     sessiontarget = 2;
 end

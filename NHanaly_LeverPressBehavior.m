@@ -24,7 +24,7 @@ xsg_data = AP_load_xsg_continuous(pname);
 
 %%%%%%%%%%%%%% Detect whether opto session %%%%%%%%%%%%%%%%%
 if ~isempty(find(~cell2mat(cellfun(@(x) isempty(regexp(x,'Opto', 'once')), xsg_data.channel_names, 'uni', false)),1))
-    isOptoSession = 1;
+    isOptoSession = 0;
 else
     isOptoSession = 0;
 end

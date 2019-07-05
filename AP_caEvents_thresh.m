@@ -35,12 +35,14 @@ for curr_cell = use_cells'
     below_zero_trace = curr_trace(curr_trace < 0);
     noise_est = std([below_zero_trace -below_zero_trace]);
     
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%% NH edited %%% set minimum value (important for silent spines)
     high_thresh = noise_est*thresh;
     lower_lim = 0.2;
     if high_thresh<lower_lim
         high_thresh = lower_lim;
     end
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
     thresh_lo = temp_smooth_30 > noise_est*1;
     thresh_hi = temp_smooth_30 > high_thresh;

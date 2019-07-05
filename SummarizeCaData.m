@@ -87,112 +87,31 @@ isbeingcalled = length(dbstack)>1;  %%% if the number of programs in 'dbstack' i
 %%%%%%%%%%%%%%%%%%%%% Find the file being called %%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%% First, preserve the called file name details, around which a
+%%% constrained naming pattern can be based (saved file name is not always
+%%% the same pattern, so impose your own pattern)
 
-if isstruct(File)
-    experimenter_initials = File.Filename(1:2);
-    folder = regexp(File.Filename, [experimenter_initials, '000?\d+'], 'match');
-    folder = folder{1};
-    Date = regexp(File.Filename, '_\d+_', 'match');
-    Date = Date{1};
-else
-    experimenter_initials = regexp(File, '[A-Z]{2}', 'match');
-    experimenter_initials = experimenter_initials{1};
-    folder = regexp(File, [experimenter_initials, '\d+[^_]'], 'match');
-    folder = folder{1};
-    Date = regexp(File, '\d{4,6}', 'match');
-    Date = Date{1};
-    if ispc
-        filestart = ['Z:', filesep, 'People'];
-    elseif isunix
-        filestart = [filesep,'usr',filesep,'local',filesep,'lab', filesep, 'People'];
-    else
-        error('Operating system not recognized as PC or Unix; terminating');
-    end
-    switch Experimenter
-        case 'Assaf'
-            targetdir = [filestart, filesep, Experimenter, filesep, 'Data', filesep, folder, filesep, Date, filesep, 'motion_corrected_tiffs', filesep, 'GFP', filesep, 'summed'];
-        case 'Pantong'
-            targetdir = [filestart, filesep, Experimenter, filesep, 'Data', filesep, folder, filesep, Date, filesep, 'Snfr', filesep, 'summed'];
-        otherwise
-            if isOpto
-                targetdir = [filestart, filesep, Experimenter, filesep, 'Data', filesep, folder, filesep, Date, filesep,'Optoping',filesep, 'summed'];
-            else
-                targetdir = [filestart, filesep, Experimenter, filesep, 'Data', filesep, folder, filesep, Date, filesep, 'summed'];
-            end
-    end
-    if isfolder(targetdir)
-        cd(targetdir)
-        files = fastdir(targetdir, {'Analyzed', Analyzer});
-        check = 0;    
-        if isempty(files)
-            disp('Raw data file not found; PULLING FROM PREVIOUS ANALYSIS!!')
-            cd('E:\ActivitySummary')
-            files = fastdir(cd, folder);
-            for i = 1:length(files)
-                if ~isempty(regexp(files{i}, [folder, '_', Date], 'once')) && isempty(regexp(files{i},'Poly', 'once'))
-                    load(files{i})
-                end
-            end
-        else
-            if length(files)>1      %%%% INSERT NEW CODE FOR USING MOST RECENT FILE
-                for i = 1:length(files)
-                    file_info = dir(files{i});
-                    filedate(i) = file_info.datenum;
-                end
-                [~,I] = max(filedate);
-                latestfile = files{I};
-                load(latestfile)
-                check = 1;
-            else
-                load(files{1});
-                check = 1;
-            end
-            if ~check
-                disp('Raw data file not found; PULLING FROM PREVIOUS ANALYSIS!!')
-                cd('E:\ActivitySummary')
-                files = fastdir(cd, folder);
-                for i = 1:length(files)
-                    if ~isempty(regexp(files{i}, [folder, '_', Date], 'once')) && isempty(regexp(files{i},'Poly', 'once'))
-                        load(files{i})
-                    end
-                end
-            end
-        end
+experimenter_initials = regexp(File, '[A-Z]{2,3}', 'match');
+experimenter_initials = experimenter_initials{1};
+animal = regexp(File, [experimenter_initials, '\d+[^_]'], 'match');
+animal = animal{1};
+Date = regexp(File, '\d{4,6}', 'match');
+Date = Date{1};
 
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %%% set loaded file as generic variable name, "File"
-        try
-            eval(['File =' folder, '_', Date, '_001_001_summed_50_Analyzed;'])
-        catch
-            temp = who(['*', experimenter_initials, '*']);
-            eval(['File =', temp{1}, ';']);
-        end
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    else
-        disp('COULD NOT LINK TO TARGET DIRECTORY; PULLING FROM PREVIOUS ANALYSIS!!')
-        cd('E:\ActivitySummary')
-        files = fastdir(cd, folder);
-        for i = 1:length(files)
-            if ~isempty(regexp(files{i}, [folder, '_', Date], 'once')) && isempty(regexp(files{i},'Poly', 'once'))
-                load(files{i})
-            end
-        end
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %%% set "file" data to be used
-        try
-            eval(['File =' folder, '_', Date, '_Summary;'])
-        catch
-            temp = who(['*', experimenter_initials, '*']);
-            eval(['File =', temp{1}, ';']);
-        end
-        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    end
+[dirtouse, filetoload] = FindRawDataFile(File, Experimenter, Analyzer, isOpto);
+load([dirtouse,'/',filetoload])
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% set loaded file as generic variable name, "File"
+try
+    eval(['File =' filetoload(1:end-4), ';'])    %%% Filename should always have the file extension at the end, in format .xyz; exclude these characters, as they are not included in the workspace
+catch
+    temp = who(['*', experimenter_initials, '*']);
+    eval(['File =', temp{1}, ';']);
 end
-
 filename = regexp(File.Filename, '.tif', 'split');
 filename = filename{1};
-File.Filename = [folder, '_', Date(3:end), '_001_001_summed_50_Analyzed'];
-
+File.Filename = filename;
 analyzed = File;
 Scrsz = get(0, 'Screensize');
 
@@ -226,8 +145,8 @@ foldertouse = 'E:\ActivitySummary';
 if analyzed.UsePreviousPreferences
     cd(foldertouse)
     try
-        load([folder, '_', Date, '_Summary']);
-        eval(['SummaryFile = ', folder, '_', Date, '_Summary;'])
+        load([animal, '_', Date, '_Summary']);
+        eval(['SummaryFile = ', animal, '_', Date, '_Summary;'])
     catch
         return
     end
@@ -307,8 +226,7 @@ if File.NumberofSpines ==  0 || File.NumberofSpines ~= length(File.deltaF)
 end
 % 
 SpineNo = randi(File.NumberofSpines,1); %%% Will choose a random spine from the available ones for this file
-% SpineNo = 6;  %%% Manually select spine to be considered
-
+% SpineNo = 26;  %%% Manually select spine to be considered
 
 DendNum = File.NumberofDendrites;
 % DendriteChoice = 2;
@@ -384,7 +302,7 @@ Options.BeingAnalyzed = 'Spine';
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 for i = 1:numberofSpines
-    [spine_thresh(i,1), spinedriftbaseline(i,:), processed_dFoF(i,:)] = AnalyzeTrace2(spinedatatouse{i}, Options);
+    [spinedriftbaseline(i,:), processed_dFoF(i,:)] = AnalyzeTrace(spinedatatouse{i}, Options);
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -403,7 +321,6 @@ for i = 1:numberofSpines
     frequency(i,1) = (nnz(diff(trueeventcount(i,:)>0.5)>0)/((length(File.Time)/ImagingFrequency)/60))';
 end
 
-analyzed.SpineThreshold = spine_thresh;
 analyzed.StandardDeviationofNoise = spread;
 
 
@@ -490,12 +407,8 @@ analyzed.Processed_dFoF = processed_dFoF;
 %%%%%%%%%%%
 %%%%%%%%%%%%%%%%
 
-Dtruebaseline = zeros(DendNum,length(File.Dendrite_dFoF(1,:)));
 Ddriftbaseline = zeros(DendNum,length(File.Dendrite_dFoF(1,:)));
 processed_Dendrite = zeros(DendNum, length(File.Dendrite_dFoF(1,:)));
-Dthresh = zeros(DendNum,1);
-Dmed = zeros(DendNum,1);
-Dspread = zeros(DendNum,1);
 Damp = zeros(DendNum,1);
 Dfreq = zeros(DendNum,1);
 globaldendriteevents = cell(1,DendNum);
@@ -508,8 +421,6 @@ File.Poly_Fluorescence_Measurement = File.Poly_Fluorescence_Measurement(~cell2ma
 % end
 
 Pdriftbaseline = zeros(cumulativepolypoints(end),length(File.Dendrite_dFoF(1,:)));
-Pthresh = zeros(cumulativepolypoints(end),1);
-
 
 square_Poly = cell(1,DendNum);
 floored_Poly = cell(1,DendNum);
@@ -563,7 +474,7 @@ for i = 1:DendNum
         Options.BeingAnalyzed = 'Poly';
 
         %%%%%%%%%%%%%%
-        [Pthresh(j,1), Pdriftbaseline(i,:), processed_PolyROI{j}] = AnalyzeTrace(rawpoly{j}, Options);
+        [Pdriftbaseline(i,:), processed_PolyROI{j}] = AnalyzeTrace(rawpoly{j}, Options);
         %%%%%%%%%%%%%%
         
         %%% Binarization    
@@ -610,7 +521,7 @@ for i = 1:DendNum
     Options.BeingAnalyzed = 'Dendrite';
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    [Dthresh(i,1), Ddriftbaseline(i,:), processed_Dendrite(i,:)] = AnalyzeTrace(dendritedatatouse(i,:), Options);
+    [Ddriftbaseline(i,:), processed_Dendrite(i,:)] = AnalyzeTrace(dendritedatatouse(i,:), Options);
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
     floored_Dend = zeros(DendNum,length(processed_Dendrite(1,:)));
@@ -618,15 +529,12 @@ for i = 1:DendNum
 
 end
 
-analyzed.DendriteThreshold = Dthresh;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-[square_Dend, floored_Dend ,Dendtrueeventcount, Dtopspikes, Dboth] =  DetectEvents(processed_Dendrite, 3);
+[square_Dend, floored_Dend ,Dendtrueeventcount, Dtopspikes, Dboth] =  DetectEvents2(processed_Dendrite, 3);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 Dglobal = zeros(DendNum,length(processed_Dendrite(1,:)));
-ternarized_Dend = Dtopspikes;
-
 dendtimebuffer = round(ImagingFrequency/4);
 
 for i = 1:File.NumberofDendrites
@@ -671,10 +579,6 @@ end
 %%%%%%%%%%%%%%%%
 
 if showFig
-    k = zeros(1,length(File.Time));
-    k(1:end) = Dthresh(DendriteChoice,1);
-%     m = zeros(1,length(File.Time)) * Dmed(DendriteChoice,1);
-
     figure('Position', [10, 50 ,Scrsz(3)/2,Scrsz(4)/2]); hold on;
     rawdend = subplot(2,2,1:2);
     plot(File.Time, dendritedatatouse(DendriteChoice,:), 'Color', [0.2 0.2 0.2]);
@@ -683,7 +587,7 @@ if showFig
     legend({'Raw Data', 'Baseline'}, 'Location', 'SouthEastOutside')
     
     xlabel('Frames')
-    ylabel(['Events for Dendrite ', num2str(DendriteChoice)])
+    ylabel(['Raw Trace for Dendrite ', num2str(DendriteChoice)])
     
     procdend = subplot(2,2,3:4);
     plot(File.Time, processed_Dendrite(DendriteChoice,:), 'Color', [0.2 0.2 0.2]); hold on;
@@ -691,10 +595,8 @@ if showFig
     plot(1:length(File.Time), topspikes, 'Color', dred, 'LineWidth', 2);
 %     plot(File.Time(Dend_Locations{DendriteChoice}), Dend_Peaks{DendriteChoice}+0.05, 'kv', 'markerfacecolor', lgreen);
     plot(File.Time, Dboth(DendriteChoice,:)*1.5, 'Color', yellow, 'Linewidth', 2)
-
-    plot(File.Time, k, '--', 'Color', lgreen, 'Linewidth', 2)
     plot(File.Time, Dglobal(DendriteChoice,:)*1.5, 'Color', orange, 'Linewidth', 2)
-    plot(File.Time, Dendtrueeventcount(DendriteChoice,:)*Dthresh(DendriteChoice,1),'Color', lblue, 'LineWidth', 2);
+    plot(File.Time, Dendtrueeventcount(DendriteChoice,:),'Color', lblue, 'LineWidth', 2);
     
     legend({'Smoothed Data', 'Activity above Thresh', 'Binary Activity', 'Threshold', 'Global Event', 'Counted Events'}, 'Location', 'SouthEastOutside')        
     pause(0.1)
@@ -717,7 +619,6 @@ end
 
 Dboth(Dboth>1) = 1;
 Dglobal(Dglobal>1) = 1;
-
 
 analyzed.Dendrite_Binarized = Dglobal;
 analyzed.Processed_Dendrite_dFoF = processed_Dendrite;
@@ -795,10 +696,9 @@ for i = 1:numberofSpines
             %%% This is the last decision variable on whether to use
             %%% dendrite-corrected or dendrite-removed data!!!
             %%%
-            switch ImagingSensor
-                case 'GCaMP'
-                    synapticEvents(i,:) = analyzed.SynapseOnlyBinarized_DendriteSubtracted(i,:)-Dglobal(onDend,:);
-                case 'GluSnFR'
+            if strcmpi(ImagingSensor, 'GCaMP')
+                    synapticEvents(i,:) = analyzed.SynapseOnlyBinarized_DendriteSubtracted(i,:)-square_Dend(onDend,:);
+            elseif strcmpi(ImagingSensor, 'GluSNFR')
                     synapticEvents(i,:) = square(i,:);
             end
             synapseOnlyActivity(i,:) = processed_dFoF(i,:).*synapticEvents(i,:);
@@ -830,7 +730,9 @@ end
 
 if showFig
     rasterfig = figure('Position', [Scrsz(3)/2, Scrsz(4)/2.5,Scrsz(3)/2,Scrsz(4)/2]); 
-    imagesc(synapticEvents)
+    rasterdata = analyzed.SynapseOnlyBinarized_DendriteSubtracted;
+    rasterdata(isnan(rasterdata))=0;
+    imagesc(rasterdata)
     set(rasterfig, 'ColorMap', hot)
     xlabel('Frames');
     ylabel('Spine number');
@@ -915,13 +817,13 @@ counter = 1;
 
 % switch method 
 %     case 'new'
-        ROIfile = fastdir(targetdir, 'DrawnBy', 'Volume');
+        ROIfile = fastdir(dirtouse, 'DrawnBy', 'Volume');
         if length(ROIfile)>1
             filesdrawnbyuser = find(~cellfun(@isempty, cellfun(@(x) regexp(x, Analyzer, 'once'), ROIfile, 'uni', false)));
             if length(filesdrawnbyuser) == 1
                 ROIfile = ROIfile{filesdrawnbyuser};
             else
-                dirc = dir(targetdir);
+                dirc = dir(dirtouse);
                 dirc = dirc(~cellfun(@isdir,{dirc(:).name}));
                 dirc = dirc(cell2mat(cellfun(@(x) ~isempty(regexp(x, 'DrawnBy')), {dirc(:).name}, 'uni', false)));
                 [~,I] = max([dirc(:).datenum]);
@@ -933,7 +835,7 @@ counter = 1;
         else
             ROIfile = ROIfile{1};
         end
-        load([targetdir, '\', ROIfile])
+        load([dirtouse, '\', ROIfile])
         eval(['ROIfile = ', ROIfile(1:end-4), ';']);
 %     case 'old'
 %         ROIfile = [];
@@ -1008,7 +910,7 @@ r_all(isnan(r_all)) = 0;
 OverallCorrelations = r_all;
 OverallPvalue = p_all;
 
-[r, p] = corrcoef(analyzed.SynapseOnlyBinarized');
+[r, p] = corrcoef(analyzed.SynapseOnlyBinarized_DendriteSubtracted');
 r(isnan(r)) = 0;
 SpineToSpineCorrelation = r;
 SpineToSpinePValue = p;
@@ -1025,11 +927,11 @@ CausalPValue = p_causal;
 
 
 nonnan = find(~isnan(SpineToSpineDistance)); %% Find the indices for  non-NaN values
-switch ImagingSensor
-    case 'GCaMP'
+if strcmpi(ImagingSensor, 'GCaMP')
         Correlations = SpineToSpineCorrelation(nonnan);
-    case 'GluSnFR'
+elseif strcmpi(ImagingSensor, 'GluSNFR')
         Correlations = OverallCorrelations(nonnan);
+else
 end
 pValues = SpineToSpinePValue(nonnan);
 wAPCorrelations = SpwAPCorrelation(nonnan);
@@ -1410,13 +1312,13 @@ end
 cd('E:\ActivitySummary')
 
 if isOpto
-    savefile = [folder, '_' Date, '_OptoSummary'];
-    polyfile = [folder, '_',Date, '_OptoPolySummary'];
+    savefile = [animal, '_' Date, '_OptoSummary'];
+    polyfile = [animal, '_',Date, '_OptoPolySummary'];
     eval([savefile, '= analyzed;']);
     eval([polyfile, '= poly;']);
 else
-    savefile = [folder, '_' Date, '_Summary'];
-    polyfile = [folder, '_',Date, '_PolySummary'];
+    savefile = [animal, '_' Date, '_Summary'];
+    polyfile = [animal, '_',Date, '_PolySummary'];
     eval([savefile, '= analyzed;']);
     eval([polyfile, '= poly;']);
 end
@@ -1431,7 +1333,7 @@ save(polyfile, polyfile, '-v7.3');
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-disp([folder, '_', Date, ' (session ', num2str(analyzed.Session),')',' analysis complete'])
+disp([animal, '_', Date, ' (session ', num2str(analyzed.Session),')',' analysis complete'])
 
 % spatialfit = robustfit(SpineToSpineDistance, SpineToSpineCorrelation);
 % fitcurve = spatialfit(2)*([0:0.1:max(SpineToSpineDistance)])+spatialfit(1);

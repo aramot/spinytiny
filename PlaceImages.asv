@@ -3,19 +3,7 @@ function [ch1image, ch2image] = PlaceImages(channel1, channel2, CommandSource)
 global gui_CaImageViewer
 global zStack_Interface
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% For all operations that call this funcion - with the exception of the
-%%% initial imaging loading, a uiobject is used. Make this the current
-%%% object at the end of calling this function to easily resume normal
-%%% operations
 
-if ~strcmpi(CommandSource, 'Loader') 
-    current_uiobject = get(gco, 'Tag');
-else 
-    current_uiobject = [];
-end
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Initialize basic image parameters by pulling data from GUI
 
 twochannels = get(gui_CaImageViewer.figure.handles.TwoChannels_CheckBox, 'Value');
@@ -62,7 +50,6 @@ Green_Figure = gui_CaImageViewer.figure.handles.GreenGraph;
 Red_Figure = gui_CaImageViewer.figure.handles.RedGraph;
 
 filterwindow = str2num(get(gui_CaImageViewer.figure.handles.SmoothingFactor_EditableText, 'String'));
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%% Find images in the axes, if they exist
 GreenChild = findobj(Green_Figure, 'Type', 'image');
@@ -71,9 +58,6 @@ RedChild = findobj(Red_Figure, 'Type', 'image');
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 mapchoice = gui_CaImageViewer.CurrentCMap;
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 if strcmpi(CommandSource, 'Loader')
     channel1 = channel1{1};
@@ -552,9 +536,8 @@ elseif strcmpi(CommandSource, 'Adjuster')
         OldCAxis = OverlapFig.UserData.CAxis; OldRed = OldCAxis(:,1); OldGreen = OldCAxis(:,2); OldBlue = OldCAxis(:,3);
         if ImageNum == 3
            NewCAxis = [OldRed(1) OldGreen(1) AdjLow; OldRed(2) OldGreen(2) AdjHigh];
-           NewIm = imadjust(OverlapImage, NewCAxis, [], green_gamma);
-           OverlapFig.UserData.CAxis = NewCAxis;
-        elseif ImageNum == 2 %%% Channel 2/Session 1 is green!
+           NewIm = imadjust(Olver
+        if ImageNum == 2 %%% Channel 2/Session 1 is green!
            NewCAxis = [OldRed(1) AdjLow OldBlue(1); OldRed(2) AdjHigh OldBlue(2)];
            NewIm = imadjust(OverlapImage, NewCAxis,[], green_gamma);
            OverlapFig.UserData.CAxis = NewCAxis;
@@ -567,11 +550,5 @@ elseif strcmpi(CommandSource, 'Adjuster')
         end
         OverlapAxProp.Children.CData = NewIm;
     end
+    end
 end
-
-if ~isempty(current_uiobject)
-    eval(['uicontrol(gui_CaImageViewer.figure.handles.', current_uiobject,')'])
-end
-
-end
-

@@ -1,6 +1,8 @@
 function NewSpineAnalysis(varargin)
 
-for animal = 1:length(varargin)
+sensor = varargin(end);
+
+for animal = 1:length(varargin)-1
     
     experimentnames = varargin{animal}; 
     FilterforMovementDends = 0;
@@ -122,11 +124,11 @@ for animal = 1:length(varargin)
     
     secondspostmovementstart = 3;
     
-    %%% When using GCaMP
-% 	ImagingFrequency = 30.49;
-    
-    %%% When using GluSNFR
-	ImagingFrequency = 60;
+    if strcmpi(sensor, 'GCaMP')
+    	ImagingFrequency = 30.49;
+    elseif strcmpi(sensor, 'GluSNFR')
+    	ImagingFrequency = 60;
+    end
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
@@ -1753,5 +1755,5 @@ for animal = 1:length(varargin)
     save(fname, fname)
 
     disp(['Analysis of ', experimentnames, ' complete'])
-    clearvars -except varargin
+    clearvars -except varargin sensor
 end

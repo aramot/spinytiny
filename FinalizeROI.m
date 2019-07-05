@@ -1,7 +1,17 @@
 function FinalizeROI(hObject, eventdata, ROInum)
 
-%%% This function is generally designed to manipulate the eliptical ROIs
-%%% created using the function DrawROI. 
+%%% This function is generally designed to finalize the eliptical ROIs
+%%% created using the function DrawROI. In most cases, this function simply
+%%% adds a finalize version of the fine-tuned ellipse drawn in the pop-up
+%%% menu after initializing "DrawROI", adding the ellipse to the
+%%% CaImageViewer main window and tacking on context menus and listener
+%%% functions for the future manipulation of the ROI. Thus, each ROI
+%%% requires 1) the initial drawing, including embedding an appropriate ROI
+%%% tag, 2) addition of conetext menus, which are created by uicontextmenu,
+%%% then modified by adding menu elements with uimenu, and 3) adding
+%%% listener functions, including an option for deleting the ROI, and a
+%%% generalized mechanism for declaring and storing the ROI number that was
+%%% clicked, which allows flexible access for any called functions
 
 program = get(gcf);
 
@@ -34,10 +44,14 @@ catch
 end
 axes(gui_CaImageViewer.figure.handles.GreenGraph)
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% If inserting an ROI on a dendrite, first delete all of the ROIs that come
+%%% after the new ROI (the ROI number being decided based on the closest
+%%% existing ROI to the one being drawn (performed in DrawROI) so that they
+%%% can be redrawn with their updated ROI number/tag.
 
 InsertOpt = get(glovar.figure.handles.InsertSpine_ToggleButton,'Value');
 if InsertOpt 
-%     ROInum = glovar.InsertPoint;
     AllROIs = flipud(findobj(gui_CaImageViewer.figure.handles.GreenGraph, 'Type', 'images.roi.ellipse', '-and', '-not', {'-regexp', 'Tag', 'Dendrite'}, '-and', '-not', {'-regexp', 'Tag', 'Background'},'-and', '-not', 'Tag', ['ROI0']));
     AllBackgrounds = nan(1,length(gui_CaImageViewer.BackgroundROI));
     AllBackgrounds(logical(~isnan(gui_CaImageViewer.BackgroundROI))) = flipud(findobj('Type', 'rectangle', '-and', {'-regexp', 'Tag', 'Background'}));    
@@ -61,11 +75,13 @@ end
 delete(findobj('Type', 'rectangle', '-and', 'Tag', ['ROI', num2str(ROInum), ' Starter']))
 %         delete(findobj('Type', 'rectangle', '-and', 'Tag', ['BackgroundROI', num2str(ROInum)]))
 delete(findobj('Type', 'text', '-and', 'Tag', ['ROI', num2str(ROInum), ' Text Starter']))
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%%%%%%%%%%%%%%%%%%%
-%%% Draw final ROI
-%%%%%%%%%%%%%%%%%%%%
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%% Draw final ROI %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 cmap = glovar.CurrentCMap; 
 
 switch cmap
@@ -135,11 +151,14 @@ if InsertOpt %%% Redraw the deleted ROIs, now with the numbers increased by 1
     for a = ROInum:length(oldpositions)
         gui_CaImageViewer.ROI(a+2) = drawellipse('Center', oldpositions{a}(1:2), 'SemiAxes', oldsemiaxes{a}, 'RotationAngle', oldrotations{a}, 'AspectRatio', oldAR{a}, 'Tag', ['ROI', num2str(a+1)], 'UIContextMenu', c, 'Color', linecolor, 'HandleVisibility', 'on', 'Label', num2str(a+1), 'Linewidth', 1, 'FaceAlpha', 0, 'InteractionsAllowed', 'none');
         roiget = get(gui_CaImageViewer.ROI(a+2));
-        c = roiget.UIContextMenu;
+        c = uicontextmenu;
         uimenu(c, 'Label', 'Add Surround Background', 'Callback', @ModifyROI);
         uimenu(c, 'Label', 'Remove Surround Background', 'Callback', @ModifyROI);
         uimenu(c, 'Label', 'Set as eliminated', 'Callback', @CategorizeSpines);
         uimenu(c, 'Label', 'Set as active', 'Callback', @CategorizeSpines);
+        roiget.UIContextMenu = c;
+        gui_CaImageViewer.ROIlistener{a+2} = listener(findobj(gui_CaImageViewer.ROI(a+2)), 'DeletingROI', @DeleteROI);
+        addlistener(findobj(gui_CaImageViewer.ROI(a+2)), 'ROIClicked', @DeclareROI)
         if twochannels
             axes(axes2)
             gui_CaImageViewer.ROIred(a+2) = drawellipse('Center', oldpositions{a}(1:2), 'SemiAxes', oldsemiaxes{a}, 'RotationAngle', oldrotations{a}, 'AspectRatio', oldAR{a}, 'Tag', ['ROIred', num2str(a+1)], 'UIContextMenu', c, 'Color', 'c', 'HandleVisibility', 'on', 'Label', num2str(a+1), 'Linewidth', 1, 'FaceAlpha', 0, 'InteractionsAllowed', 'none');
@@ -149,6 +168,8 @@ if InsertOpt %%% Redraw the deleted ROIs, now with the numbers increased by 1
             uimenu(c, 'Label', 'Remove Surround Background', 'Callback', @ModifyROI);
             uimenu(c, 'Label', 'Set as eliminated', 'Callback', @CategorizeSpines);
             uimenu(c, 'Label', 'Set as active', 'Callback', @CategorizeSpines);
+            roiget.UIContextMenu = c;
+            gui_CaImageViewer.ROIlistener{a+2} = listener(findobj(gui_CaImageViewer.ROI(a+2)), 'DeletingROI', @DeleteROI);
             axes(axes1)
         end
     end

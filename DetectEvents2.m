@@ -1,5 +1,7 @@
 function [square, floored,trueeventcount, topspikes, both] =  DetectEvents2(data, threshold)
 
+data(isnan(data)) = 0;
+
 caEvents = AP_caEvents_thresh(data,threshold,0);
 
 floored = caEvents;

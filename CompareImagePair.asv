@@ -77,29 +77,25 @@ end
 
 figure('Name', 'Side-by-side Comparison','Position', [336,285,1217,522], 'NumberTitle', 'off'); 
 imwidth = 0.8/length(im);
-im_ax{1} = axes('Units', 'Normalized','Position', [0.05 0.05 imwidth 0.9], 'XTick', [], 'YTick', []); 
+im{1} = axes('Units', 'Normalized','Position', [0.05 0.05 imwidth 0.9], 'XTick', [], 'YTick', []); 
 imshow(centeredimage,[]); colormap(fire);
 title('Image 1')
 ax_count = 2;
 for al = 2:length(im)
-    x_pos = 0.05+((al-1)*0.05)+((al-1)*imwidth);
-    im_ax{ax_count} = axes('Units', 'Normalized','Position', [x_pos 0.05 imwidth 0.9], 'XTick', [], 'YTick', []);
+    x_pos = 0.05+(ax_count*0.1)+(ax_count*imwidth);
+    im{ax_count} = axes('Units', 'Normalized','Position', [x_pos 0.05 im 0.9], 'XTick', [], 'YTick', []);
     imshow(shiftedimage{al}, []); colormap(fire);
     title(['Image ', num2str(al)])
     ax_count = ax_count+1;
 end
 
 figure('Name', 'Side-by-side Comparison','Position', [336,255,1217,522], 'NumberTitle', 'off');  
-im_ax{ax_count} = axes('Units', 'Normalized','Position', [0.05 0.05 imwidth 0.9], 'XTick', [], 'YTick', []); 
+im3 = axes('Units', 'Normalized','Position', [0.05 0.05 0.4 0.9], 'XTick', [], 'YTick', []); 
 imshow(im2double(mobileimage)/max(im2double(mobileimage(:)))-im2double(centeredimage)/max(im2double(centeredimage(:))),[]); 
 title('Image difference pre-correction', 'Fontsize', 12)
-for al = 2:length(im)
-    x_pos = 0.05+((al-1)*0.05)+((al-1)*imwidth);
-    im_ax{ax_count} = axes('Units', 'Normalized','Position', [x_pos 0.05 imwidth 0.9], 'XTick', [], 'YTick', []); 
-    ax_count = ax_count+1;
-    imshow(im2double(shiftedimage{al})/max(im2double(shiftedimage{al}(:)))-im2double(centeredimage)/max(im2double(centeredimage(:))),[]);
-    title('Image difference post-correction', 'Fontsize', 12)
-end
+im4 = axes('Units', 'Normalized','Position', [0.55 0.05 0.4 0.9], 'XTick', [], 'YTick', []); 
+imshow(im2double(shiftedimage{al})/max(im2double(shiftedimage{al}(:)))-im2double(centeredimage)/max(im2double(centeredimage(:))),[]);
+title('Image difference post-correction', 'Fontsize', 12)
 
 OverlapFig = figure('Name', 'RGB Overlap','Position', [336,255,1217,522], 'NumberTitle', 'off');  
 normalized_centeredimage = im2double(centeredimage)/max(im2double(centeredimage(:)));
@@ -112,10 +108,10 @@ for al = 2:length(im)
     shiftedimage_RGB(1:end,1:end,al) = normalized_shiftedimage;
     RGBim = RGBim+shiftedimage_RGB;
 end
-im_ax{ax_count} = axes('Units', 'Normalized','XTick', [], 'YTick', []);
+im5 = axes('Units', 'Normalized','XTick', [], 'YTick', []);
 imshow(RGBim)
 title('Color-coded alignment', 'Fontsize', 12)
-linkaxes([im_ax{:}, gui_CaImageViewer.figure.handles.GreenGraph], 'xy')
+linkaxes([im1,im2,im3,im4,im5, gui_CaImageViewer.figure.handles.GreenGraph], 'xy')
 OverlapFig.UserData.CAxis = [0 0 0; 1 1 0.001];
 OverlapFig.UserData.OriginalImage = RGBim;
 

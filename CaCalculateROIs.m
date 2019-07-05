@@ -412,8 +412,8 @@ end
                 if(isNaNPossible);Background_Intensity = Background_Intensity(~isnan(Background_Intensity));end
                 Total_Background_Intensity = sum(Background_Intensity(:));
                 Background_Pixel_num = Total_Background_Intensity/nanmean(Background_Intensity(:));
-                Background_Mean_Int = nanmean(Background_Intensity(:));
-
+%                 Background_Mean_Int = nanmean(Background_Intensity(:));
+                Background_Mean_Int  = 0;
 %                 if twochannels == 1
 %                     Background_Red = current_image(ROIreg{1},2);
 %                     Total_Background_Red = sum(Background_Red(:));
@@ -441,6 +441,9 @@ end
                             Fluorescence_Measurement{i-1}(1,actual_image_counter) = (tmp_mean_intensity-Background_Mean_Int)*Pixel_Number{i-1};
                         end
                     else
+                        if Background_Mean_Int>tmp_mean_intensity ||(tmp_mean_intensity-Background_Mean_Int) <0
+                            k = 1;
+                        end
                         Fluorescence_Measurement{i-1}(1,actual_image_counter) = (tmp_mean_intensity-Background_Mean_Int)*Pixel_Number{i-1};
                     end
 %                     if twochannels == 1
@@ -592,16 +595,15 @@ zoomval = str2num(get(gui_CaImageViewer.figure.handles.Zoom_EditableText, 'Strin
 
 fullfname = gui_CaImageViewer.filename;
 
-a.deltaF = deltaF;
-a.dF_over_F = dF_over_F;
+a.Background_Intensity = Background_Intensity;
 a.Time = Time;
 a.Fluorescence_Intensity = Fluorescence_Intensity;
 a.Total_Intensity = Total_Intensity;
 a.Pixel_Number = Pixel_Number;
 a.Fluorescence_Measurement = Fluorescence_Measurement;
+a.deltaF = deltaF;
+a.dF_over_F = dF_over_F;
 a.Filename = fullfname;
-% a.Poly_deltaF = Poly_deltaF;
-% a.Poly_dF_over_F = Poly_dF_over_F;
 a.Poly_Fluorescence_Intensity = Poly_Fluorescence_Intensity;
 a.Poly_Total_Intensity = Poly_Total_Intensity;
 a.Poly_Pixel_Number = Poly_Pixel_Number;
@@ -722,6 +724,12 @@ end
 
 scrsz = get(0, 'ScreenSize');
 set(timecourse_h, 'Position', [0, scrsz(2), scrsz(3)/2, scrsz(4)]);
+
+%% Figure 2: Plot Background Intensity;
+
+figure('Position', [scrsz(3)/2+1,scrsz(2), scrsz(3)/2,scrsz(4)]);
+plot(Background_Intensity, 'linewidth', 3)
+
 
 
 function y = sloppy_mean(x,dim)
