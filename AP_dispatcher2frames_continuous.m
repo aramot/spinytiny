@@ -48,7 +48,7 @@ trial_channel = cellfun(@(x) strcmp(x,'Trial_number'),xsg_data.channel_names);
 curr_trial_list = AP_ReadBitCode(xsg_data.channels(:,trial_channel));
 
 % loop through those trials, find the offsets
-for curr_trial_indx = 1:size(curr_trial_list,1);
+for curr_trial_indx = 1:size(curr_trial_list,1)
     
     curr_trial = curr_trial_list(curr_trial_indx,2);
     

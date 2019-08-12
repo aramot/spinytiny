@@ -1,22 +1,15 @@
-function [Threshold, DriftBaseline, ProcessedData] = AnalyzeTrace(Data, Options)
+function [DriftBaseline, ProcessedData] = AnalyzeTrace(Data, Options)
     
-driftbaselinesmoothwindow = Options.DriftBaselineSmoothWindow;
-baselinesmoothwindow = Options.BaselineSmoothWindow;
-smoothwindow = Options.SmoothWindow;
-valueslimitfornoise = Options.ValuesLimitforNoise;
-valueslimitforbaseline = Options.ValuesLimitforBaseline;
+filterwindow = Options.SmoothWindow;
 traceoption = Options.TraceOption;
-BeingAnalyzed = Options.BeingAnalyzed;
 
+%%%%%%%%% Return outputs in the case of eliminated spines/placeholder ROIs
 if sum(isnan(Data)) == length(Data)
-    Threshold = 0.5;
     DriftBaseline = zeros(1,length(Data));
     ProcessedData = zeros(1,length(Data));
     return
 end
-
 %%% Data with NaN cannot be smoothed well, so find and fix any NaNs
-
 if any(isnan(Data))
    firstactualvalue = find(~isnan(Data),1,'first'); %%% If something is wrong with the early frames, they can be excluded; the code to do this makes these values NaN, so replace them with a baseline estimation from later data points
    if firstactualvalue > 10
@@ -24,22 +17,19 @@ if any(isnan(Data))
    end
    Data(isnan(Data)) = nanmedian(Data);
 end
-
 if sum(Data) == 0
-    Threshold = 1;
     DriftBaseline = zeros(1,length(Data));
     ProcessedData = Data;
     return
 end
 
-Data(Data<0) = 0;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Fix data near zero
 
-%%% Values at the ends can mess up smoothing; set the first few to the
-%%% median of the first 1000 frames
-
-Data(1:10) = Data(randi([20,100],1,10));
-Data(end-9:end) = Data(randi([length(Data)-100,length(Data)-20],1,10));
 raw = Data;
+if any(raw<1)
+    raw = raw + abs(min(raw));
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Pad data for protecting edges while estimating baseline
@@ -47,68 +37,85 @@ raw = Data;
 
 fornoise = raw;
 roundnum = 1;
-roundstodo = 10;
-rawmed = nanmedian(raw);
-rawspread = nanstd(raw);
-while roundnum<=roundstodo 
-    fornoise(fornoise>rawmed+(rawspread)) = rawmed+(rawspread);      %%% Cap off large and small values to pinch the data towards the true baseline
-    fornoise(fornoise<rawmed-(rawspread)) = rawmed-(rawspread);      %%%
-        rawspread = nanstd(fornoise);
-        rawmed = nanmedian(fornoise);
-    roundnum = roundnum+1;
+if strcmpi(Options.ImagingSensor, 'GCaMP')
+        downsample_ratio = 20;
+        windowsize = 30;
+        stepforKDE = 20;
+elseif strcmpi(Options.ImagingSensor, 'GluSNFR')
+        downsample_ratio = 20;
+        windowsize = 60;
+        stepforKDE = 20;
+else
 end
 
-padlength = 2000;
-pad_start = randi([1,length(fornoise)],1,padlength);
-pad_end = randi([1,length(fornoise)],1,padlength);
-padded_data = [fornoise(pad_start), raw, fornoise(pad_end)];
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Stop when analyzing:
+%%% (for debugging purposes)
+
+switch Options.BeingAnalyzed
+    case 'Spine'
+        k = 1;
+    case 'Poly'
+        k = 1;
+    case 'Dendrite'
+        k = 1;
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% First, construct a bounded
+%%% curve (roughly estimating baseline
+%%% around which a simulated baseline
+%%% can be used to pad the data, which
+%%% reduces edge effects of estimation
+
+est_base = baseline_kde(raw', downsample_ratio, round(Options.ImagingFrequency*30), stepforKDE)';
+
+if strcmpi(Options.ImagingSensor, 'GluSNFR')
+    if ~isempty(Options.ImageFramesatBoutSeparations)
+        SecondsPostStarttoIgnore = 2;
+        AcqStartPoints = [1;Options.ImageFramesatBoutSeparations];
+        IgnoreWindows = AcqStartPoints + ceil(SecondsPostStarttoIgnore*Options.ImagingFrequency);
+        for bout = 1:size(AcqStartPoints,1)
+            if AcqStartPoints(bout)>length(raw)
+                continue
+            end
+            if IgnoreWindows(bout)>length(raw)
+                IgnoreWindows(bout) = length(raw);
+            end
+            raw(AcqStartPoints(bout):IgnoreWindows(bout)) = est_base(AcqStartPoints(bout):IgnoreWindows(bout))+(std(raw)/3)*randn(1,length(AcqStartPoints(bout):IgnoreWindows(bout)));
+        end
+    end
+end
+
+pad_length = 1000;
+paddeddata = [est_base(randi([1 1000], 1,pad_length)), raw, est_base(randi([length(est_base)-pad_length, length(est_base)], 1,pad_length))];
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%% Baseline %%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
 %%% Kernel Density Estimation (Aki's method) %%%
-switch BeingAnalyzed
-    case 'Spine'
-        windowsize = 30;
-    case 'Poly'
-        windowsize = 30;
-    case 'Dendrite'
-        windowsize = 30;
-end
-truebaseline = baseline_kde(padded_data',20,windowsize,20);    %%% inputs = downsample ratio, window size, step
-truebaseline = truebaseline(padlength+1:end-padlength);
-DriftBaseline = truebaseline;
-
+truebaseline_kde = baseline_kde(paddeddata',downsample_ratio,windowsize,stepforKDE);    %%% inputs = data,downsample ratio, window size, step
+truebaseline_kde = truebaseline_kde(pad_length+1:end-pad_length);
+DriftBaseline = truebaseline_kde; 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%% Baseline Subtraction
-
-if any(truebaseline<=0)
-    constant = abs(min(truebaseline))+max(abs(truebaseline));
-    raw = raw+constant;
-    truebaseline = truebaseline+constant;
-end
-
-%     blsub = driftsub-truebaseline;                                                             %%% Baseline-subtracted value
-blsub = raw-truebaseline';
-
+%%% Baseline Subtraction                                                        %%% Baseline-subtracted value
+blsub = raw-DriftBaseline';
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Baseline division (if using raw traces)
-
 if traceoption == 1 
-    if nanmedian(truebaseline)~= 0
-        dFoF = blsub./truebaseline';
+    if nanmedian(DriftBaseline)~= 0
+        dFoF = blsub./DriftBaseline';
 %             blsub(blsub<0) = 0;
         rawmed = nanmedian(dFoF);
         rawspread = nanstd(dFoF);
     else
         blsub = blsub+1;
-        truebaseline = truebaseline+1;
-        dFoF = blsub./truebaseline';
+        DriftBaseline = DriftBaseline+1;
+        dFoF = blsub./DriftBaseline';
 %             blsub(blsub<0) = 0;
         rawmed = nanmedian(dFoF);
         rawspread = nanstd(dFoF);
@@ -117,91 +124,17 @@ if traceoption == 1
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%% Final variable
-
-    filterorder = 3;        %%% Polynomial order with which to filter the final signal. This will depend on the imaging frequency as well as the noise of the signal. 
-
-    if ~mod(smoothwindow,2)
-        smoothwindow = smoothwindow+1;
-    else
-    end
-
-    processed_dFoF = sgolayfilt(dFoF,filterorder,smoothwindow);
-
+    pad_length = 500;
+    
+    newbaseline = baseline_kde(dFoF',downsample_ratio,windowsize,stepforKDE);    %%% inputs = data,downsample ratio, window size, step
+    paddeddata = [newbaseline(randi([1 1000], 1,pad_length))', dFoF, newbaseline(randi([length(dFoF)-500, length(dFoF)], 1,pad_length))'];
+    
+%     smooth_padded = smooth(paddeddata, filterwindow, 'loess');
+    smooth_padded = smooth(paddeddata, filterwindow);
+    processed_dFoF = smooth_padded(pad_length+1:end-pad_length);
+%     processed_dFoF = dFoF;
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-    fornoise = processed_dFoF;
-    rawmed = nanmedian(processed_dFoF);
-    rawspread = nanstd(processed_dFoF);
-
-
-    roundnum = 1;
-    roundstodo = 50;
-    while roundnum<=roundstodo 
-        fornoise(fornoise>rawmed+(valueslimitfornoise*rawspread)) = rawmed+(valueslimitfornoise*rawspread);      %%% Cap off large and small values to pinch the data towards the true baseline
-        fornoise(fornoise<rawmed-(valueslimitfornoise*rawspread)) = rawmed-(valueslimitfornoise*rawspread);      %%%
-            rawspread = nanstd(fornoise);
-            rawmed = nanmedian(fornoise);
-        roundnum = roundnum+1;
-    end
 end
 
-%     spread = rawmed+spinevalueslimitfornoise*nanstd(fornoise);
-spread = nanmax(fornoise);
-
-med = nanmedian(fornoise);
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%% Noise Estimation %%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%% Adjust spine threshold multiplier based on processed data for each
-%%% spine
-
-%%% Estimate signal by finding peaks
-pks = findpeaks(processed_dFoF, 'MinPeakHeight', spread, 'MinPeakDistance', 200,'sortstr', 'descend');
-
-%     [f, xi] = ksdensity(blsub);
-%     lowerlimit = prctile(xi,75);
-
-switch Options.ImagingSensor
-    case 'GCaMP'
-        spinethresh = 0.5;
-        dendthresh = 0.5;
-    case 'GluSnFR'
-        spinethresh = 0.25;
-        dendthresh = 0.25;
-end
-
-if isempty(pks)
-    thresh = 1;
-else
-    switch BeingAnalyzed
-        case 'Spine'
-            if spread < spinethresh
-                thresh = spinethresh;
-            else
-                thresh = spread;
-            end
-        case 'Poly'
-            if spread < dendthresh
-                thresh = dendthresh;
-            else
-                thresh = spread;
-            end
-        case 'Dendrite'
-            if spread < dendthresh
-                thresh = dendthresh;
-            else
-                thresh = spread;
-            end
-    end
-
-    signal = nanmean(pks);
-    noise = spread;
-    StN = signal/noise;
-%         maxaddition = 1;
-end
-
-Threshold = thresh;
 ProcessedData = processed_dFoF;

@@ -21,7 +21,7 @@ SpectralLengthConstant = 10;
 for j = 1:DendNum     
     firstspine = inputData.SpineDendriteGrouping{j}(1);
     lastspine = inputData.SpineDendriteGrouping{j}(end);
-    if j == DendNum && lastspine ~= length(inputData.dF_over_F)
+    if j == DendNum && lastspine ~= length(inputData.Fluorescence_Measurement)
         lastspine = length(inputData.dF_over_F);
     end
 %     if Choices.UseStatDends
@@ -96,8 +96,23 @@ for j = 1:DendNum
                 SpatioTemporal_FirstEigenvector{j} = stvecs(:,ind);
 
         MovementCorrelationsforAllSpinesonDend{j} = Correlations(Choices.MovementAddress,Choices.Spine1_Address+firstspine:Choices.Spine1_Address+lastspine)';
+        
+        rowcount = 1; 
+        for row = firstspine:lastspine
+            colcount = 1;
+            for column = firstspine:lastspine
+                MeanInterspineMovementCorrelation{j}(rowcount,colcount) = nanmean([MovementCorrelationsforAllSpinesonDend{j}(rowcount),MovementCorrelationsforAllSpinesonDend{j}(colcount)]);
+                if ~isempty(StatClass{session})
+                    MeanInterspineMovementReliability{j}(rowcount,colcount) = nanmean([StatClass{session}.AllSpineReliability(row),StatClass{session}.AllSpineReliability(column)]);
+                else
+                    MeanINterspineMovementReliability{j}(rowcount,colcount) = nan;
+                end
+                colcount = colcount+1;
+            end
+            rowcount = rowcount+1;
+        end
 
-        MovementCorrelationsforAllSpinesonDend{j} = MovementCorrelationsforAllSpinesonDend{j}.*(MovementCorrelationsforAllSpinesonDend{j});
+%         MovementCorrelationsforAllSpinesonDend{j} = MovementCorrelationsforAllSpinesonDend{j}.*(MovementCorrelationsforAllSpinesonDend{j});
 
         if ~isempty(Spatiotemporal_Deg{j})
             address = ~isnan(MovementCorrelationsforAllSpinesonDend{j});
@@ -154,6 +169,7 @@ SpectralData.Temporal_Laplacian = Temporal_Laplacian;
 SpectralData.Temporal_Laplacian = Temporal_Laplacian ;
 
 try
+    SpectralData.SpatioTemporalAdjacencyMatrix = Spatiotemporal_Adjacency;
     SpectralData.MeanSpatialDegreeofCueSpines = nanmean(allspatialspines(StatClass{session}.CueSpines));
     SpectralData.MeanTemporalDegreeofCueSpines = nanmean(alltemporalspines(StatClass{session}.CueSpines));
     SpectralData.MeanSpatioTemporalDegreeofCueSpines = nanmean(allSTspines(StatClass{session}.CueSpines));
@@ -172,6 +188,8 @@ try
     SpectralData.MeanSpatialDegreeofRewardSpines = nanmean(allspatialspines(StatClass{session}.RewardSpines));
     SpectralData.MeanTemporalDegreeofRewardSpines = nanmean(alltemporalspines(StatClass{session}.RewardSpines));
     SpectralData.MeanSpatioTemporalDegreeofRewardSpines = nanmean(allSTspines(StatClass{session}.RewardSpines));
+    SpectralData.MeanInterspineMovementReliability = MeanInterspineMovementReliability;
+    SpectralData.MeanInterspineMovementCorrelation = MeanInterspineMovementCorrelation;
 catch
     SpectralData.MeanSpatialDegreeofCueSpines = nan;
     SpectralData.MeanTemporalDegreeofCueSpines = nan;

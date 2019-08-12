@@ -18,9 +18,17 @@ for i = 1:length(files)
         fname = files(i).name;
     end
 end
-    
 
 xsg_data = AP_load_xsg_continuous(pname);
+
+
+%%%%%%%%%%%%%% Detect whether opto session %%%%%%%%%%%%%%%%%
+if ~isempty(find(~cell2mat(cellfun(@(x) isempty(regexp(x,'Opto', 'once')), xsg_data.channel_names, 'uni', false)),1))
+    isOptoSession = 0;
+else
+    isOptoSession = 0;
+end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 [lever_active, lever_force_resample, lever_force_smooth, lever_velocity_envelope_smooth] = AP_parseLeverMovement_continuous(xsg_data);
 
@@ -41,18 +49,24 @@ a.Behavior_Frames = bhv_frames;
 a.Imaged_Trials = imaged_trials;
 a.Frame_Times = frame_times;
 
-exp = regexp(fname, ['[ABCDEFGHIJKLMNOPQRSTUVWXYZ]{2}\d{3,4}'], 'match');
-Date = regexp(fname, '\d{6}', 'match');
-experiment_name = regexp(fname,[exp{1}, '_', Date{1}], 'match')
-eval([experiment_name{1}, '_Behavior = a']);
+if isOptoSession
+%     a.OptoStim = 
+    exp = regexp(fname, ['[A-Z]{2,3}\d{3,4}'], 'match');
+    Date = regexp(fname, '\d{6}', 'match');
+    experiment_name = regexp(fname,[exp{1}, '_OPTO_', Date{1}], 'match')
+    eval([experiment_name{1}, '_Behavior = a']);
+else
+    exp = regexp(fname, ['[ABCDEFGHIJKLMNOPQRSTUVWXYZ]{2}\d{3,4}'], 'match');
+    Date = regexp(fname, '\d{6}', 'match');
+    experiment_name = regexp(fname,[exp{1}, '_', Date{1}], 'match')
+    eval([experiment_name{1}, '_Behavior = a']);
+end
 
 save_name = [experiment_name{1}, '_Behavior'];
 save(save_name, save_name);
-try
-    cd('E:\Behavioral Data\All Summarized Behavior Files list')
-catch
-    cd('C:\Users\komiyama\Desktop\Giulia\All Behavioral Data')
-end
+
+cd('E:\Behavioral Data\All Summarized Behavior Files list')
+
 save(save_name, save_name);
 cd(pname);
 

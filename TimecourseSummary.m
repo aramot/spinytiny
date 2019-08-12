@@ -1,37 +1,51 @@
 function TimecourseSummary(varargin)
 
-ns = length(varargin);
+h1 = waitbar(0, 'Initializing...');
 
-Frequency = nan(ns,14);
-Amp = nan(ns,14);
-SynapseOnlyFreq = nan(ns,14);
-SpikeTimedEvents = nan(ns,14);
-Dendritic_Freq = nan(ns,14);
-Dendritic_Amp = nan(ns,14);
-
-for j = 1:ns
-    Frequency(j,1:14) = varargin{j}.Frequency;
-    Amp(j,1:14) = varargin{j}.Amplitude;
-    SynapseOnlyFreq(j,1:14) = varargin{j}.SynapseOnlyFreq;
-    SpikeTimedEvents(j,1:14) = varargin{j}.SpikeTimedEvents;
-    Dendritic_Freq(j,1:14) = varargin{j}.Dendritic_Frequency;
-    Dendritic_Amp(j,1:14) = varargin{j}.Dendritic_Amp;
+sensor = inputdlg('Enter Sensor', '', 1,{'GCaMP'});
+if contains(sensor, 'GluSNFR')
+    ImagingFrequency = 58.30;
+elseif contains(sensor, 'GCaMP')
+    ImagingFrequency = 30.49;
 end
 
+ns = length(varargin);
+AllFreq = [];
+Frequency = nan(ns,14);
+Amp = nan(ns,14);
+Dendritic_Freq = nan(ns,14);
+Dendritic_Amp = nan(ns,14);
+PercentTimeActive = nan(ns,14);
+All_PercentTimeActive = [];
+TotalActivity = nan(ns,14);
+All_TotalActivity = [];
 
-meanF = nanmean(Frequency,1);
-semF = nanstd(Frequency,0,1)./sqrt(sum(~isnan(Frequency),1));
-meanA = nanmean(Amp,1);
-semA = nanstd(Amp,0,1)./sqrt(sum(~isnan(Amp),1));
-meanSOF = nanmean(SynapseOnlyFreq,1);
-semSOF = nanstd(SynapseOnlyFreq,0,1)./sqrt(sum(~isnan(SynapseOnlyFreq),1));
-meanSTE = nanmean(SpikeTimedEvents,1);
-semSTE = nanstd(SpikeTimedEvents,1)./sqrt(sum(~isnan(SpikeTimedEvents),1));
-meanDF = nanmean(Dendritic_Freq,1);
-semDF = nanstd(Dendritic_Freq,0,1)./sqrt(sum(~isnan(Dendritic_Freq),1));
-meanDA = nanmean(Dendritic_Amp,1);
-semDA = nanstd(Dendritic_Amp,0,1)./sqrt(sum(~isnan(Dendritic_Amp),1));
+for i = 1:ns
+    waitbar(i/ns,h1, ['Animal ', num2str(i), '/', num2str(ns)])
+    files = fastdir('E:\ActivitySummary', varargin{i}, {'Poly', 'ZSeries'});
+    for j = 1:length(files)
+        load(files{j})
+        eval(['Session = ', files{j}(1:end-4), '.Session;'])
+        eval(['freq = ', files{j}(1:end-4), '.Frequency_DendriteSubtracted;'])
+        AllFreq = [AllFreq; freq];
+        Frequency(i,Session) = nanmedian(freq);
+        eval(['floored_data = ', files{j}(1:end-4), '.Floored_DendriteSubtracted;'])
+        Amp(i,Session) = nanmedian(floored_data(floored_data>0));
+        eval(['dend_freq = ', files{j}(1:end-4), '.Dendritic_Frequency;'])
+        Dendritic_Freq(i,Session) = nanmedian(dend_freq);
+        eval(['dend_amp = ', files{j}(1:end-4), '.Dendritic_Amp;'])
+        Dendritic_Amp(i,Session) = nanmedian(dend_amp);
+        eval(['pta = (sum(', files{j}(1:end-4), '.SynapseOnlyBinarized,2)./ImagingFrequency)/(length(', files{j}(1:end-4), '.Fluorescence_Measurement{1})/(ImagingFrequency));'])
+        PercentTimeActive(i,Session) = nanmedian(pta);
+        All_PercentTimeActive = [All_PercentTimeActive; pta];
+        eval(['TA = sum(', files{j}(1:end-4), '.SynapseOnlyBinarized.*', files{j}(1:end-4), '.Processed_dFoF,2)./ImagingFrequency;'])
+        TotalActivity(i,Session) = nanmedian(TA);
+        All_TotalActivity = [All_TotalActivity; TA];
+        clear(files{j}(1:end-4));
+    end
+end
 
+delete(h1)
 
 %%%%%%%%%%%%%%%%%%%%%%
 %%Color Information%%%
@@ -52,45 +66,72 @@ semDA = nanstd(Dendritic_Amp,0,1)./sqrt(sum(~isnan(Dendritic_Amp),1));
     
 scrsz = get(0, 'ScreenSize');
 figure('Position', scrsz)
+statchoice = 'nonparametric';
 
-subplot(2,3,1); plot(1:14,meanF,'k')
-r_errorbar(1:14,meanF,semF,'k')
+sub1 = 2;
+sub2 = 2;
+subcount = 1;
+
+subplot(sub1,sub2,subcount); flex_plot(1:size(Frequency,2), Frequency, statchoice, 'k', 2);
 title('Event Frequency')
 xlabel('Session')
 ylabel('Events/min')
+subcount= subcount+1;
 
 xlim([0 15])
-subplot(2,3,2); plot(1:14,meanA,'k')
-r_errorbar(1:14,meanA,semA,'k')
+subplot(sub1,sub2,subcount); flex_plot(1:size(Amp,2), Amp, statchoice, 'k', 2);
 title('Event Amp')
 xlim([0 15])
 xlabel('Session')
 ylabel('dF/F')
+subcount = subcount+1;
 
-subplot(2,3,3); plot(1:14, meanSOF,'k')
-r_errorbar(1:14,meanSOF,semSOF,'k')
-title('Synapse Only Freq')
-xlim([0 15])
-xlabel('Session')
-ylabel('Events/min')
-
-subplot(2,3,4); plot(1:14, meanSTE,'k')
-r_errorbar(1:14,meanSTE,semSTE,'k')
-title('Spike Timed Freq')
-xlim([0 15])
-xlabel('Session')
-ylabel('Events/min')
-
-subplot(2,3,5); plot(1:14, meanDF,'k')
-r_errorbar(1:14,meanDF,semDF,'k')
+subplot(sub1,sub2,subcount); flex_plot(1:size(Dendritic_Freq,2), Dendritic_Freq,statchoice, 'k', 2);
 title('Dendritic Freq')
 xlim([0 15])
 xlabel('Session')
 ylabel('Events/min')
+subcount = subcount+1;
 
-subplot(2,3,6); plot(1:14, meanDA,'k')
-r_errorbar(1:14,meanDA,semDA,'k')
+subplot(sub1,sub2,subcount); flex_plot(1:size(Dendritic_Amp,2), Dendritic_Amp, statchoice, 'k', 2);
 title('Dendritic Amp')
 xlim([0 15])
 xlabel('Session')
 ylabel('dF/F')
+
+
+%==========================================================================
+figure('Position', scrsz)
+statchoice = 'nonparametric';
+
+sub1 = 1;
+sub2 = 2;
+subcount = 1;
+
+
+subplot(sub1,sub2,subcount); flex_plot(1:size(PercentTimeActive,2), PercentTimeActive, statchoice, 'k', 2);
+title('Percent Time Active')
+xlabel('Session')
+ylabel('Events/min')
+subcount= subcount+1;
+
+xlim([0 15])
+subplot(sub1,sub2,subcount); flex_plot(1:size(TotalActivity,2), TotalActivity, statchoice, 'k', 2);
+title('Total Activity')
+xlim([0 15])
+xlabel('Session')
+ylabel('dF/F')
+subcount = subcount+1;
+%==========================================================================
+ActivityDataBasics.AnimalList = varargin;
+ActivityDataBasics.Frequency = Frequency;
+ActivityDataBasics.Amplitude = Amp;
+ActivityDataBasics.DendriticFrequency = Dendritic_Freq;
+ActivityDataBasics.DendriticAmplitude = Dendritic_Amp; 
+date_string = datestr(datetime('today'));
+
+Notes = inputdlg('Any notes for this analysis?', '', 1,{'Analyzed using...'});
+
+ActivityDataBasics.Notes = Notes{1};
+
+save([sensor{1}, ' ActivityDataBasics ', date_string], 'ActivityDataBasics')

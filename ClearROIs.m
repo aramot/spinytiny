@@ -69,6 +69,8 @@ elseif strcmpi(choice, 'Dendrites')
     glovar.PolyLineVertices = [];
     glovar.PolyLine = [];
     glovar.DendritePolyPointNumber = 0;
+    
+    delete(findobj(glovar.figure.handles.GreenGraph, 'Type', 'rectangle'))
 
 elseif strcmpi(choice, 'Both')  
     twochannels = get(glovar.figure.handles.TwoChannels_CheckBox);
@@ -78,7 +80,8 @@ elseif strcmpi(choice, 'Both')
     glovar.Dendrite_Number = 0;
     glovar.Dendrite_ROIs = 0;
 
-    ROIboxes = findobj(program.Children, 'Type', 'images.roi.ellipse');
+    ROIboxes = findobj(program.Children, 'Type', 'images.roi');
+    Otherboxes = findobj(program.Children, 'Type', 'rectangle');
     Textboxes = findobj(program.Children, 'Type', 'text');
     Lineboxes = findobj(program.Children, 'Type', 'line');
 
@@ -87,6 +90,9 @@ elseif strcmpi(choice, 'Both')
         delete(ROIboxes(i));
     end
 
+    for i = 1:length(Otherboxes)
+        delete(Otherboxes(i))
+    end
     for i = 1:length(Textboxes)
         delete(Textboxes(i));
     end
@@ -102,6 +108,7 @@ elseif strcmpi(choice, 'Both')
     glovar.DendritePolyPointNumber = 0;
     glovar.ROI = [];
     glovar.BackgroundROI = [];
+    glovar.ROIother = [];
 end
 
 if ~isempty(regexp(running, 'CaImageViewer'))

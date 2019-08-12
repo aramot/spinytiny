@@ -22,7 +22,7 @@ function varargout = KomiyamaLabHub(varargin)
 
 % Edit the above text to modify the response to help KomiyamaLabHub
 
-% Last Modified by GUIDE v2.5 28-Sep-2018 16:21:03
+% Last Modified by GUIDE v2.5 02-Aug-2019 19:29:33
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -64,10 +64,14 @@ guidata(hObject, handles);
 set(handles.AnalyzeActivity_ToggleButton, 'Value', 0);
 set(handles.AnalyzeBehavior_ToggleButton, 'Value', 0);
 set(handles.Timecourse_PushButton, 'Enable', 'off');
-set(handles.Clustering_PushButton, 'Enable', 'off');
+set(handles.ClusteringAverage_PushButton, 'Enable', 'off');
 set(handles.BehaviorTimecourse_PushButton, 'Enable', 'off');
 set(handles.AlignActivty_PushButton, 'Enable', 'off');
 set(handles.NewSpineAnalysis_PushButton, 'Enable', 'off');
+set(handles.NewSpineAveraging_PushButton, 'Enable', 'off');
+set(handles.NewSpineAnalysis_PushButton, 'Enable', 'off');
+
+%%%%%%%%%%%%%%%%%%%%%% Mouse Rollover Text %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
 % setappdata(gcf, 'Folder', 'C:\Users\Komiyama\Desktop\ActivitySummary_UsingRawData');
@@ -149,27 +153,55 @@ Behavior = get(handles.AnalyzeBehavior_ToggleButton, 'Value');
 if Activity == 1 && Behavior == 0
     set(handles.Timecourse_PushButton, 'Enable', 'on');
     set(handles.Clustering_PushButton, 'Enable', 'on');
+    set(handles.ClusteringAverage_PushButton, 'Enable', 'on');
     set(handles.BehaviorTimecourse_PushButton, 'Enable', 'off');
     set(handles.AlignActivty_PushButton, 'Enable', 'off');
+    set(handles.NewSpineAveraging_PushButton, 'Enable', 'off');
     set(handles.NewSpineAnalysis_PushButton, 'Enable', 'off');
+    set(handles.TrialActivityAnalysis_PushButton, 'Enable', 'off');
+    set(handles.FitwithMLR_CheckBox, 'Enable', 'off');
+    set(handles.Prediction_PushButton, 'Enable', 'off');
+    set(handles.PCA_PushButton, 'Enable', 'off');
+    set(handles.SpineVolume_PushButton, 'Enable', 'off');
 elseif Activity == 0 && Behavior == 1
     set(handles.Timecourse_PushButton, 'Enable', 'off');
     set(handles.Clustering_PushButton, 'Enable', 'off');
+    set(handles.ClusteringAverage_PushButton, 'Enable', 'off');
     set(handles.BehaviorTimecourse_PushButton, 'Enable', 'on');
     set(handles.AlignActivty_PushButton, 'Enable', 'off');
+    set(handles.NewSpineAveraging_PushButton, 'Enable', 'off');
     set(handles.NewSpineAnalysis_PushButton, 'Enable', 'off');
+    set(handles.TrialActivityAnalysis_PushButton, 'Enable', 'off');
+    set(handles.FitwithMLR_CheckBox, 'Enable', 'off');
+    set(handles.Prediction_PushButton, 'Enable', 'off');
+    set(handles.PCA_PushButton, 'Enable', 'off');
+    set(handles.SpineVolume_PushButton, 'Enable', 'off');
 elseif Activity == 1 && Behavior == 1
     set(handles.Timecourse_PushButton, 'Enable', 'off');
     set(handles.Clustering_PushButton, 'Enable', 'on');
+    set(handles.ClusteringAverage_PushButton, 'Enable', 'on');
     set(handles.BehaviorTimecourse_PushButton, 'Enable', 'off');
     set(handles.AlignActivty_PushButton, 'Enable', 'on');
+    set(handles.NewSpineAveraging_PushButton, 'Enable', 'on');
     set(handles.NewSpineAnalysis_PushButton, 'Enable', 'on');
+    set(handles.TrialActivityAnalysis_PushButton, 'Enable', 'on');
+    set(handles.FitwithMLR_CheckBox, 'Enable', 'on');
+    set(handles.Prediction_PushButton, 'Enable', 'on');
+    set(handles.PCA_PushButton, 'Enable', 'on');
+    set(handles.SpineVolume_PushButton, 'Enable', 'on');
 elseif Activity == 0 && Behavior == 0
     set(handles.Timecourse_PushButton, 'Enable', 'off');
     set(handles.Clustering_PushButton, 'Enable', 'off');
+    set(handles.ClusteringAverage_PushButton, 'Enable', 'off');
     set(handles.BehaviorTimecourse_PushButton, 'Enable', 'off');
     set(handles.AlignActivty_PushButton, 'Enable', 'off');
+    set(handles.NewSpineAveraging_PushButton, 'Enable', 'off');
     set(handles.NewSpineAnalysis_PushButton, 'Enable', 'off');
+    set(handles.TrialActivityAnalysis_PushButton, 'Enable', 'off');
+    set(handles.FitwithMLR_CheckBox, 'Enable', 'off');
+    set(handles.Prediction_PushButton, 'Enable', 'off');
+    set(handles.PCA_PushButton, 'Enable', 'off');
+    set(handles.SpineVolume_PushButton, 'Enable', 'off');
 end
 
 
@@ -187,27 +219,55 @@ Behavior = get(handles.AnalyzeBehavior_ToggleButton, 'Value');
 if Activity == 1 && Behavior == 0
     set(handles.Timecourse_PushButton, 'Enable', 'on');
     set(handles.Clustering_PushButton, 'Enable', 'on');
+    set(handles.ClusteringAverage_PushButton, 'Enable', 'on');
     set(handles.BehaviorTimecourse_PushButton, 'Enable', 'off');
     set(handles.AlignActivty_PushButton, 'Enable', 'off');
+    set(handles.NewSpineAveraging_PushButton, 'Enable', 'off');
     set(handles.NewSpineAnalysis_PushButton, 'Enable', 'off');
+    set(handles.TrialActivityAnalysis_PushButton, 'Enable', 'off');
+    set(handles.FitwithMLR_CheckBox, 'Enable', 'off');
+    set(handles.Prediction_PushButton, 'Enable', 'off');
+    set(handles.PCA_PushButton, 'Enable', 'off');
+    set(handles.SpineVolume_PushButton, 'Enable', 'off');
 elseif Activity == 0 && Behavior == 1
     set(handles.Timecourse_PushButton, 'Enable', 'off');
     set(handles.Clustering_PushButton, 'Enable', 'off');
+    set(handles.ClusteringAverage_PushButton, 'Enable', 'off');
     set(handles.BehaviorTimecourse_PushButton, 'Enable', 'on');   
     set(handles.AlignActivty_PushButton, 'Enable', 'off');
+    set(handles.NewSpineAveraging_PushButton, 'Enable', 'off');
     set(handles.NewSpineAnalysis_PushButton, 'Enable', 'off');
+    set(handles.TrialActivityAnalysis_PushButton, 'Enable', 'off');
+    set(handles.FitwithMLR_CheckBox, 'Enable', 'off');
+    set(handles.Prediction_PushButton, 'Enable', 'off');
+    set(handles.PCA_PushButton, 'Enable', 'off');
+    set(handles.SpineVolume_PushButton, 'Enable', 'off');
 elseif Activity == 1 && Behavior == 1
     set(handles.Timecourse_PushButton, 'Enable', 'off');
     set(handles.Clustering_PushButton, 'Enable', 'on');
+    set(handles.ClusteringAverage_PushButton, 'Enable', 'on');
     set(handles.BehaviorTimecourse_PushButton, 'Enable', 'off');
     set(handles.AlignActivty_PushButton, 'Enable', 'on');
+    set(handles.NewSpineAveraging_PushButton, 'Enable', 'on');
     set(handles.NewSpineAnalysis_PushButton, 'Enable', 'on');
+    set(handles.TrialActivityAnalysis_PushButton, 'Enable', 'on')
+    set(handles.FitwithMLR_CheckBox, 'Enable', 'on');
+    set(handles.Prediction_PushButton, 'Enable', 'on');
+    set(handles.PCA_PushButton, 'Enable', 'on');
+    set(handles.SpineVolume_PushButton, 'Enable', 'on');
 elseif Activity == 0 && Behavior == 0
     set(handles.Timecourse_PushButton, 'Enable', 'off');
     set(handles.Clustering_PushButton, 'Enable', 'off');
+    set(handles.ClusteringAverage_PushButton, 'Enable', 'off');
     set(handles.BehaviorTimecourse_PushButton, 'Enable', 'off');  
     set(handles.AlignActivty_PushButton, 'Enable', 'off');
+    set(handles.NewSpineAveraging_PushButton, 'Enable', 'off');
     set(handles.NewSpineAnalysis_PushButton, 'Enable', 'off');
+    set(handles.TrialActivityAnalysis_PushButton, 'Enable', 'off');
+    set(handles.FitwithMLR_CheckBox, 'Enable', 'off');
+    set(handles.Prediction_PushButton, 'Enable', 'off');
+    set(handles.PCA_PushButton, 'Enable', 'off');
+    set(handles.SpineVolume_PushButton, 'Enable', 'off');
 end
 
 
@@ -240,60 +300,25 @@ function Timecourse_PushButton_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 listpos = get(handles.AnimalName_ListBox, 'Value');
-list = get(handles.AnimalName_ListBox, 'String');
-h1 = waitbar(0, 'Initializing...');
+fulllist = get(handles.AnimalName_ListBox, 'String');
 % datafolder = getappdata(KomiyamaLabHub, 'Folder');
 datafolder = 'E:\ActivitySummary';
 
-if length(listpos) == 1
-    folder = dir(datafolder);
-    cd(datafolder);
-    filestoanalyze = [];
-    animal = list{listpos};
-    for i = 1:length(folder)
-        ismatch = strfind(folder(i).name, animal);
-        wrongfile = strfind(folder(i).name, 'Timecourse');
-        if ~isempty(ismatch) && isempty(wrongfile)
-            load(folder(i).name)
-            filestoanalyze = [filestoanalyze, ',', folder(i).name(1:end-4)];
-        end
-        waitbar(i/length(folder), h1, 'Looking for files...')
-    end
-
-    close(h1)
-    filestoanalyze = filestoanalyze(2:end);
-
-    eval(['SummarizeActivity(', filestoanalyze, ');']);
-else
-    cd('C:\Users\Komiyama\Desktop\Output Data')
-    folder = dir('C:\Users\Komiyama\Desktop\Output Data');
-    filestoanalyze = [];
-    for n = 1:length(listpos)
-        animal{n} = list{listpos(n)};
-        for i = 1:length(folder)
-            ismatch = strfind(folder(i).name, animal{n});
-            rightfile = strfind(folder(i).name, 'Timecourse_Summary');
-            if ~isempty(ismatch) && ~ isempty(rightfile)
-                load(folder(i).name)
-                filestoanalyze = [filestoanalyze, ',', folder(i).name(1:end-4)];
-            end
-            waitbar(i/(length(folder)*length(listpos)), h1, 'Looking for files')
-        end
-    end
-    
-    close(h1)
-    filestoanalyze = filestoanalyze(2:end);
-    
-    eval(['TimecourseSummary(', filestoanalyze, ');'])
+cd(datafolder)
+animals = fulllist(listpos);
+filestoanalyze = [];
+for i = 1:length(animals)
+    filestoanalyze =[filestoanalyze, ',''',animals{i}, ''''];
 end
+filestoanalyze =  filestoanalyze(2:end);
+
+eval(['TimecourseSummary(', filestoanalyze, ');']);
 
 
 
-
-
-% --- Executes on button press in Clustering_PushButton.
-function Clustering_PushButton_Callback(~, ~, handles)
-% hObject    handle to Clustering_PushButton (see GCBO)
+% --- Executes on button press in ClusteringAverage_PushButton.
+function ClusteringAverage_PushButton_Callback(~, ~, handles)
+% hObject    handle to ClusteringAverage_PushButton (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
@@ -306,10 +331,71 @@ Behavior = get(handles.AnalyzeBehavior_ToggleButton, 'Value');
 datafolder = 'E:\ActivitySummary';
 
 if Activity == 1 && Behavior == 0
+    filestoanalyze = [];
+    animal = list(listpos);
+    folder = dir('C:\Users\Komiyama\Desktop\Output Data');
+    cd('C:\Users\Komiyama\Desktop\Output Data');    
+    source = 'multiple';
+    for i = 1:length(folder)
+        ismatch = strfind(folder(i).name, '_ClusteringProfile');
+        if isempty(ismatch)
+            continue
+        else
+            ismatch2 = strncmp(folder(i).name, animal, 5);
+        end
+        if sum(ismatch2) ~=0
+            load(folder(i).name)
+            if isempty(filestoanalyze)
+                filestoanalyze = folder(i).name(1:end-4);
+            else
+                filestoanalyze = [filestoanalyze, ',', folder(i).name(1:end-4)];
+            end
+        end
+        waitbar(i/length(folder), h1, 'Looking for files')
+    end
+    eval(['NHanalyClusteringAnalysis(', filestoanalyze,',source);']);
+    close(h1)          
+elseif Activity == 1 && Behavior == 1
+    filestoanalyze = [];
+    cd('C:\Users\Komiyama\Desktop\Output Data');
+    animals = list(listpos);
+    allcorrfiles = fastdir(cd, '_SpineCorrelationTimecourse');
+    for i = 1:length(allcorrfiles)
+        ismatch = strncmp(allcorrfiles{i}, animals, 5);
+        if sum(ismatch) ~=0
+            load(allcorrfiles{i})
+%                 currentanimal = regexp(folder(i).name, '[A-Z]{2,3}0+\d+', 'match');
+%                 currentanimal = currentanimal{1};
+%                 [usesessions] = blacklist(currentanimal);
+%                 eval([folder(i).name(1:end-4), ' = structfun(@(x) x([', num2str(usesessions), ']), ', folder(i).name(1:end-4), ', ''uni'', false)'])
+            filestoanalyze = [filestoanalyze, ',', allcorrfiles{i}(1:end-4)];
+        end
+        waitbar(i/length(allcorrfiles), h1, 'Looking for files')
+    end
+    filestoanalyze = filestoanalyze(2:end);
+    close(h1)
+    eval(['ClusterBehaviorCorrelationsAverage(', filestoanalyze, ');']);
+end
+
+
+% --- Executes on button press in Clustering_PushButton.
+function Clustering_PushButton_Callback(hObject, eventdata, handles)
+% hObject    handle to Clustering_PushButton (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+listpos = get(handles.AnimalName_ListBox, 'Value');
+list = get(handles.AnimalName_ListBox, 'String');
+Activity = get(handles.AnalyzeActivity_ToggleButton, 'Value');
+Behavior = get(handles.AnalyzeBehavior_ToggleButton, 'Value');
+% datafolder = getappdata(KomiyamaLabHub, 'Folder');
+datafolder = 'E:\ActivitySummary';
+
+if Activity && ~Behavior 
+    h1 = waitbar(0, 'Initializing...');
     folder = dir(datafolder);
     cd(datafolder);
     filestoanalyze = [];
-    if length(listpos) ==1
         source = 'single';
         animal = list{listpos};
         for i = 1:length(folder)
@@ -326,101 +412,48 @@ if Activity == 1 && Behavior == 0
         cd('C:\Users\Komiyama\Desktop\Output Data');    
         close(h1)
         fname = [animal, '_ClusteringProfile'];
-        save(fname, fname);
-
-    else
-        animal = list(listpos);
-        folder = dir('C:\Users\Komiyama\Desktop\Output Data');
-        cd('C:\Users\Komiyama\Desktop\Output Data');    
-        source = 'multiple';
-        for i = 1:length(folder)
-            ismatch = strfind(folder(i).name, '_ClusteringProfile');
-            if isempty(ismatch)
-                continue
-            else
-                ismatch2 = strncmp(folder(i).name, animal, 5);
-            end
-            if sum(ismatch2) ~=0
-                load(folder(i).name)
-                if isempty(filestoanalyze)
-                    filestoanalyze = folder(i).name(1:end-4);
-                else
-                    filestoanalyze = [filestoanalyze, ',', folder(i).name(1:end-4)];
-                end
-            end
-            waitbar(i/length(folder), h1, 'Looking for files')
-        end
-        eval(['NHanalyClusteringAnalysis(', filestoanalyze,',source);']);
-        close(h1)
-    end
-             
-elseif Activity == 1 && Behavior == 1
-    numfiles = 0;
-    filestoanalyze = [];
-    if length(listpos) == 1
-        folder = dir(datafolder);
+        save(fname, fname);         
+elseif Activity && Behavior
+    for L = 1:length(listpos)
+        filestoanalyze = [];
+        count = 1;
         cd(datafolder);
-        selection = list{listpos}; animal = regexp(selection, '[\r\f\n]', 'split'); animal = animal{1};
-        for i = 1:length(folder)
-            ispart = strfind(folder(i).name, animal);
-            wrongfile = strfind(folder(i).name, 'Timecourse');
-            wrongfile2 = strfind(folder(i).name, 'Poly');
-            if ~isempty(ispart) && isempty(wrongfile) && isempty(wrongfile2)
-                load(folder(i).name)
-                eval(['filesesh = ', folder(i).name(1:end-4), '.Session;']);
-                currentanimal = regexp(folder(i).name, '[A-Z]{2,3}0+\d+', 'match');
-                currentanimal = currentanimal{1};
-                usesessions = blacklist(currentanimal);
-                if ~ismember(filesesh,usesessions)
-                    clear(folder(i).name)
-                    continue
-                end
-                numfiles = numfiles+1;
-                filestoanalyze = [filestoanalyze, ',', folder(i).name(1:end-4)];
+        h1 = waitbar(0, 'Initializing...');
+        selection = list{listpos(L)}; animal = regexp(selection, '[\r\f\n]', 'split'); animal = animal{1};
+        targetfiles = fastdir(cd, animal, {'Poly', 'ZSeries'});
+        for i = 1:length(targetfiles)
+            load(targetfiles{i})
+            eval(['filesesh = ', targetfiles{i}(1:end-4), '.Session;']);
+            usesessions = blacklist(animal);
+            if ~ismember(filesesh,usesessions)
+                clear(targetfiles{i}(1:end-4))
+                waitbar(i/length(targetfiles), h1, 'Looking for files')
+                continue
             end
-            waitbar(i/length(folder), h1, 'Looking for files')
+%             filestoanalyze = [filestoanalyze, ',', targetfiles{i}(1:end-4)];
+            filestoanalyze{count} = targetfiles{i};
+            waitbar(i/length(targetfiles), h1, 'Looking for files')
+            clear(targetfiles{i}(1:end-4))
+            count = count+1;
         end
-        folder = dir('C:\Users\Komiyama\Desktop\Output Data');
         cd('C:\Users\Komiyama\Desktop\Output Data');
-        for i = 1:length(folder)
-            ismatchCorrelations = strfind(folder(i).name, [animal, '_Correlations']);
-            ismatchStats = strfind(folder(i).name, [animal, '_StatClassified']);
-            if ~isempty(ismatchCorrelations) || ~isempty(ismatchStats)
-                load(folder(i).name)
-%                 eval([inputlist{n}, 'file = folder(', num2str(i), ').name(1:end-4);']);
-                if ~isempty(ismatchCorrelations)
-                    Correlationsfile = folder(i).name(1:end-4);
-                elseif ~isempty(ismatchStats)
-                    StatClassifiedfile = folder(i).name(1:end-4);
-                end
-            end
-        end
-        filestoanalyze = filestoanalyze(2:end);
+        targetCorrfiles = fastdir(cd, [animal, '_Correlations']);
+        load(targetCorrfiles{1}(1:end-4))
+        eval(['Correlationsfile = ', targetCorrfiles{1}(1:end-4), ';']);
+        targetStatfiles = fastdir(cd, [animal, '_StatClassified']);
+        load(targetStatfiles{1})
+        eval(['StatClassifiedfile = ', targetStatfiles{1}(1:end-4), ';']);
+
+%         filestoanalyze = filestoanalyze(2:end);
         close(h1);
-        eval(['ClusterBehaviorCorrelations(', ...
-            Correlationsfile, ',', ...
-            StatClassifiedfile ',', ...
-            filestoanalyze, ');'])
-    else
-        folder = dir('C:\Users\Komiyama\Desktop\Output Data');
-        cd('C:\Users\Komiyama\Desktop\Output Data');
-        animals = list(listpos);
-        for i = 1:length(folder)
-            ismatch = strncmp(folder(i).name, animals, 5);
-            isfile = strfind(folder(i).name, 'SpineCorrelationTimecourse');
-            if sum(ismatch) ~=0 && ~isempty(isfile)
-                load(folder(i).name)
-%                 currentanimal = regexp(folder(i).name, '[A-Z]{2,3}0+\d+', 'match');
-%                 currentanimal = currentanimal{1};
-%                 [usesessions] = blacklist(currentanimal);
-%                 eval([folder(i).name(1:end-4), ' = structfun(@(x) x([', num2str(usesessions), ']), ', folder(i).name(1:end-4), ', ''uni'', false)'])
-                filestoanalyze = [filestoanalyze, ',', folder(i).name(1:end-4)];
-            end
-            waitbar(i/length(folder), h1, 'Looking for files')
-        end
-        filestoanalyze = filestoanalyze(2:end);
-        close(h1)
-        eval(['ClusterBehaviorCorrelations(', filestoanalyze, ');']);
+%         eval(['ClusterBehaviorCorrelations(', ...
+%             Correlationsfile, ',', ...
+%             StatClassifiedfile ',', ...
+%             filestoanalyze, ');'])
+        ClusterBehaviorCorrelations(Correlationsfile, StatClassifiedfile,...
+            filestoanalyze);
+        toclear = who('-regexp', animal);
+        cellfun(@clear, toclear)
     end
 end
 
@@ -457,12 +490,13 @@ if length(listpos) ==1
         FractionITISpentMovingPreRewardedTrials = nan(1,14);
 
     try
-        targetdir = 'C:\Users\Komiyama\Desktop\Behavioral Data\All Summarized Behavior Files list';
-        folder = dir(targetdir);
-        cd(targetdir);
+        behaviordir = 'E:\Behavioral Data\All Summarized Behavior Files list';
+        activitydir = 'E:\ActivitySummary';
+        folder = dir(behaviordir);
+        cd(behaviordir);
     catch
         [fname pname] = uigetfile();
-        targetdir = pname;
+        behaviordir = pname;
         folder = dir(pname(1:end-1));
         cd(pname);
     end
@@ -475,26 +509,46 @@ if length(listpos) ==1
         cd('C:\Users\Komiyama\Desktop\Output Data')
         load([animal, '_SummarizedBehavior'])
         eval(['sessions =', animal, '_SummarizedBehavior.UsedSessions'])
-        cd(targetdir);
+        cd(behaviordir);
     else
-        sessions = str2num(get(handles.Session_EditableText, 'String'));
+        sessions = 1:14;
     end
     sessioncounter = 0;
-    files = fastdir(targetdir, animal);
+    behfiles = fastdir(behaviordir, animal, 'Summarized');
+    actfiles = fastdir(activitydir, animal, {'ZSeries', 'Poly'});
 %     actual_sessions = [];
-    if length(sessions)~=length(files)
-        disp('Make sure to enter the correct session numbers!');
-        if length(sessions)>length(files)
-            sessions = 1:length(files)
-        elseif length(sessions)<length(files)
-            files = files(sessions);
-        else
-            files = files;
+    if length(sessions)~=length(behfiles)
+        sessions = [];
+        for bf = 1:length(behfiles)
+            currentdate{bf} = regexp(behfiles{bf}, '[0-9]{6}', 'match');
+            iscorrespactfile = find(~cellfun(@isempty, (cellfun(@(x) strfind(x,currentdate{bf}{1}), actfiles, 'uni', false))));
+            if ~isempty(iscorrespactfile)
+                matchedactfile = actfiles(iscorrespactfile);
+                z = matfile([activitydir, '\', matchedactfile{1}]);
+                fullstruct = eval(['z.', matchedactfile{1}(1:end-4), ';']);
+                sessions = [sessions, fullstruct.Session];
+                clear z;
+                clear fullstruct;
+            else
+                if ~isempty(sessions)
+                    sessions = [sessions, sessions(end)+split(caldiff([datetime(currentdate{bf-1}{1}, 'InputFormat', 'yyMMdd'), datetime(currentdate{bf}{1}, 'InputFormat', 'yyMMdd')]), 'days')]; %%% Find the calendar difference between two sessions (found by using currentdate function with input format known to register strings as dates) then split the answer into numeric values of days
+                else
+                    sessions = 1;
+                end
+            end
+        end
+        if length(unique(sessions))~=length(sessions)
+            [~, ind] = unique(sessions);
+            temp_session = sessions(ind);
+            prob = find(diff([temp_session])>1);
+            temp_session = [temp_session(1:prob),NaN, temp_session(prob+1:end)];
+            temp_session = fillmissing(temp_session, 'linear');
+            sessions = temp_session;
         end
     end
-    for i = 1:length(files)
-        load(files{i})
-        date = regexp(files{i}, '\d{6}\w*_Behavior', 'match');
+    for i = 1:length(behfiles)
+        load(behfiles{i})
+        date = regexp(behfiles{i}, '\d{6}\w*_Behavior', 'match');
         wrkspc = who;
         filetoanalyze = wrkspc{~cellfun(@isempty, regexp(who, date))};
         sessioncounter = sessioncounter +1;
@@ -521,7 +575,7 @@ if length(listpos) ==1
           
         wrkspc = who;
         clear(wrkspc{~cellfun(@isempty, regexp(who, date))});
-        waitbar(i/length(files), h1, 'Looking for files...')
+        waitbar(i/length(behfiles), h1, 'Looking for files...')
     end
     close(h1)
     
@@ -537,8 +591,16 @@ if length(listpos) ==1
     title('Reaction Time')
     xlabel('Session')
     legend({'Cue to movement', 'Cue to reward'})
+    
+    for i = sessions
+        reducedMovementMat = MovementMat{i}(any(~isnan(MovementMat{i}),2),:);
+        [coeffs{i}, scores{i}, ~, ~, explained{i}] = pca(reducedMovementMat');
+    end
 
     [r_lever] = SummarizeLeverPressCorrelations(MovementMat, sessions);
+    
+    valid_pca_sessions = find(~cellfun(@isempty, explained));
+    plot(sessions(ismember(sessions, valid_pca_sessions)), cellfun(@(x) x(1)./100, explained(valid_pca_sessions)), 'r', 'linewidth', 2)
     
     subplot(2,2,2); plot(MoveDurationBeforeIgnoredTrials);
     xlabel('Session')
@@ -555,10 +617,14 @@ if length(listpos) ==1
     ylabel('Fraction of ITI Spent Moving')
     
     a.rewards = Rewards;
+    a.MovementMat = MovementMat;
     a.ReactionTime = ReactionTime;
     a.MovingAtTrialStartFaults = MovingAtTrialStartFaults;
     a.MovementAverages = MovementAverages;
     a.MovementCorrelation = r_lever;
+    a.PCA_Coefficients = coeffs;
+    a.PCA_Scores = scores;
+    a.PCA_VarianceExplained = explained;
     a.UsedSessions = UsedSessions;
     a.CuetoReward = CuetoReward;
     a.MoveDurationBeforeIgnoredTrials = MoveDurationBeforeIgnoredTrials;
@@ -582,7 +648,7 @@ else
     end
     filetoanalyze = [];
     animal = list(listpos);
-    for i = 1:length(folder);
+    for i = 1:length(folder)
         rightanimal = regexp(folder(i).name, animal);
         rightfile = strfind(folder(i).name, 'Summarized');
         if sum(cell2mat(rightanimal)) ~= 0 && ~isempty(rightfile)
@@ -640,19 +706,20 @@ Beh_folder = dir('E:\Behavioral Data\All Summarized Behavior Files list');
 datafolder = 'E:\ActivitySummary';
 Act_folder = dir(datafolder);
 Output_folder = dir('C:\Users\Komiyama\Desktop\Output Data');
+MLRopt = get(handles.FitwithMLR_CheckBox, 'value');
 
 scsz = get(0, 'ScreenSize');
 
-LeverTracePlots.figure = figure('Position', scsz);
 
 if length(listpos) == 1
     animal = list{listpos};
+    LeverTracePlots.figure = figure('Position', scsz);
     for i = 1:length(Act_folder)
         cd(datafolder);
         ismatch = strfind(Act_folder(i).name, animal);
         wrongfile = strfind(Act_folder(i).name, 'Poly');
-
-        if ~isempty(ismatch) && isempty(wrongfile) 
+        wrongfile2 = strfind(Act_folder(i).name, 'ZSeries');
+        if ~isempty(ismatch) && isempty(wrongfile) && isempty(wrongfile2)
             load(Act_folder(i).name)
             eval(['currentsession = ', Act_folder(i).name(1:end-4), '.Session;'])
             Activity{currentsession} = Act_folder(i).name(1:end-4);
@@ -667,7 +734,9 @@ if length(listpos) == 1
                 end
             end
             if ~isempty(Activity{currentsession}) && ~isempty(Behavior{currentsession})
-                eval(['[', animal, '_Correlations{', num2str(currentsession), '},', ...
+                eval(['[',...
+                    animal, '_Aligned{', num2str(currentsession), '},', ...
+                    animal, '_Correlations{', num2str(currentsession), '},', ...
                     animal, '_StatClassified{', num2str(currentsession), '},', ...
                     animal, '_TrialInformation{', num2str(currentsession), '},',...
                     animal, '_PredictionModel{', num2str(currentsession), ...
@@ -683,7 +752,7 @@ if length(listpos) == 1
         end
         waitbar(i/(length(Act_folder)), h1, 'Finding and aligning files...')
     end
-    close(h1)
+    fnameAligned = [animal, '_Aligned'];
     fnameCorrelations = [animal, '_Correlations'];
     fnameStatClass = [animal, '_StatClassified'];
     fnameTrial = [animal, '_TrialInformation'];
@@ -691,10 +760,14 @@ if length(listpos) == 1
     
     cd('C:\Users\Komiyama\Desktop\Output Data');
     
+    save(fnameAligned, fnameAligned);
     save(fnameCorrelations, fnameCorrelations);
     save(fnameStatClass, fnameStatClass);
     save(fnameTrial, fnameTrial, '-v7.3');
-    save(fnamePrediction, fnamePrediction);
+    if MLRopt
+        save(fnamePrediction, fnamePrediction);
+    else
+    end
     toclear = who(['*', animal, '*']);
     for c = 1:length(toclear)
         clear(toclear{c})
@@ -704,17 +777,19 @@ else
     animals = list(listpos);
     count = 0;
     for f = 1:length(listpos)
+    LeverTracePlots.figure = figure('Position', scsz);
         for i = 1:length(Act_folder)
             animal = animals{f};
-            cd('C:\Users\Komiyama\Desktop\ActivitySummary');
+            LeverTracePlots.figure.Name = animal;
             ismatch = strfind(Act_folder(i).name, animal);
             wrongfile = strfind(Act_folder(i).name, 'Poly');
-            
-            if ~isempty(ismatch) && isempty(wrongfile) 
+            wrongfile2 = strfind(Act_folder(i).name, 'ZSeries');
+            if ~isempty(ismatch) && isempty(wrongfile) && isempty(wrongfile2)
+                cd('E:\ActivitySummary');
                 load(Act_folder(i).name)
                 eval(['currentsession = ', Act_folder(i).name(1:end-4), '.Session;'])
                 Activity{currentsession} = Act_folder(i).name(1:end-4);
-                cd('C:\Users\Komiyama\Desktop\Behavioral Data\All Summarized Behavior Files list');
+                cd('E:\Behavioral Data\All Summarized Behavior Files list');
                 for j = 1:length(Beh_folder)
                     areboth = strncmp(Beh_folder(j).name, Activity(currentsession), 12);
                     if areboth
@@ -723,8 +798,12 @@ else
                     end
                 end
                 if ~isempty(Activity{currentsession}) && ~isempty(Behavior{currentsession})
-                    eval(['[', animal, '_StatClassified{', num2str(currentsession), '},', ...
-                        animal, '_TrialInformation{', num2str(currentsession),...
+                    eval(['[', ...
+                        animal, '_Aligned{', num2str(currentsession), '},', ...
+                        animal, '_Correlations{', num2str(currentsession), '},', ...
+                        animal, '_StatClassified{', num2str(currentsession), '},', ...
+                        animal, '_TrialInformation{', num2str(currentsession), '},',...
+                        animal, '_PredictionModel{', num2str(currentsession), ...
                         '}] = NHanalyAlignBehavior(', Activity{currentsession},',', Behavior{currentsession}, ');'])
                     clear(Activity{currentsession})
                     clear(Behavior{currentsession})
@@ -738,25 +817,28 @@ else
             count = count+1;
             waitbar(count/(length(Act_folder)*length(listpos)), h1, 'Finding and aligning files...')
         end
+        fnameAligned = [animal, '_Aligned'];
+        fnameCorrelations = [animal, '_Correlations'];
         fnameStatClass = [animal, '_StatClassified'];
         fnameTrial = [animal, '_TrialInformation'];
-
+        fnamePrediction = [animal, '_PredictionModel'];
+        
         cd('C:\Users\Komiyama\Desktop\Output Data');
 
+        save(fnameAligned, fnameAligned);
+        save(fnameCorrelations, fnameCorrelations);
         save(fnameStatClass, fnameStatClass);
-        save(fnameTrial, fnameTrial);
-        clear(fnameStatClass)
-        clear(fnameTrial)
-        toclear = who(['*', animal, '*']);
-    %     fileclear = who(['*', fname, '*']);
-        for c = 1:length(toclear)
-            clear(toclear{c})
+        save(fnameTrial, fnameTrial, '-v7.3');
+        if MLRopt
+            save(fnamePrediction, fnamePrediction);
         end
-    %     for c = 1:length(fileclear)
-    %         clear(fileclear{c})
-    %     end
+
+        toclear = who('-regexp', animal);
+        cellfun(@clear, toclear)
         disp(['Animal ', animal, ' alignment complete'])
+        close(LeverTracePlots.figure)
     end
+    close(h1)
 end
 
 % for i = 1:14
@@ -893,7 +975,15 @@ function InspectRandomTraces_DropDown_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-plotspineanddenddata;
+index = handles.AnimalName_ListBox.Value;
+
+if ~isempty(index)
+    animals = handles.AnimalName_ListBox.String(index);
+    plotspineanddenddata(animals);
+else
+    plotspineanddenddata;
+end
+
 
 
 % --- Executes on button press in DendSubtracted_CheckBox.
@@ -931,28 +1021,20 @@ function AllAnalysis_DropDown_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-RedoAnalysis
+listpos = get(handles.AnimalName_ListBox, 'Value');
+fulllist = get(handles.AnimalName_ListBox, 'String');
+animals = fulllist(listpos);
+filestoanalyze = [];
+for i = 1:length(animals)
+    filestoanalyze =[filestoanalyze, ',''',animals{i}, ''''];
+end
+filestoanalyze =  filestoanalyze(2:end);
+
+eval(['RedoAnalysis(', filestoanalyze, ')']);
 
 % --------------------------------------------------------------------
 function DendSub_DropDown_Callback(hObject, eventdata, handles)
 % hObject    handle to DendSub_DropDown (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-RedoSubtraction
-
-% --------------------------------------------------------------------
-function CorrShuff_DropDown_Callback(hObject, eventdata, handles)
-% hObject    handle to CorrShuff_DropDown (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-ShuffleSpines;
-
-
-% --- Executes on button press in NewSpineAnalysis_PushButton.
-function NewSpineAnalysis_PushButton_Callback(hObject, eventdata, handles)
-% hObject    handle to NewSpineAnalysis_PushButton (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
@@ -966,7 +1048,34 @@ for i = 1:length(animals)
 end
 filestoanalyze =  filestoanalyze(2:end);
 
-eval(['NewSpineAnalysis(', filestoanalyze, ')']);
+eval(['RedoSubtraction(', filestoanalyze, ')']);
+
+% --------------------------------------------------------------------
+function CorrShuff_DropDown_Callback(hObject, eventdata, handles)
+% hObject    handle to CorrShuff_DropDown (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+ShuffleSpines;
+
+
+% --- Executes on button press in NewSpineAveraging_PushButton.
+function NewSpineAveraging_PushButton_Callback(hObject, eventdata, handles)
+% hObject    handle to NewSpineAveraging_PushButton (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+
+listpos = get(handles.AnimalName_ListBox, 'Value');
+fulllist = get(handles.AnimalName_ListBox, 'String');
+animals = fulllist(listpos);
+filestoanalyze = [];
+for i = 1:length(animals)
+    filestoanalyze =[filestoanalyze, ',''',animals{i}, ''''];
+end
+filestoanalyze =  filestoanalyze(2:end);
+
+eval(['NewSpineAveraging(', filestoanalyze, ')']);
 
 
 % --- Executes on button press in Prediction_PushButton.
@@ -985,3 +1094,163 @@ end
 filestoanalyze =  filestoanalyze(2:end);
 
 eval(['AveragePrediction(', filestoanalyze, ')']);
+
+
+% --- Executes on button press in UnselectAll_PushButton.
+function UnselectAll_PushButton_Callback(hObject, eventdata, handles)
+% hObject    handle to UnselectAll_PushButton (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+handles.AnimalName_ListBox.Value = [];
+
+
+% --- Executes on button press in NewSpineAnalysis_PushButton.
+function NewSpineAnalysis_PushButton_Callback(hObject, eventdata, handles)
+% hObject    handle to NewSpineAnalysis_PushButton (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+listpos = get(handles.AnimalName_ListBox, 'Value');
+fulllist = get(handles.AnimalName_ListBox, 'String');
+animals = fulllist(listpos);
+filestoanalyze = [];
+for i = 1:length(animals)
+    filestoanalyze =[filestoanalyze, ',''',animals{i}, ''''];
+end
+filestoanalyze =  filestoanalyze(2:end);
+
+sensor = inputdlg('Enter Sensor', '', 1,{'GCaMP'});
+
+eval(['NewSpineAnalysis(', filestoanalyze,',', '''', sensor{1}, ''')']);
+
+
+
+% --- Executes on button press in TrialActivityAnalysis_PushButton.
+function TrialActivityAnalysis_PushButton_Callback(hObject, eventdata, handles)
+% hObject    handle to TrialActivityAnalysis_PushButton (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+
+listpos = get(handles.AnimalName_ListBox, 'Value');
+fulllist = get(handles.AnimalName_ListBox, 'String');
+animals = fulllist(listpos);
+filestoanalyze = [];
+for i = 1:length(animals)
+    filestoanalyze =[filestoanalyze, ',''',animals{i}, ''''];
+end
+filestoanalyze =  filestoanalyze(2:end);
+
+
+eval(['TrialActivityAnalysis(', filestoanalyze, ')']);
+
+
+% --- Executes on button press in PCA_PushButton.
+function PCA_PushButton_Callback(hObject, eventdata, handles)
+% hObject    handle to PCA_PushButton (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+%%% Note: This code can only be run after first running
+%%% TrialActivityAnalysis, the outputs of this function serving as the
+%%% inputs to the current
+
+cd('C:\Users\Komiyama\Desktop\Output Data')
+
+sensorused = inputdlg('Enter Sensor', '', 1,{'GCaMP'});
+sensorused = sensorused{1};
+
+datafile = fastdir(cd, [sensorused, '_TrialDataSummary']);
+load(datafile{1})
+
+featuresfile = fastdir(cd, [sensorused, '_TrialFeatures']);
+load(featuresfile{1})
+
+TrialActivityPCA(TrialDataSummary, TrialFeatures);
+
+
+
+
+% --- Executes on button press in FitwithMLR_CheckBox.
+function FitwithMLR_CheckBox_Callback(hObject, eventdata, handles)
+% hObject    handle to FitwithMLR_CheckBox (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hint: get(hObject,'Value') returns toggle state of FitwithMLR_CheckBox
+
+
+% --------------------------------------------------------------------
+function Thresholding_DropDown_Callback(hObject, eventdata, handles)
+% hObject    handle to Thresholding_DropDown (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+
+listpos = get(handles.AnimalName_ListBox, 'Value');
+fulllist = get(handles.AnimalName_ListBox, 'String');
+animals = fulllist(listpos);
+filestoanalyze = [];
+for i = 1:length(animals)
+    filestoanalyze =[filestoanalyze, ',''',animals{i}, ''''];
+end
+filestoanalyze =  filestoanalyze(2:end);
+
+eval(['ReDoThresholding(', filestoanalyze, ')']);
+
+
+% --------------------------------------------------------------------
+function HistogramofAlphas_Callback(hObject, eventdata, handles)
+% hObject    handle to HistogramofAlphas (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+
+listpos = get(handles.AnimalName_ListBox, 'Value');
+fulllist = get(handles.AnimalName_ListBox, 'String');
+animals = fulllist(listpos);
+filestoanalyze = [];
+for i = 1:length(animals)
+    filestoanalyze =[filestoanalyze, ',''',animals{i}, ''''];
+end
+filestoanalyze =  filestoanalyze(2:end);
+
+eval(['AlphaHistogram(', filestoanalyze, ')']);
+
+
+
+% --- Executes on button press in SpineVolume_PushButton.
+function SpineVolume_PushButton_Callback(hObject, eventdata, handles)
+% hObject    handle to SpineVolume_PushButton (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+listpos = get(handles.AnimalName_ListBox, 'Value');
+fulllist = get(handles.AnimalName_ListBox, 'String');
+animals = fulllist(listpos);
+filestoanalyze = [];
+for i = 1:length(animals)
+    filestoanalyze =[filestoanalyze, ',''',animals{i}, ''''];
+end
+filestoanalyze =  filestoanalyze(2:end);
+
+eval(['SpineVolumeSummary(', filestoanalyze, ')']);
+
+
+% --------------------------------------------------------------------
+function ThreshMethods_DropDown_Callback(hObject, eventdata, handles)
+% hObject    handle to ThreshMethods_DropDown (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+listpos = get(handles.AnimalName_ListBox, 'Value');
+fulllist = get(handles.AnimalName_ListBox, 'String');
+animals = fulllist(listpos);
+filestoanalyze = [];
+for i = 1:length(animals)
+    filestoanalyze =[filestoanalyze, ',''',animals{i}, ''''];
+end
+filestoanalyze =  filestoanalyze(2:end);
+
+eval(['ThresholdMethodsSummary(', filestoanalyze, ')']);

@@ -30,6 +30,9 @@ else
     save_directory = [filesep,nameparts{2}, filesep, nameparts{3}, filesep, nameparts{4}, filesep, nameparts{5}, filesep, nameparts{6}, filesep, nameparts{7},filesep, nameparts{8}, filesep, nameparts{9}, filesep, nameparts{10}, filesep];
 end
 
+if ~strcmpi(save_directory(end), filesep)
+    save_directory = [save_directory, filesep];
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Determine if ROIs have been drawn, and exist in the appropriate format
@@ -77,7 +80,11 @@ animal = regexp(fullfname, '[A-Z]{2,3}0*[0-9]*', 'match');
 animal = animal{1};
 fullfname = [pname,filegeneral];
 numberofzerosusedinnaming = length(regexp(fname{1}(feat_sep(end):end), '0'));
-CaImage_File_info = imfinfo([pname,firstimfile,'_',repmat('0', 1,numberofzerosusedinnaming),'1_corrected.tif']);
+if isfile([pname,firstimfile,'_',repmat('0', 1,numberofzerosusedinnaming),'1_corrected.tif'])
+    CaImage_File_info = imfinfo([pname,firstimfile,'_',repmat('0', 1,numberofzerosusedinnaming),'1_corrected.tif']);
+else
+    CaImage_File_info = imfinfo([save_directory, gui_CaImageViewer.filename]);
+end
 
 D = dir(pname);
 if isempty(D)
@@ -91,11 +98,22 @@ timecourse_image_number = 0;
 acquisition_step = [];
 frame_bin_count = [];
 for i = 1:length(D)
-    if ~isempty(strfind(D(i).name, 'corrected.tif'))
+    if ~isempty(strfind(D(i).name, '.tif'))
         timecourse_image_number = timecourse_image_number + 1;
-        feat_step = regexp(D(i).name, '_');
-        acquisition_step = [acquisition_step; D(i).name(feat_step(2)+1:feat_step(3)-1)];
-        frame_bin_count = [frame_bin_count; D(i).name(feat_step(3)+1:feat_step(4)-1)];
+        feat_sep = regexp(D(i).name, '_');
+        for f = 1:length(feat_sep)-1
+            findacqpattern{f} = regexp(D(i).name(feat_sep(f)+1:feat_sep(f+1)-1), '[0]{2,5}\d');
+        end
+        first_acquisition_delimiter = find(~cell2mat(cellfun(@isempty, findacqpattern, 'uni', false)),1,'first');
+%         acquisition_step = [acquisition_step; D(i).name(feat_sep(2)+1:feat_sep(3)-1)];
+        acquisition_step = [acquisition_step; D(i).name(feat_sep(first_acquisition_delimiter)+1:feat_sep(first_acquisition_delimiter+1)-1)];
+        bin_acquisition_delimiter = find(~cell2mat(cellfun(@isempty, findacqpattern, 'uni', false)),1,'last');
+%         if length(feat_sep)>3
+%             frame_bin_count = [frame_bin_count; D(i).name(feat_sep(3)+1:feat_sep(4)-1)];
+%         else
+%             frame_bin_count = [frame_bin_count; D(i).name(feat_sep(3)+1:end)];
+            frame_bin_count = [frame_bin_count; D(i).name(feat_sep(bin_acquisition_delimiter)+1:feat_sep(bin_acquisition_delimiter+1)-1)];
+%         end
     else
     end
 end
@@ -184,13 +202,25 @@ if newspineanalysis || islong
         userspecificpart = [];
     end
     load([targ_folder, filesep,userspecificpart,'Imaging Field ', num2str(currentfield), ' Spine Registry'])
-    if isempty(gui_CaImageViewer.NewSpineAnalysisInfo.CurrentDate)
-        date = regexp(save_directory, '[0-9]{6}', 'match'); date = date{1};
-    else
-        date = gui_CaImageViewer.NewSpineAnalysisInfo.CurrentDate;
+    datefromglobal = regexp(save_directory, '[0-9]{6}', 'match'); datefromglobal = datefromglobal{1};
+    if ~isempty(gui_CaImageViewer.NewSpineAnalysisInfo.CurrentDate)
+        datefromNSI = gui_CaImageViewer.NewSpineAnalysisInfo.CurrentDate;
     end
-    instanceofappearance = logical(strcmpi(SpineRegistry.DatesAcquired, date));
+    if ~strcmpi(datefromglobal, datefromNSI)
+        datedecision = inputdlg('Date information is conflicting; enter date::', 'YYMMDD');
+        date = datedecision{1};
+    else
+        date = datefromglobal;
+    end
+    if ~isempty(gui_CaImageViewer.NewSpineAnalysisInfo.CurrentSession)
+        instanceofappearance = gui_CaImageViewer.NewSpineAnalysisInfo.CurrentSession;
+    else
+        instanceofappearance = find(logical(strcmpi(sortrows(SpineRegistry.DatesAcquired), date)));
+    end
     SpineList = SpineRegistry.Data(:,instanceofappearance); %%% Note: Although the first ROI is always ROI0 (background), this is excluded (wrt indexing) for the final variables, so a direct translation of spine number is possible here
+    if length(SpineList)~=length(existing_ROI)-1
+        error('Longitudinal Spine List does not match number of ROIs; Check the Spine Registry File!')
+    end
     nullspines = find(SpineList==0);
         Fluorescence_Intensity = cell(length(SpineList),1);
         Total_Intensity = cell(length(SpineList),1);
@@ -353,11 +383,12 @@ end
                 break
             end
             imnum = frame_bin_count(j,:);
-            filepattern = [fullfname, '_',acquisition_step(j,:),'_',imnum, '_corrected.tif'];
-            if j == 1 || j ==2 || j == timecourse_image_number || ismember(j,find(diff(acquisition_step(:,end)))) %%% Length of each file assumed to be constant UNLESS it's the start of a new acquisition (or in some cases the second image, since the first one is sometimes overwritten)
-                CaImage_File_info = imfinfo(filepattern);
+            if timecourse_image_number>1
+                filepattern = [fullfname, '_',acquisition_step(j,:),'_',imnum, '_corrected.tif'];
             else
+                filepattern = [save_directory, gui_CaImageViewer.filename];
             end
+            CaImage_File_info = imfinfo(filepattern);
             all_images = read_tiff(filepattern,CaImage_File_info);
 
             for k = 1:length(CaImage_File_info)
@@ -388,13 +419,13 @@ end
                 if(isNaNPossible);Background_Intensity = Background_Intensity(~isnan(Background_Intensity));end
                 Total_Background_Intensity = sum(Background_Intensity(:));
                 Background_Pixel_num = Total_Background_Intensity/nanmean(Background_Intensity(:));
-                Background_Mean_Int = nanmean(Background_Intensity(:));
-
-                if twochannels == 1
-                    Background_Red = current_image(ROIreg{1},2);
-                    Total_Background_Red = sum(Background_Red(:));
-                    Background_Mean_Red = nanmean(Background_Red(:));
-                end
+%                 Background_Mean_Int = nanmean(Background_Intensity(:));
+                Background_Mean_Int  = 0;
+%                 if twochannels == 1
+%                     Background_Red = current_image(ROIreg{1},2);
+%                     Total_Background_Red = sum(Background_Red(:));
+%                     Background_Mean_Red = nanmean(Background_Red(:));
+%                 end
 
                 %%% 
 
@@ -417,13 +448,16 @@ end
                             Fluorescence_Measurement{i-1}(1,actual_image_counter) = (tmp_mean_intensity-Background_Mean_Int)*Pixel_Number{i-1};
                         end
                     else
+                        if Background_Mean_Int>tmp_mean_intensity ||(tmp_mean_intensity-Background_Mean_Int) <0
+                            k = 1;
+                        end
                         Fluorescence_Measurement{i-1}(1,actual_image_counter) = (tmp_mean_intensity-Background_Mean_Int)*Pixel_Number{i-1};
                     end
-                    if twochannels == 1
-                        Red_Intensity{i-1} = current_image(ROIreg{i},2);
-                        Total_Red_Intensity{i-1} = sum(Red_Intensity{i-1}(:));
-                        Red_Measurement{i-1}(1,actual_image_counter) = (nanmean(Red_Intensity{i-1}(:))-Background_Mean_Red)*Pixel_Number{i-1};
-                    end
+%                     if twochannels == 1
+%                         Red_Intensity{i-1} = current_image(ROIreg{i},2);
+%                         Total_Red_Intensity{i-1} = sum(Red_Intensity{i-1}(:));
+%                         Red_Measurement{i-1}(1,actual_image_counter) = (nanmean(Red_Intensity{i-1}(:))-Background_Mean_Red)*Pixel_Number{i-1};
+%                     end
                 end
 
                 if isfield(gui_CaImageViewer, 'PolyROI')
@@ -436,11 +470,11 @@ end
                         Poly_Pixel_Number{i} = Poly_Total_Intensity{i}/tmp_mean_intensity;
                         Poly_Fluorescence_Measurement{i}(1,actual_image_counter) = (tmp_mean_intensity-Background_Mean_Int)*Poly_Pixel_Number{i};
                         PolyFMat(i,actual_image_counter) = Poly_Fluorescence_Measurement{i}(1,actual_image_counter);
-                        if twochannels == 1
-                            Poly_Red_Intensity{i} = current_image(PolyROIreg{i},2);
-                            Poly_Red_Measurement{i}(1,actual_image_counter) = (nanmean(Poly_Red_Intensity{i}(:))-Background_Mean_Red)*Poly_Pixel_Number{i};
-                            Poly_Total_Red_Intensity{i} = sum(Poly_Red_Intensity{i}(:));
-                        end
+%                         if twochannels == 1
+%                             Poly_Red_Intensity{i} = current_image(PolyROIreg{i},2);
+%                             Poly_Red_Measurement{i}(1,actual_image_counter) = (nanmean(Poly_Red_Intensity{i}(:))-Background_Mean_Red)*Poly_Pixel_Number{i};
+%                             Poly_Total_Red_Intensity{i} = sum(Poly_Red_Intensity{i}(:));
+%                         end
                     end
                 end
                 for i = 1:DendNum
@@ -471,9 +505,6 @@ if newspineanalysis || islong
     experimentlength = length(Fluorescence_Measurement{1});
     nullspinedata = nan(1,experimentlength);
     insert = mat2cell(repmat(nullspinedata,length(nullspines),1),ones(length(nullspines),1),experimentlength);
-    Fluorescence_Intensity(nullspines) = insert;
-    Total_Intensity(nullspines) = insert;
-    Pixel_Number(nullspines) = insert;
     Fluorescence_Measurement(nullspines) = insert;    
 end
 
@@ -483,16 +514,14 @@ end
 
 bl = 'All';     %%% If you want a different baseline, indicate here
 
-if twochannels == 1
-    baselineFrames = [];
+
+if strcmpi(bl, 'All')
+    bl = 1:actual_image_counter -1;
 else
-    if strcmpi(bl, 'All')
-        bl = 1:actual_image_counter -1;
-    else
-        bl = str2num(bl);
-    end
-    baselineFrames = bl;
+    bl = str2num(bl);
 end
+baselineFrames = bl;
+
 
 a.BaselineFrames = bl;
 
@@ -518,8 +547,8 @@ for i = 1:length(Fluorescence_Measurement)
     spine_baseline(1,i) = median(trace);
 end
 
-dend_baseline(1,i) = zeros(1,DendNum);
-  
+dend_baseline = zeros(1,DendNum);
+
 for i = 1:DendNum
     roundstodo = 10;
     thisround = 1;
@@ -548,12 +577,12 @@ for i = 1:length(existing_ROI)-1
     for j = 1:DendNum
         deltaDend(j,:) = (Mean_Dend(j,:)-dend_baseline(1,j))/dend_baseline(1,j);
     end
-    if twochannels == 1
-        deltaR{i} = Red_Measurement{i} / nanmean(Red_Measurement{i}(baselineFrames));
-        dF_over_F{i} = (deltaF{i}./deltaR{i})/(nanmean(Fluorescence_Measurement{i}(baselineFrames))./nanmean(Red_Measurement{i}(baselineFrames)));
-    else
+%     if twochannels == 1
+%         deltaR{i} = Red_Measurement{i} / nanmean(Red_Measurement{i}(baselineFrames));
+%         dF_over_F{i} = (deltaF{i}./deltaR{i})/(nanmean(Fluorescence_Measurement{i}(baselineFrames))./nanmean(Red_Measurement{i}(baselineFrames)));
+%     else
         dF_over_F{i} = deltaF{i}/spine_baseline(1,i);
-    end
+%     end
 end
 
 if ~isfield(gui_CaImageViewer, 'PolyLine')
@@ -570,16 +599,15 @@ zoomval = str2num(get(gui_CaImageViewer.figure.handles.Zoom_EditableText, 'Strin
 
 fullfname = gui_CaImageViewer.filename;
 
-a.deltaF = deltaF;
-a.dF_over_F = dF_over_F;
+a.Background_Intensity = Background_Intensity;
 a.Time = Time;
 a.Fluorescence_Intensity = Fluorescence_Intensity;
 a.Total_Intensity = Total_Intensity;
 a.Pixel_Number = Pixel_Number;
 a.Fluorescence_Measurement = Fluorescence_Measurement;
+a.deltaF = deltaF;
+a.dF_over_F = dF_over_F;
 a.Filename = fullfname;
-% a.Poly_deltaF = Poly_deltaF;
-% a.Poly_dF_over_F = Poly_dF_over_F;
 a.Poly_Fluorescence_Intensity = Poly_Fluorescence_Intensity;
 a.Poly_Total_Intensity = Poly_Total_Intensity;
 a.Poly_Pixel_Number = Poly_Pixel_Number;
@@ -611,14 +639,14 @@ catch
     disp(['Could not save all ROIs during analysis. Make sure you''ve saved them before you clear them!'])
 end
 
-if twochannels == 1
-    a.Red_Intensity = Red_Intensity;
-    a.Total_Red_Intensity = Total_Red_Intensity;
-    a.Red_Measurement = Red_Measurement;
-    a.Poly_Red_Intensity = Poly_Red_Intensity;
-    a.Poly_Total_Red_Intensity = Poly_Total_Red_Intensity;
-    a.Poly_Red_Measurement = Poly_Red_Measurement;
-end
+% if twochannels == 1
+%     a.Red_Intensity = Red_Intensity;
+%     a.Total_Red_Intensity = Total_Red_Intensity;
+%     a.Red_Measurement = Red_Measurement;
+%     a.Poly_Red_Intensity = Poly_Red_Intensity;
+%     a.Poly_Total_Red_Intensity = Poly_Total_Red_Intensity;
+%     a.Poly_Red_Measurement = Poly_Red_Measurement;
+% end
 
 user = get(gui_CaImageViewer.figure.handles.figure1, 'UserData');
 
@@ -681,7 +709,7 @@ for i = 1:length(existing_ROI)-1
     subplot(sub1,sub2,i)
     onDend = 1;
     for j = 1:DendNum
-        if ~isempty(find(DendSpines{j} == i))   
+        if ~isempty(find(DendSpines{j} == i,1))   
             plot(Time, deltaDend(j,:), 'k', 'LineWidth', 2); hold on;
             onDend = j;
         else
@@ -701,15 +729,12 @@ end
 scrsz = get(0, 'ScreenSize');
 set(timecourse_h, 'Position', [0, scrsz(2), scrsz(3)/2, scrsz(4)]);
 
-if twochannels == 1
-    uncaging_times = [0:2:58];
-    Pulse_mark_max = max(get(trace_fig, 'YData'));
-    Pulse_mark_min = min(get(trace_fig, 'Ydata'));
+%% Figure 2: Plot Background Intensity;
 
-    for i = 1:length(uncaging_times)
-        line([uncaging_times(i), uncaging_times(i)], [Pulse_mark_min, Pulse_mark_max], 'linewidth', 0.5, 'Color', 'black')
-    end
-end
+figure('Position', [scrsz(3)/2+1,scrsz(2), scrsz(3)/2,scrsz(4)]);
+plot(Background_Intensity, 'linewidth', 3)
+
+
 
 function y = sloppy_mean(x,dim)
 

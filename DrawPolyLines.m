@@ -84,7 +84,11 @@ ymin = floor(min(y)-10);
 ymax = ceil(max(y)+10);
 
 if glovar.NewSpineAnalysis
-    immax = glovar.ch1image;
+    if size(glovar.ch1image,3)>1
+        immax = glovar.ch1image(:,:,2);
+    else
+        immax = glovar.ch1image;
+    end
 else
     im = glovar.GCaMP_Image;
     im = cat(3, im{:});
@@ -106,7 +110,7 @@ end
 
 scrsz = get(0, 'ScreenSize');
 
-dendwindow = figure('Position', scrsz); imagesc(immax(ymin:ymax, xmin:xmax)); colormap(cmap)
+dendwindow = figure('Position', scrsz); imagesc(immax(ymin:ymax, xmin:xmax)); colormap('Fire')
 set(gca, 'XTick', [], 'YTick', []);
 
 
@@ -145,7 +149,7 @@ radius = 3;
 axes(axes1)
 
 %%% Correction Factor may change depending on zoom
-correctionfactor = 2;
+correctionfactor = 1;
 x = x-correctionfactor;
 y = y-correctionfactor;
 %%%
@@ -208,13 +212,13 @@ end
 if twochannels == 1
 
     axes(axes2)
-    glovar.RedPolyLine = line(x,y, 'Tag', 'PolyLine', 'color', 'cyan');
+%     glovar.RedPolyLine = line(x,y, 'Tag', 'PolyLine', 'color', 'cyan');
 
-    for i = 1:length(x)
-        glovar.RedPolyLinePos{i} = [x(i)-radius, y(i)-radius, radius*2, radius*2];
-        ROInum = i;
-        glovar.RedPolyROI{i} = rectangle('Position', glovar.RedPolyLinePos{i}, 'EdgeColor', 'cyan', 'Tag', ['Dendrite ', num2str(DendriteNum), ' RedPolyROI', num2str(i)], 'Curvature', [1 1],'ButtonDownFcn', {@Drag_Poly, ROInum});
-    end
+%     for i = 1:length(x)
+%         glovar.RedPolyLinePos{i} = [x(i)-radius, y(i)-radius, radius*2, radius*2];
+%         ROInum = i;
+%         glovar.RedPolyROI{i} = rectangle('Position', glovar.RedPolyLinePos{i}, 'EdgeColor', 'cyan', 'Tag', ['Dendrite ', num2str(DendriteNum), ' RedPolyROI', num2str(i)], 'Curvature', [1 1],'ButtonDownFcn', {@Drag_Poly, ROInum});
+%     end
 
 end
 

@@ -24,7 +24,7 @@ if isempty(varargin)
     filelist = files(randnum);
    
 
-    for f = 1:length(filelist);
+    for f = 1:length(filelist)
         load(filelist{f});
         eval(['File = ', filelist{f}(1:end-4), ';'])
         clear(filelist{f}(1:end-4));
@@ -98,7 +98,7 @@ if isempty(varargin)
 else
     filelist = varargin;
 
-    for f = 1:length(filelist);
+    for f = 1:length(filelist)
         File = filelist{f};
         bound = cell(1,File.NumberofDendrites);
         split = cell(1,File.NumberofDendrites);

@@ -1,0 +1,43 @@
+function File = MoveThreshold(File)
+
+NumberofSpines = File.NumberofSpines;
+sensor = File.ImagingSensor;
+if strcmpi(sensor, 'GCaMP')
+    ImagingFrequency = 30.49;
+elseif strcmpi(sensor, 'GluSNFR')
+    ImagingFrequency = 58.3;
+end
+
+%% =======================================================================
+%%% Put method for determining new threshold here; can be a static value, a
+%%% multiplier of noise, etc. Be sure to consider how the actual analysis
+%%% function, AP_caEvents_thresh, uses the data to determine the threshold
+%%% (if it is a single value, this is assumed to be a multiplier of SD; if
+%%% it is an array of values, this is assumed to be the ACTUAL DESIRED
+%%% THRESHOLDS FOR EACH TRACE
+
+OldSpineThreshold = File.SpineThresholds;
+NewSpineThreshold = File.SpineThresholds; %%% just to initialize the same structure
+
+oldSDfactor = OldSpineThreshold.UpperThreshold./OldSpineThreshold.LowerThreshold;
+newSDfactor = 2;
+NewSpineThreshold.UpperThreshold = OldSpineThreshold.LowerThreshold.*newSDfactor; 
+
+
+%% ========================================================================
+for s = 1:NumberofSpines
+    ParentDend =  logical(~cell2mat(cellfun(@(x) isempty(find(x == s,1)), File.SpineDendriteGrouping, 'Uni', false))); 
+    OldSpineThreshold = File.SpineThreshold(s);
+    NewSpineThreshold = ShiftValue;
+    File.ModifiedSpineThreshold = NewSpineThreshold;
+    CurrentSpineActivity = File.Processed_dFoF(s,:);
+    [square, ~,trueeventcount, ~, ~] = DetectEvents2(CurrentSpineActivity, NewSpineThreshold);
+    NewActivityTrace = square-File.Dendrite_Binarized(ParentDend,:);
+    NewActivityTrace(NewActivityTrace<0) = 0;
+    File.SynapseOnlyBinarized(s,:) = NewActivityTrace;
+    File.Frequency(s) = (nnz(diff(trueeventcount>0.5)>0)/((length(File.Time)/ImagingFrequency)/60))';
+    CurrentDendSubSpineActivity = File.Processed_dFoF_DendriteSubtracted(s,:);
+    [square, ~,trueeventcount, ~, ~] = DetectEvents(CurrentDendSubSpineActivity, NewSpineThreshold);
+    File.SynapseOnlyBinarized_DendriteSubtracted(s,:) = square;
+    File.Frequency_DendriteSubtracted(s) = (nnz(diff(trueeventcount>0.5)>0)/((length(File.Time)/ImagingFrequency)/60))';
+end

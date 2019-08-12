@@ -1,7 +1,7 @@
 myfiles = fastdir(cd, ['NH\w+SummarizedBehavior']);
 for i = 1:length(myfiles)
 load(myfiles{i})
-eval(['corrdata = ', myfiles{i}(1:end-4), '.MovementCorrelation']);
+eval(['corrdata = ', myfiles{i}(1:end-4), '.MovementCorrelation;']);
 y = diag(corrdata);
 y = y(logical(~isnan(y)));
 x = 1:length(logical(~isnan(y)));

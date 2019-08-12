@@ -11,16 +11,50 @@ for i = 1:length(selectedaxes)
     xlabel(['Imaging field ', imagingfieldlabel], 'Color', 'k');
 end
 
+dates = sortrows(dates);
+
+figtitle = regexp(get(gcf, 'Name'), '[A-Z]{2,3}0+\d+', 'match');
+if ~isempty(figtitle)
+    experiment = figtitle{1};
+    animal = experiment;
+else
+    if ~isempty(gui_CaImageViewer.filename)
+        animal = regexp(gui_CaImageViewer.filename, '[A-Z]{2,3}[0-9]*', 'match');
+    else
+        a = get(gcf);
+        animal = regexp(a.FileName, '[A-Z]{2,3}0*[1-9]*', 'match');
+    end
+    animal = animal{1};
+end
+
 %%%%% Move to parent folder
+
+if isfield(gui_CaImageViewer, 'save_directory')
+    if ~isempty(gui_CaImageViewer.save_directory)
+        experimenter = regexp(gui_CaImageViewer.save_directory, ['People.\w+'], 'match');
+    else
+    end
+else
+    a = get(gcf);
+    experimenter = regexp(a.FileName, ['People.\w+'], 'match');
+end
+experimenter = experimenter{1};
+experimenter = experimenter(strfind(experimenter, '\')+1:end);
+
+    switch experimenter
+        case 'Assaf'
+            gui_CaImageViewer.save_directory = ['Z:\People\', experimenter, '\Data\', animal];
+        otherwise
+            gui_CaImageViewer.save_directory = ['Z:\People\',experimenter,'\Data\', animal];
+    end
 
 fullpath = gui_CaImageViewer.save_directory;
 allseps = strfind(fullpath, filesep);
-stepsup = 2;
-newpath = fullpath(1:allseps(end-stepsup)-1); %%% move two steps up in the path directory to get bath to the main animal folder (e.g. Z:/People/Nathan/Data/NH004 instead of Z:/People/Nathan/Data/NH004/160316/summed)
-cd(newpath)
+% stepsup = 2;
+% newpath = fullpath(1:allseps(end-stepsup)-1); %%% move two steps up in the path directory to get bath to the main animal folder (e.g. Z:/People/Nathan/Data/NH004 instead of Z:/People/Nathan/Data/NH004/160316/summed)
+cd(fullpath)
 
 %%%%%%
-files = dir(newpath);
 
 drawer = get(gui_CaImageViewer.figure.handles.figure1, 'UserData');
 if ~isempty(drawer)
@@ -68,10 +102,10 @@ else
         month = cellfun(@(x) x(3:4), dates, 'uni', false);
         day = cellfun(@(x) x(5:6), dates, 'uni', false);
         if length(unique(month))>1
-            [monthval, monthind] = sort(month);
+            [~, monthind] = sort(month);
             SpineRegistry.DatesAcquired = dates(monthind);
         else
-            [dayval, dayind] = sort(day);
+            [~, dayind] = sort(day);
             SpineRegistry.DatesAcquired = dates(dayind);
         end
     end

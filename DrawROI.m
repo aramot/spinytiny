@@ -21,27 +21,20 @@ program = get(gcf);
 
 running = program.FileName;
 
-if ~isempty(regexp(running, 'CaImageViewer'))
-    global gui_CaImageViewer
-    glovar = gui_CaImageViewer;
-    axes1 = glovar.figure.handles.GreenGraph;
-    axes2 = glovar.figure.handles.RedGraph;
-    twochannels = glovar.figure.handles.TwoChannels_CheckBox.Value;
-    zoom = str2num(get(glovar.figure.handles.Zoom_EditableText, 'String'));
-    if zoom > 10 
-        radius = 30;
-    else
-        radius = 20;
-    end
+global gui_CaImageViewer
+glovar = gui_CaImageViewer;
+axes1 = glovar.figure.handles.GreenGraph;
+axes2 = glovar.figure.handles.RedGraph;
+twochannels = glovar.figure.handles.TwoChannels_CheckBox.Value;
+
+zoom = str2num(get(glovar.figure.handles.Zoom_EditableText, 'String'));
+if zoom > 10 
+    radius = 30;
 else
-    global sideline
-    global gui_CaImageViewer;
-    glovar = gui_CaImageViewer;
-    axes1 = gca;
-    axes2 = [];
-    twochannels = [];
-    radius = 10;
+    radius = 20;
 end
+
+Merge = get(gui_CaImageViewer.figure.handles.Merge_ToggleButton, 'Value');
 
 if ~isnumeric(ROInum)
     ROInum = str2double(ROInum);
@@ -85,7 +78,7 @@ Fl_ROI(3) = radius; Fl_ROI(4) = radius;
 %%%%%%%%%%% Draw ROI (method depends on invoking function) %%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-if ~strcmpi(Router, 'FineSelect') && ROInum == 0 %%% For drawing the general background ROI
+if strcmpi(Router, 'Background') %%% For drawing the general background ROI
     axes(axes1)
     delete(findobj('Tag', 'ROI confine'));
     delete(findobj('Tag', 'ROI0'));
@@ -93,49 +86,30 @@ if ~strcmpi(Router, 'FineSelect') && ROInum == 0 %%% For drawing the general bac
     delete(findobj('Tag', 'ROI0 Text'));
     set(gui_CaImageViewer.figure.handles.output, 'WindowButtonDownFcn', []);
     glovar.ROI(ROInum+1) = drawellipse(axes1,'Tag', ['ROI', num2str(ROInum)], 'LineWidth', edgewidth, 'FaceAlpha', 0, 'Color', linecolor, 'DrawingArea', 'unlimited', 'HandleVisibility', 'on');
-%     glovar.ROItext(ROInum+1) = text(Fl_ROI(1)-2, Fl_ROI(2)-2, num2str(ROInum), 'color', 'white', 'Tag', ['ROI', num2str(ROInum), ' Text'], 'ButtonDownFcn', @DeleteROI, 'FontSize', textsize);
-%     glovar.BackgroundROI(ROInum+1) = NaN;
-    if twochannels
-        axes(axes2)
-        glovar.ROIred(ROInum+1) = rectangle('Position', Fl_ROI, 'EdgeColor', 'red', 'Curvature', [1 1], 'Tag', ['ROIred', num2str(ROInum)],'ButtonDownFcn', {@DragROI, ROInum});
-        glovar.ROIredtext(ROInum+1) = text(Fl_ROI(1)-2, Fl_ROI(2)-2, num2str(ROInum), 'color', 'white', 'Tag', ['ROIred', num2str(ROInum), ' Text'],'ButtonDownFcn', 'Ca_deleteROI');
-    else
-    end
 elseif strcmpi(Router, 'Spine') %%% First round drawing, just temporary while the fine-select mode is initiated
     axes(axes1)
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     InsertOpt = get(glovar.figure.handles.InsertSpine_ToggleButton,'Value');
     if InsertOpt
-        ROInum = glovar.InsertPoint;
+        allROIPos = get(gui_CaImageViewer.ROI, 'Center');
+        [~, ind] = min(sum(abs(cell2mat(cellfun(@(x) x(1:2)-Fl_ROI(1:2), allROIPos, 'uni', false))),2));
+        ROInum = ind;
+%         ROInum = glovar.InsertPoint;
     end
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     glovar.ROI(ROInum+1) = rectangle('Position', Fl_ROI, 'EdgeColor', linecolor, 'Curvature', [0 0], 'Tag', ['ROI', num2str(ROInum), ' Starter'], 'Linewidth', edgewidth);
-    glovar.ROItext(ROInum+1) = text(Fl_ROI(1)-2, Fl_ROI(2)-2, num2str(ROInum), 'color', 'white', 'Tag', ['ROI', num2str(ROInum), ' Text Starter'], 'ButtonDownFcn', 'DeleteROI', 'FontSize', textsize);
-    
-    if twochannels
-        axes(axes2)
-        glovar.ROIred(ROInum+1) = rectangle('Position', Fl_ROI, 'EdgeColor', 'red', 'Curvature', [1 1], 'Tag', ['ROIred', num2str(ROInum)]);
-        glovar.ROIredtext(ROInum+1) = text(Fl_ROI(1)-2, Fl_ROI(2)-2, num2str(ROInum), 'color', 'white', 'Tag', ['ROIred', num2str(ROInum), ' Text'],'ButtonDownFcn', 'DeleteROI');
-    else
-    end
+    glovar.ROItext(ROInum+1) = text(Fl_ROI(1)-2, Fl_ROI(2)-2, num2str(ROInum), 'color', 'white', 'Tag', ['ROI', num2str(ROInum), ' Text Starter'], 'ButtonDownFcn', 'DeleteROI', 'FontSize', textsize);    
 elseif strcmpi(Router, 'FineSelect') && ROInum ~=0
+    glovar.ROI(ROInum+1) = drawellipse('FaceAlpha', 0, 'Color', linecolor, 'DrawingArea', 'unlimited', 'HandleVisibility', 'on', 'Tag', ['tempROI', num2str(ROInum)]);
+    gui_CaImageViewer.templistener = listener(findobj(gca, 'Type', 'images.roi.ellipse'), 'DeletingROI', @returnwindowbtndwnfcn);       %%% Reset the window button down function after object is deleted; allows drawing again
+elseif strcmpi(Router, 'Other')
+    if twochannels && ~Merge
+        axes(axes2)
+    else
         axes(axes1)
-%     if glovar.UsingSurroundBackground
-%         surroundoffset = glovar.SurroundBackgroundBuffer;
-%         glovar.BackgroundROI(ROInum+1) = rectangle('Position', [Fl_ROI(1)-surroundoffset/2, Fl_ROI(2)-surroundoffset/2, Fl_ROI(3)+surroundoffset, Fl_ROI(4)+surroundoffset], 'EdgeColor', 'w', 'Curvature', [1 1], 'Tag', ['BackgroundROI', num2str(ROInum)], 'Linewidth', 0.75);
-%     else
-%         glovar.BackgroundROI(ROInum+1) = NaN;
-%     end
-%     glovar.ROI(ROInum+1) = rectangle('Position', Fl_ROI, 'EdgeColor', linecolor, 'Curvature', [1 1], 'Tag', ['ROI', num2str(ROInum)], 'ButtonDownFcn', {@DragROI, ROInum, 'ZoomWindow'}, 'Linewidth', edgewidth);
-    glovar.ROI(ROInum+1) = drawellipse('Tag', ['ROI', num2str(ROInum)], 'FaceAlpha', 0, 'Color', linecolor, 'DrawingArea', 'unlimited', 'HandleVisibility', 'on', 'Tag', ['tempROI', num2str(ROInum)]);
-    gui_CaImageViewer.templistener = listener(findobj(gca, 'Type', 'images.roi.ellipse'), 'DeletingROI', @returnwindowbtndwnfcn);
-%     uistack(glovar.ROI(ROInum+1), 'top');
-%     glovar.ROItext(ROInum+1) = text(Fl_ROI(1)-2, Fl_ROI(2)-2, num2str(ROInum), 'color', 'white', 'Tag', ['ROI', num2str(ROInum), ' Text'], 'ButtonDownFcn', @DeleteROI, 'FontSize', textsize);
-
-%     if twochannels
-%         axes(axes2)
-%         glovar.ROIred(ROInum+1) = rectangle('Position', Fl_ROI, 'EdgeColor', 'red', 'Curvature', [1 1], 'Tag', ['ROIred', num2str(ROInum)],'ButtonDownFcn', {@DragROI, ROInum, 'ZoomWindow'});
-%         glovar.ROIredtext(ROInum+1) = text(Fl_ROI(1), Fl_ROI(2), num2str(ROInum), 'color', 'white', 'Tag', ['ROIred', num2str(ROInum), ' Text'],'ButtonDownFcn', 'Ca_deleteROI');
-%     else
-%     end
+    end
+    set(gui_CaImageViewer.figure.handles.output, 'WindowButtonDownFcn', []);
+    glovar.ROIother(ROInum+1) = drawfreehand('Tag', ['ROIother', num2str(ROInum+1)], 'FaceAlpha', 0, 'Color', 'm', 'HandleVisibility', 'on', 'Label', num2str(ROInum+1));
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -157,7 +131,11 @@ elseif strcmpi(Router, 'Spine')
         im = cat(3, im{:});
         immax = max(im, [], 3);
     else
-        immax = gui_CaImageViewer.ch1image;
+        if size(gui_CaImageViewer.ch1image,3)>1
+            immax = gui_CaImageViewer.ch1image(:,:,2);
+        else
+            immax = gui_CaImageViewer.ch1image;
+        end
     end
     poschange = 0;
     if r(1)<=0
@@ -230,8 +208,8 @@ elseif strcmpi(Router, 'Spine')
     
 %     global sideline
     
-elseif strcmpi(Router, 'Nearby')
-    set(glovar.figure.handles.NearbySpine_ToggleButton, 'Value', 0)
+elseif strcmpi(Router, 'Other')
+    set(glovar.figure.handles.DrawOther_ToggleButton, 'Value', 0)
 elseif strcmpi(Router, 'FineSelect')
     
 end

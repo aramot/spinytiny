@@ -82,7 +82,7 @@ end
 lever_active_switch = diff([0;lever_active;0]);
 lever_active_starts = find(lever_active_switch == 1);
 lever_active_stops = find(lever_active_switch == -1)-1;
-if lever_active_starts(1) == 1;
+if lever_active_starts(1) == 1
     lever_active(1:lever_active_stops(1)) = 0;
 end
 if lever_active_stops(end) == length(lever_force_resample)

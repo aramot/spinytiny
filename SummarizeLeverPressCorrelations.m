@@ -17,10 +17,10 @@ unused_days = setdiff(sessions(1):sessions(end),sessions);
 cat_data = nan(3001,total+length(unused_days));
 
 counter = sessions(1); %%% Start from the first day that was actually used, leave preceding days blank
-for i = 1:length(sessions);
+for i = 1:length(sessions)
     currentsession = sessions(i);
     if size(MovementMat{currentsession},1)
-        cat_data(:,counter:counter+size(MovementMat{currentsession},1)-1) = MovementMat{currentsession}';
+        cat_data(:,counter:counter+size(MovementMat{currentsession},1)-1) = MovementMat{currentsession}'; %%% Concatenate all movements performed by the animal over all sessions together in one matrix
         counter = counter + size(MovementMat{currentsession},1);
     else 
     end
@@ -37,7 +37,7 @@ r_lever = nan(sessions(end),sessions(end));
 counter1 = 1;
 for currentsession = 1:ns
     session_row = sessions(currentsession);
-    temp1 = counter1:counter1+size(MovementMat{session_row},1)-1;
+    temp1 = counter1:counter1+size(MovementMat{session_row},1)-1;   %%% List of movement numbers in this session
     counter2 = counter1; %%% to step down the diagonal, make counter2 start where counter 1 does!
         for trialnumber = currentsession:ns
             session_column = sessions(trialnumber);
@@ -66,9 +66,9 @@ title('Movement correlation over sessions')
 
 scrsz = get(0, 'ScreenSize');
 
-LeverTracePlots.figure2 = figure('Position', scrsz); subplot(2,2,1); plot(diag(r_lever), 'k');
+LeverTracePlots.figure2 = figure('Position', scrsz); subplot(2,2,1); plot(diag(r_lever), 'k', 'Linewidth', 2);
 hold on;
-plot(diag(r_lever,1),'Color', [0.6 0.6 0.6])
+plot(diag(r_lever,1),'Color', [0.6 0.6 0.6], 'Linewidth', 2)
 ylabel('Correlations')
 xlabel('Session')
 legend({'Within sessions', 'Across sessions'})

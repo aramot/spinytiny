@@ -5,11 +5,12 @@ clc, clear, close all
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%% Brain section number             %%%%%%%%%%%%%%%%%%%
-animal_num = 2;  %% For the second brain, change it to 2
+animal_num = 4;  %% For the second brain, change it to 2
 
 %%% Input folder name and output stack name    %%%%%%%%%
-cd('E:')
-folder_pre = ['E:', filesep, 'CavCre',num2str(animal_num),'.'];
+chosen_directory = ['G:', filesep];
+cd(chosen_directory);
+folder_pre = [chosen_directory, filesep,'Projection Tracing', filesep, 'NHCAV',num2str(animal_num),'.'];
 folder_post = '.vsi.Collection';
 layer_name = [filesep,'Layer'];
 file_name = [filesep, 'Layer.btf'];
@@ -35,18 +36,24 @@ flip_lr = 0;                %%% Left - right flip ; 1 to turn on
 %%%% file. % Added by Nathan
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-cd('E:\')
+cd('G:\Projection Tracing')
 slicemap = fastdir(cd, ['Animal ', num2str(animal_num), ' Slice Mapping']);
-load(slicemap{1})
-current_slice_map = SliceMapping{1};
-reordered_layer = find(current_slice_map == min_layer + 1)-1;
+if isempty(slicemap)
+    remapslices = 0;
+    ordered_layer = min_layer;
+else
+    remapslices = 1;
+    load(slicemap{1})
+    current_slice_map = SliceMapping{1};
+    ordered_layer = find(current_slice_map == min_layer + 1)-1;
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Compression and Save to stack    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 f_dir = [folder_pre,num2str(1),folder_post ...
-        ,layer_name,num2str(reordered_layer),file_name];
+        ,layer_name,num2str(ordered_layer),file_name];
 img = imread(f_dir);
 img_r = imresize(img,[height, width]);
 
@@ -73,14 +80,18 @@ imwrite(img_r,[output_name,num2str(animal_num),'.tif'],...
 sortfig = figure('Position', [456 94 1035 401]);
 keep_button = uicontrol('style', 'pushbutton', 'Units', 'Normalize','Position', [0.5703 0.025 0.16 0.08], 'callback', @flipdecision, 'String', 'Keep as-is');
 flip_button = uicontrol('style', 'pushbutton', 'Units', 'Normalize','Position', [0.745 0.025 0.16 0.08], 'callback', @flipdecision, 'String', 'Flip L/R');
-currentimage = ['Slide ', num2str(1), ' Slice ', num2str(min_layer+1), ' (Layer ', num2str(reordered_layer), ')'];
+currentimage = ['Slide ', num2str(1), ' Slice ', num2str(min_layer+1), ' (Layer ', num2str(ordered_layer), ')'];
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 for i = 1:max_collection
     figure('Position', [456 582 1035 401])
     max_layer = size(fastdir([folder_pre, num2str(i), folder_post], 'Layer'),1)-1;
-    current_slice_map = SliceMapping{i};
+    if remapslices
+        current_slice_map = SliceMapping{i};
+    else
+        current_slices_map = [];
+    end
     if isempty(fastdir([folder_pre, num2str(i), folder_post, filesep],'Overview_Downsampled.btf'))
         cd([folder_pre, num2str(i), folder_post, filesep])
         OV = imread([folder_pre, num2str(i), folder_post, filesep,'Overview.btf']);
@@ -101,9 +112,13 @@ for i = 1:max_collection
         if i == 0 && j == 0
             continue
         else
-            reordered_layer = find(current_slice_map == j+1)-1;
+            if remapslices
+                ordered_layer = find(current_slice_map == j+1)-1;
+            else
+                ordered_layer = j;
+            end
             f_dir = [folder_pre,num2str(i)  ...
-                    ,folder_post,layer_name,num2str(reordered_layer),file_name];
+                    ,folder_post,layer_name,num2str(ordered_layer),file_name];
             figure(sortfig)
             subplot(1,2,1); cla;
             imagesc(img_r); set(gca, 'XTick', []); set(gca, 'YTick', []);
@@ -119,7 +134,7 @@ for i = 1:max_collection
                 img_r = flipdim(img_r, 1);
             end
             
-            currentimage = ['Slide ', num2str(i), ' Slice ', num2str(j+1), ' (Layer ', num2str(reordered_layer), ')'];
+            currentimage = ['Slide ', num2str(i), ' Slice ', num2str(j+1), ' (Layer ', num2str(ordered_layer), ')'];
             subplot(1,2,2);
             imagesc(img_r); set(gca, 'XTick', []); set(gca, 'YTick', []);
             title(currentimage)
@@ -127,7 +142,7 @@ for i = 1:max_collection
             
             %%% Fetch user selection and assign choice to variable flip_lr
             flipchoice = get(gcf, 'UserData');
-            if strcmpi(flipchoice, 'Flip L/R');
+            if strcmpi(flipchoice, 'Flip L/R')
                 flip_lr = 1;
             else
                 flip_lr = 0;
@@ -137,7 +152,7 @@ for i = 1:max_collection
                 img_r = flipdim(img_r, 2);
             end
             cla; imagesc(img_r);set(gca, 'XTick', []); set(gca, 'YTick', [])
-            cd('E:\')
+            cd(chosen_directory)
             imwrite(img_r, [output_name,num2str(animal_num), ...
                 '.tif'], 'WriteMode', 'append', ...
                 'Compression','packbits');
