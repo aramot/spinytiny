@@ -1,9 +1,5 @@
 function [Correlations, Classified, Trial] = NHanalyAlignBehavior(varargin)
 
-%%% Inputs: Assumes that you are inputting both calcium trace data (the
-%%% output of *SummarizeCaData*) and behavior data (the output from
-%%% *NHanaly_LeverPressBehavior*)
-
 %%% Note: The data contained in the behavior file is confusing, but is
 %%% organized in the following way:
 %%% All of the lever measurements are given in terms of behavioral frames
@@ -55,8 +51,8 @@ end
 
 numberofTrials = length(firsttrial:length(Behavior.Behavior_Frames));
 lasttrial = length(Behavior.Behavior_Frames);
-numberofSpines = length(Fluor.dF_over_F);
-numberofDendrites = size(Fluor.Dendrite_dFoF,1);
+numberofROIs = length(Fluor.roi_trace_df);% AR changed from "numberofSpines" to "numberofROIs, "dF_over_F" to "roi_trace_df"
+% numberofDendrites = size(Fluor.Dendrite_dFoF,1);% AR 05072018
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Determine the framework of all of the data acquisition, as defined by
@@ -79,7 +75,7 @@ for i = firsttrial:lasttrial
     t0 = Behavior.DispatcherData.saved_history.ProtocolsSection_parsed_events{i}.states.bitcode(1);
     end_trial = start_trial+round((Behavior.DispatcherData.saved_history.ProtocolsSection_parsed_events{i}.states.state_0(2,1)-t0)*1000);
     trial_movement{i} = Behavior.lever_force_smooth(start_trial:end_trial);
-    trial_activity{i} = Fluor.Processed_dFoF_DendriteSubtracted(1,Behavior.Behavior_Frames{i}.states.state_0(1,2):Behavior.Behavior_Frames{i}.states.state_0(2,1));
+    trial_activity{i} = Fluor.caEvents(1,Behavior.Behavior_Frames{i}.states.state_0(1,2):Behavior.Behavior_Frames{i}.states.state_0(2,1)); %% AR changed from "Fluot.Processed_dFoF_DendriteSubtracted(1"
     if ~mod(Behavior.Behavior_Frames{i}.states.state_0(1,2),1); %%% Test if integer value (any integer value put into 'mod' (e.g. mod(3,1)) returns zero. Any non-integer returns a nonzero. So using a 'not' boolean means the value is an integer)
         trial_frames(i,1:2) = [Behavior.Behavior_Frames{i}.states.state_0(1,2), Behavior.Behavior_Frames{i}.states.state_0(2,1)];
         imagingframestouse = [imagingframestouse,Behavior.Behavior_Frames{i}.states.state_0(1,2):Behavior.Behavior_Frames{i}.states.state_0(2,1)];  %%% Designates the imaging frames to use according to when Dispatcher starts each trials
@@ -111,11 +107,11 @@ end
 imagingframestouse = unique(imagingframestouse);
 behaviorframestouse = unique(behaviorframestouse);
 
-if imagingframestouse(end)>length(Fluor.SynapseOnlyBinarized)       %%% Occasionally, the behavior goes longer than the imaging, so cut off the frames to use variable at the last imaging frame
-    behaviorstoppoint = find(imagingframestouse == length(Fluor.SynapseOnlyBinarized));
+if imagingframestouse(end)>length(Fluor.roi_trace)       %%% Occasionally, the behavior goes longer than the imaging, so cut off the frames to use variable at the last imaging frame % AR changed "SynapseOnlyBinarized" to "roi_trace" 
+    behaviorstoppoint = find(imagingframestouse == length(Fluor.roi_trace));% AR changed "SynapseOnlyBinarized" to "roi_trace" 
     if isempty(behaviorstoppoint)
-        for i = 1:length(Fluor.SynapseOnlyBinarized)
-            lengthvector(1,i) = length(Fluor.SynapseOnlyBinarized(1:i));
+        for i = 1:length(Fluor.roi_trace)% AR changed "SynapseOnlyBinarized" to "roi_trace" 
+            lengthvector(1,i) = length(Fluor.roi_trace(1:i));% AR changed "SynapseOnlyBinarized" to "roi_trace" 
         end
         C = intersect(imagingframestouse,lengthvector);
         behaviorstoppoint = find(imagingframestouse == C(end));
@@ -142,10 +138,10 @@ if ~isempty(skippedframes)
 %     [imagingframestouse sortedindices] = sort(valstosort);
 %     blankframes = zeros(1,length(imagingframestouse)+length(skippedframes));
     
-%     for s = 1:numberofSpines
-%         extendeddata = [Fluor.Processed_dFoF(s,:), blankframes];
+%     for s = 1:numberofROIs    %% AR changed from "numberofSpines" to "numberofROIs
+%         extendeddata = [Fluor.Processed_dFoF(s,:), blankframes];   
 %         FramedProcessed_dFoF(s,1:length(extendeddata(sortedindices))) = extendeddata(sortedindices);
-        blankdata = zeros(numberofSpines,length(imagingframestouse)+length(skippedframes));
+        blankdata = zeros(numberofROIs,length(imagingframestouse)+length(skippedframes)); %% AR changed from "numberofSpines" to "numberofROIs"
         tempdata = blankdata;
         tempdata(:,imagingframestouse) = Fluor.Processed_dFoF(:,imagingframestouse);
         FramedProcessed_dFoF = tempdata(:,imagingframestouse(1):imagingframestouse(end));
@@ -161,10 +157,13 @@ if ~isempty(skippedframes)
     
     tempdata = blankdata;
     tempdata(:,imagingframestouse) = Fluor.OverallSpineActivity(:,imagingframestouse);
-    FramedOverallSpineActivity = tempdata(:,imagingframestouse(1):imagingframestouse(end));
+    FramedOverallROIActivity = tempdata(:,imagingframestouse(1):imagingframestouse(end)); % AR changed "FramedOverallspineActivity" to "FramedOverallROIActivity"
     
-%     useddata = Fluor.OverallSpineActivity(:,imagingframestouse);
-%     extendeddata = [useddata, repmat(blankframes,numberofSpines,1)]; %%% add nans ("blankframes") onto the end of the data
+%     useddata = Fluor.OverallROIActivity(:,imagingframestouse); %% AR
+%     changed from "Spine" to "ROI"
+%     extendeddata = [useddata, repmat(blankframes,numberofROIs,1)]; %%%
+%     add nans ("blankframes") onto the end of the data %% AR changed from
+%     "numberofSpines"
 %         FramedOverallSpineActivity = extendeddata(:,sortedindices);
     
     tempdata = blankdata;
@@ -193,7 +192,7 @@ else
     
     FramedProcessed_dFoF_DendriteSubtracted = Fluor.Processed_dFoF_DendriteSubtracted(:,imagingframestouse);
 
-    FramedOverallSpineActivity = Fluor.OverallSpineActivity(:,imagingframestouse);
+    FramedOverallROIActivity = Fluor.OverallSpineActivity(:,imagingframestouse);
     FramedSynapseOnlyBinarized = Fluor.SynapseOnlyBinarized(:,imagingframestouse);
     FramedSynapseOnlyBinarized_DendriteSubtracted = Fluor.SynapseOnlyBinarized_DendriteSubtracted(:,imagingframestouse);
     FramedCausalBinarized = Fluor.CausalBinarized(:,imagingframestouse);
@@ -206,32 +205,32 @@ numframes = size(FramedProcessed_dFoF,2);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%% Change buffer region around which to ignore dendritic events
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-for i = 1:length(Fluor.SpineDendriteGrouping)
-    dendtimebuffer = 30;
-    
-    widerdend = FramedDendrite_Binarized(i,:);
-    rises = find(diff(FramedDendrite_Binarized(i,:))>0);
-    falls = find(diff(FramedDendrite_Binarized(i,:))<0);
-
-    earlier_rises = rises-dendtimebuffer;
-        earlier_rises(earlier_rises<1) = 1;
-    later_falls = falls+dendtimebuffer;
-        later_falls(later_falls>length(FramedDendrite_Binarized(i,:))) = length(FramedDendrite_Binarized(i,:));
-
-    for p = 1:length(earlier_rises)
-        widerdend(earlier_rises(p):rises(p)) = 1;
-    end
-    for p = 1:length(later_falls)
-        widerdend(falls(p):later_falls(p)) = 1;
-    end
-
-    for j = 1:length(Fluor.SpineDendriteGrouping{i})
-        spineno = Fluor.SpineDendriteGrouping{i}(j);
-        FramedSynapseOnlyBinarized(spineno, :) = FramedSynapseOnlyBinarized(spineno,:)-widerdend;
-        FramedSynapseOnlyBinarized(spineno, FramedSynapseOnlyBinarized(spineno,:)<1) = 0;
-    end
-end
+% AR added % to all the below 05072018
+% % for i = 1:length(Fluor.SpineDendriteGrouping)
+%     dendtimebuffer = 30;
+%     
+%     widerdend = FramedDendrite_Binarized(i,:);
+%     rises = find(diff(FramedDendrite_Binarized(i,:))>0);
+%     falls = find(diff(FramedDendrite_Binarized(i,:))<0);
+% 
+%     earlier_rises = rises-dendtimebuffer;
+%         earlier_rises(earlier_rises<1) = 1;
+%     later_falls = falls+dendtimebuffer;
+%         later_falls(later_falls>length(FramedDendrite_Binarized(i,:))) = length(FramedDendrite_Binarized(i,:));
+% 
+%     for p = 1:length(earlier_rises)
+%         widerdend(earlier_rises(p):rises(p)) = 1;
+%     end
+%     for p = 1:length(later_falls)
+%         widerdend(falls(p):later_falls(p)) = 1;
+%     end
+% 
+%     for j = 1:length(Fluor.SpineDendriteGrouping{i})
+%         spineno = Fluor.SpineDendriteGrouping{i}(j);
+%         FramedSynapseOnlyBinarized(spineno, :) = FramedSynapseOnlyBinarized(spineno,:)-widerdend;
+%         FramedSynapseOnlyBinarized(spineno, FramedSynapseOnlyBinarized(spineno,:)<1) = 0;
+%     end
+% end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -379,24 +378,24 @@ xlim([0-2*imstart, max_Beh_Time])
 %%% Plot Activity %%%
 %%%%%%%%%%%%%%%%%%%%%
 
-OverallSpine_Data = zeros(numframes, numberofSpines);
-spine_Data = zeros(numframes,numberofSpines);
-spine_Data_DendriteSubtracted = zeros(numframes,numberofSpines);
-causal_Data = zeros(numframes,numberofSpines);
-Dend = zeros(numberofDendrites, numframes);
+OverallROI_Data = zeros(numframes, numberofROIs); % AR changed from "numberofSpines" to "numberofROIs" and "Spine_data" to ROI_data"
+ROI_Data = zeros(numframes,numberofROIs); % AR changed from "numberofSpines" to "numberofROIs and "Spine_data" to ROI_data"
+% spine_Data_DendriteSubtracted = zeros(numframes,numberofROIs); % AR changed from "numberofSpines" to "numberofROIs
+causal_Data = zeros(numframes,numberofROIs); % AR changed from "numberofSpines" to "numberofROIs
+% Dend = zeros(numberofDendrites, numframes);
 
-if length(Fluor.OverallSpineActivity)<imagingframestouse(end);
-    im_framestouse = imagingframestouse(1:find(imagingframestouse==length(Fluor.OverallSpineActivity)));
+if length(Fluor.OverallROIActivity)<imagingframestouse(end);
+    im_framestouse = imagingframestouse(1:find(imagingframestouse==length(Fluor.OverallROIActivity)));
     im_numframes = length(im_framestouse);
 else
     im_framestouse = imagingframestouse;
     im_numframes = numframes;
 end
 
-for s = 1:length(Fluor.dF_over_F)
+for s = 1:length(Fluor.roi_trace_df) % AR changed "Fluor.dF_over_F" to "roi_trace_df"
     outcome_pos = max(Fluor.Processed_dFoF(s,:));
-    OverallSpine_Data(1:im_numframes,s) = FramedOverallSpineActivity(s,:);   %%% Used binarized spine data prior to excluding periods of dendritic activity
-    spine_Data(1:im_numframes,s) = FramedSynapseOnlyBinarized(s,:);
+    OverallROI_Data(1:im_numframes,s) = FramedOverallROIActivity(s,:);   %%% Used binarized spine data prior to excluding periods of dendritic activity
+    ROI_Data(1:im_numframes,s) = FramedSynapseOnlyBinarized(s,:);
     spine_Data_DendriteSubtracted(1:im_numframes,s) = FramedSynapseOnlyBinarized_DendriteSubtracted(s,:);
     causal_Data(1:im_numframes,s) = FramedCausalBinarized(s,:);
     
@@ -427,59 +426,59 @@ for s = 1:length(Fluor.dF_over_F)
     xlim([-1 ImagingDuration+1])
 end
 
-if size(spine_Data,1)~= length(binary_behavior)
-    spine_Data = spine_Data(1:length(binary_behavior),:);
+if size(ROI_Data,1)~= length(binary_behavior)
+    ROI_Data = ROI_Data(1:length(binary_behavior),:);
 end
-if size(spine_Data_DendriteSubtracted,1)~=length(binary_behavior)
-    spine_Data_DendriteSubtracted = spine_Data_DendriteSubtracted(1:length(binary_behavior),:);
-end
+% if size(spine_Data_DendriteSubtracted,1)~=length(binary_behavior)
+%     spine_Data_DendriteSubtracted = spine_Data_DendriteSubtracted(1:length(binary_behavior),:);
+% end
 if size(causal_Data,1)~= length(binary_behavior)
     causal_Data = causal_Data(1:length(binary_behavior),:);
 end
-if size(OverallSpine_Data,1)~= length(binary_behavior)
-    OverallSpine_Data = OverallSpine_Data(1:length(binary_behavior),:);
+if size(OverallROI_Data,1)~= length(binary_behavior)
+    OverallROI_Data = OverallROI_Data(1:length(binary_behavior),:);
 end
 
 
 %%% Make the dendrite graph occupy the remaining row of graphs by counting
 %%% up to the nearest multiple of 6
-t = 1;
-while mod(numberofSpines+t,6) ~= 0
-    t = t+1;
-end
-
-max_d = max(max(FramedDendrite_dFoF));
-if s >=60
-    disp('Too many spines to display')
-    for i = 1:numberofDendrites
-        Dend(i,:) = FramedDendrite_Binarized(i,:);
-        Dend(isnan(Dend)) = 0;
-    end
-else
-    h3 = subplot(10,6,(numberofSpines+1):(numberofSpines+t)); hold on;
-    for i = 1:size(Fluor.Dendrite_Binarized,1)
-        grayer = i-1;
-        plot([0:(imagetime/numframes):(imagetime-(imagetime/numframes))],FramedDendrite_dFoF(i,:), 'color', [(0+grayer*.10),(0+grayer*.10),(0+grayer*.10)])
-        Dend(i,1:im_numframes) = FramedDendrite_Binarized(i,:);
-        Dend(isnan(Dend)) = 0;
-    end
-    for i = 1:numberofTrials
-        if trialstouse(i)
-            if strcmpi(outcome(1,i),'o')
-                plot(h3,result(1,i):result(2,i), max_d+1, '.g', 'LineWidth', 2)
-            else
-                plot(h3,result(1,i):result(2,i), max_d+1, 'xr', 'LineWidth', 2)
-            end
-            plot(h3,cue(1,i):0.001:cue(2,i), ones(1,length(cue(1,i):0.001:cue(2,i)))*(max_d+1), '-m', 'LineWidth', 1)
-        end
-    end
-        ylim([-1 max_d+5])
-        xlim([-1 ImagingDuration+1])
-end
-
-if size(Dend,2) ~= length(binary_behavior)
-    Dend = Dend(:,1:length(binary_behavior));
-end
+% t = 1;
+% while mod(numberofROIs+t,6) ~= 0  % AR changed from "numberofSpines" to "numberofROIs
+%     t = t+1;
+% end
+% 
+% max_d = max(max(FramedDendrite_dFoF));
+% if s >=60
+%     disp('Too many spines to display')
+%     for i = 1:numberofDendrites
+%         Dend(i,:) = FramedDendrite_Binarized(i,:);
+%         Dend(isnan(Dend)) = 0;
+%     end
+% else
+%     h3 = subplot(10,6,(numberofROIs+1):(numberofROIs+t)); hold on; % AR changed from "numberofSpines" to "numberofROIs
+%     for i = 1:size(Fluor.Dendrite_Binarized,1)
+%         grayer = i-1;
+%         plot([0:(imagetime/numframes):(imagetime-(imagetime/numframes))],FramedDendrite_dFoF(i,:), 'color', [(0+grayer*.10),(0+grayer*.10),(0+grayer*.10)])
+%         Dend(i,1:im_numframes) = FramedDendrite_Binarized(i,:);
+%         Dend(isnan(Dend)) = 0;
+%     end
+%     for i = 1:numberofTrials
+%         if trialstouse(i)
+%             if strcmpi(outcome(1,i),'o')
+%                 plot(h3,result(1,i):result(2,i), max_d+1, '.g', 'LineWidth', 2)
+%             else
+%                 plot(h3,result(1,i):result(2,i), max_d+1, 'xr', 'LineWidth', 2)
+%             end
+%             plot(h3,cue(1,i):0.001:cue(2,i), ones(1,length(cue(1,i):0.001:cue(2,i)))*(max_d+1), '-m', 'LineWidth', 1)
+%         end
+%     end
+%         ylim([-1 max_d+5])
+%         xlim([-1 ImagingDuration+1])
+% end
+% 
+% if size(Dend,2) ~= length(binary_behavior)
+%     Dend = Dend(:,1:length(binary_behavior));
+% end
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -539,7 +538,7 @@ correction = imagingframestouse(1)-1;
 
 overallsignaltouse = FramedProcessed_dFoF;
 dendsub_signaltouse = FramedProcessed_dFoF_DendriteSubtracted;
-binarized_signaltouse = spine_Data';
+binarized_signaltouse = ROI_Data';
 binarized_dendsub_signaltouse = spine_Data_DendriteSubtracted';
 
 for i = firsttrial:length(Behavior.Behavior_Frames)
@@ -761,8 +760,8 @@ end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-OverallSpine_Data(isnan(OverallSpine_Data)) = 0;
-spine_Data(isnan(spine_Data)) = 0;
+OverallROI_Data(isnan(OverallROI_Data)) = 0;
+ROI_Data(isnan(ROI_Data)) = 0;
 spine_Data_DendriteSubtracted(isnan(spine_Data_DendriteSubtracted)) = 0;
 Dend(isnan(Dend)) = 0;
 
@@ -770,7 +769,7 @@ Dend(isnan(Dend)) = 0;
 %%% that will be used for all behavioral associations, including all
 %%% cluster/behavior correlations!!!!!!!
 
-spinedatatouse = spine_Data;
+spinedatatouse = ROI_Data;
 DendSubspinedatatouse = spine_Data_DendriteSubtracted;
 
 %%%
@@ -808,7 +807,7 @@ premovement = temp1';
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-[r_Overallspine, p_Overallspine] = corrcoef([binarycue', binary_behavior,wide_window, premovement', successful_behavior',wide_succ_window',movementduringcue, reward_delivery', punishment', OverallSpine_Data, Dend']);
+[r_Overallspine, p_Overallspine] = corrcoef([binarycue', binary_behavior,wide_window, premovement', successful_behavior',wide_succ_window',movementduringcue, reward_delivery', punishment', OverallROI_Data, Dend']);
 [r_spine, p_spine] = corrcoef([binarycue',binary_behavior,wide_window, premovement', successful_behavior',wide_succ_window',movementduringcue,reward_delivery',punishment', spinedatatouse, Dend']);
 [r_DSspine, p_DSspine] = corrcoef([binarycue',binary_behavior,wide_window, premovement', successful_behavior',wide_succ_window',movementduringcue,reward_delivery',punishment', DendSubspinedatatouse, Dend']);
 
@@ -851,7 +850,7 @@ spineLabel{1,9} = 'Punishment';
 otherfeatures =  length({binarycue', binary_behavior,wide_window, premovement', successful_behavior',wide_succ_window',movementduringcue, reward_delivery', punishment'}); %%% Make sure that this list is updated each time you add a feature into the correlation matrix!
 
 counter = length(spineLabel);
-for i = 1:numberofSpines
+for i = 1:numberofROIs    % AR changed from "numberofSpines" to "numberofROIs
     counter = counter+1;
     spineLabel{1,counter} = ['Spine ', num2str(i)];
 end
@@ -862,9 +861,9 @@ end
 % HeatMap(r_spine, 'ColorMap', 'hot', 'RowLabels', spineLabel, 'ColumnLabels', spineLabel);
 HMap = figure; imagesc(r_spine)
 set(gcf, 'colormap', hot);
-set(gca, 'XTick', [1:length(Fluor.dF_over_F)+size(Dend,1)+otherfeatures])
-set(gca, 'XTickLabel', [0:length(Fluor.dF_over_F)+size(Dend,1)+otherfeatures])
-set(gca, 'YTick', [1:length(Fluor.dF_over_F)+size(Dend,1)+otherfeatures])
+set(gca, 'XTick', [1:length(Fluor.roi_trace_df)+size(Dend,1)+otherfeatures]) % AR chnaged "dF_over_F" to "roi_trace_df"
+set(gca, 'XTickLabel', [0:length(Fluor.roi_trace_df)+size(Dend,1)+otherfeatures])% AR chnaged "dF_over_F" to "roi_trace_df"
+set(gca, 'YTick', [1:length(Fluor.roi_trace_df)+size(Dend,1)+otherfeatures])% AR chnaged "dF_over_F" to "roi_trace_df"
 set(gca, 'YTickLabel', spineLabel)
 colorbar
 title(['Session', num2str(Fluor.Session)])
@@ -904,9 +903,9 @@ causal_Data(isnan(causal_Data)) = 0;
 % HeatMap(r_spine, 'ColorMap', 'hot', 'RowLabels', spineLabel, 'ColumnLabels', spineLabel);
 HMap2 = figure; imagesc(r_causal)
 set(gcf, 'colormap', hot);
-set(gca, 'XTick', [1:length(Fluor.dF_over_F)+size(Dend,1)+otherfeatures])
-set(gca, 'XTickLabel', [0:length(Fluor.dF_over_F)+size(Dend,1)+otherfeatures])
-set(gca, 'YTick', [1:length(Fluor.dF_over_F)+size(Dend,1)+otherfeatures])
+set(gca, 'XTick', [1:length(Fluor.roi_trace_df)+size(Dend,1)+otherfeatures]) % AR chnaged "dF_over_F" to "roi_trace_df"
+set(gca, 'XTickLabel', [0:length(Fluor.roi_trace_df)+size(Dend,1)+otherfeatures]) % AR chnaged "dF_over_F" to "roi_trace_df"
+set(gca, 'YTick', [1:length(Fluor.roi_trace_df)+size(Dend,1)+otherfeatures]) % AR chnaged "dF_over_F" to "roi_trace_df"
 set(gca, 'YTickLabel', spineLabel)
 colorbar
 title(['Session', num2str(Fluor.Session)])
