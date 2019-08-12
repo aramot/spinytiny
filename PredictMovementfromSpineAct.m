@@ -25,7 +25,7 @@ hyperopts = struct('AcquisitionFunctionName', 'expected-improvement-plus');
 
 %%% Automatic hyperparameter tuning
 
-if ~any(SpineData(:)>0 & SpineData(:)<1) && ~any(MovementData(:)>0 & MovementData(:)<1)
+if ~any(SpineData(:)>0 & SpineData(:)<1) && ~any(MovementData(:)>0 & MovementData(:)<1) %%% Works for binarized data: fitclinear is linear classifier
     [Mdl, FitInfo, HyperparameterOptimzationResults] = fitclinear(SelectedSpineData', SelectedMovementData, 'OptimizeHyperParameters', 'auto', 'HyperparameterOptimizationOptions', hyperopts);
     TestActivityData = cell2mat(activitytracepieces(testset));
     TestMovementData = cell2mat(movementtracepieces(testset));

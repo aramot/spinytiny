@@ -189,7 +189,10 @@ end
 %% Binarize Data
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-[square_Ds,floored_Dsubtracted,trueeventcount_Dsubtracted, ~, ~] =  DetectEvents2(File.Processed_dFoF_DendriteSubtracted, 2);
+Options.Threshold = File.SpineThresholds;
+Options.ImagingSensor = File.ImagingSensor;
+
+[square_Ds,floored_Dsubtracted,trueeventcount_Dsubtracted, ~, ~] =  DetectEvents2(File.Processed_dFoF_DendriteSubtracted, Options);
 
 for i = 1:numberofSpines
     frequency_Dsubtracted(i,1) = (nnz(diff(trueeventcount_Dsubtracted(i,:)>0.5)>0)/((length(File.Time)/30.49)/60))';

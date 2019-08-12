@@ -3,9 +3,9 @@ function TimecourseSummary(varargin)
 h1 = waitbar(0, 'Initializing...');
 
 sensor = inputdlg('Enter Sensor', '', 1,{'GCaMP'});
-if contains(sensor, 'GluSNFR')
-    ImagingFrequency = 58.30;
-elseif contains(sensor, 'GCaMP')
+if strcmpi(sensor, 'GluSNFR')
+    ImagingFrequency = 58.3;
+elseif strcmpi(sensor, 'GCaMP')
     ImagingFrequency = 30.49;
 end
 
@@ -122,7 +122,7 @@ xlim([0 15])
 xlabel('Session')
 ylabel('dF/F')
 subcount = subcount+1;
-%==========================================================================
+
 ActivityDataBasics.AnimalList = varargin;
 ActivityDataBasics.Frequency = Frequency;
 ActivityDataBasics.Amplitude = Amp;

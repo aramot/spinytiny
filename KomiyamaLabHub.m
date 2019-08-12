@@ -22,7 +22,7 @@ function varargout = KomiyamaLabHub(varargin)
 
 % Edit the above text to modify the response to help KomiyamaLabHub
 
-% Last Modified by GUIDE v2.5 21-Jun-2019 17:59:59
+% Last Modified by GUIDE v2.5 02-Aug-2019 19:29:33
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -162,6 +162,7 @@ if Activity == 1 && Behavior == 0
     set(handles.FitwithMLR_CheckBox, 'Enable', 'off');
     set(handles.Prediction_PushButton, 'Enable', 'off');
     set(handles.PCA_PushButton, 'Enable', 'off');
+    set(handles.SpineVolume_PushButton, 'Enable', 'off');
 elseif Activity == 0 && Behavior == 1
     set(handles.Timecourse_PushButton, 'Enable', 'off');
     set(handles.Clustering_PushButton, 'Enable', 'off');
@@ -174,6 +175,7 @@ elseif Activity == 0 && Behavior == 1
     set(handles.FitwithMLR_CheckBox, 'Enable', 'off');
     set(handles.Prediction_PushButton, 'Enable', 'off');
     set(handles.PCA_PushButton, 'Enable', 'off');
+    set(handles.SpineVolume_PushButton, 'Enable', 'off');
 elseif Activity == 1 && Behavior == 1
     set(handles.Timecourse_PushButton, 'Enable', 'off');
     set(handles.Clustering_PushButton, 'Enable', 'on');
@@ -186,6 +188,7 @@ elseif Activity == 1 && Behavior == 1
     set(handles.FitwithMLR_CheckBox, 'Enable', 'on');
     set(handles.Prediction_PushButton, 'Enable', 'on');
     set(handles.PCA_PushButton, 'Enable', 'on');
+    set(handles.SpineVolume_PushButton, 'Enable', 'on');
 elseif Activity == 0 && Behavior == 0
     set(handles.Timecourse_PushButton, 'Enable', 'off');
     set(handles.Clustering_PushButton, 'Enable', 'off');
@@ -198,6 +201,7 @@ elseif Activity == 0 && Behavior == 0
     set(handles.FitwithMLR_CheckBox, 'Enable', 'off');
     set(handles.Prediction_PushButton, 'Enable', 'off');
     set(handles.PCA_PushButton, 'Enable', 'off');
+    set(handles.SpineVolume_PushButton, 'Enable', 'off');
 end
 
 
@@ -224,6 +228,7 @@ if Activity == 1 && Behavior == 0
     set(handles.FitwithMLR_CheckBox, 'Enable', 'off');
     set(handles.Prediction_PushButton, 'Enable', 'off');
     set(handles.PCA_PushButton, 'Enable', 'off');
+    set(handles.SpineVolume_PushButton, 'Enable', 'off');
 elseif Activity == 0 && Behavior == 1
     set(handles.Timecourse_PushButton, 'Enable', 'off');
     set(handles.Clustering_PushButton, 'Enable', 'off');
@@ -236,6 +241,7 @@ elseif Activity == 0 && Behavior == 1
     set(handles.FitwithMLR_CheckBox, 'Enable', 'off');
     set(handles.Prediction_PushButton, 'Enable', 'off');
     set(handles.PCA_PushButton, 'Enable', 'off');
+    set(handles.SpineVolume_PushButton, 'Enable', 'off');
 elseif Activity == 1 && Behavior == 1
     set(handles.Timecourse_PushButton, 'Enable', 'off');
     set(handles.Clustering_PushButton, 'Enable', 'on');
@@ -248,6 +254,7 @@ elseif Activity == 1 && Behavior == 1
     set(handles.FitwithMLR_CheckBox, 'Enable', 'on');
     set(handles.Prediction_PushButton, 'Enable', 'on');
     set(handles.PCA_PushButton, 'Enable', 'on');
+    set(handles.SpineVolume_PushButton, 'Enable', 'on');
 elseif Activity == 0 && Behavior == 0
     set(handles.Timecourse_PushButton, 'Enable', 'off');
     set(handles.Clustering_PushButton, 'Enable', 'off');
@@ -260,6 +267,7 @@ elseif Activity == 0 && Behavior == 0
     set(handles.FitwithMLR_CheckBox, 'Enable', 'off');
     set(handles.Prediction_PushButton, 'Enable', 'off');
     set(handles.PCA_PushButton, 'Enable', 'off');
+    set(handles.SpineVolume_PushButton, 'Enable', 'off');
 end
 
 
@@ -292,52 +300,19 @@ function Timecourse_PushButton_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 listpos = get(handles.AnimalName_ListBox, 'Value');
-list = get(handles.AnimalName_ListBox, 'String');
-h1 = waitbar(0, 'Initializing...');
+fulllist = get(handles.AnimalName_ListBox, 'String');
 % datafolder = getappdata(KomiyamaLabHub, 'Folder');
 datafolder = 'E:\ActivitySummary';
 
-if length(listpos) == 1
-    folder = dir(datafolder);
-    cd(datafolder);
-    filestoanalyze = [];
-    animal = list{listpos};
-    for i = 1:length(folder)
-        ismatch = strfind(folder(i).name, animal);
-        wrongfile = strfind(folder(i).name, 'Timecourse');
-        if ~isempty(ismatch) && isempty(wrongfile)
-            load(folder(i).name)
-            filestoanalyze = [filestoanalyze, ',', folder(i).name(1:end-4)];
-        end
-        waitbar(i/length(folder), h1, 'Looking for files...')
-    end
-
-    close(h1)
-    filestoanalyze = filestoanalyze(2:end);
-
-    eval(['SummarizeActivity(', filestoanalyze, ');']);
-else
-    cd('C:\Users\Komiyama\Desktop\Output Data')
-    folder = dir('C:\Users\Komiyama\Desktop\Output Data');
-    filestoanalyze = [];
-    for n = 1:length(listpos)
-        animal{n} = list{listpos(n)};
-        for i = 1:length(folder)
-            ismatch = strfind(folder(i).name, animal{n});
-            rightfile = strfind(folder(i).name, 'Timecourse_Summary');
-            if ~isempty(ismatch) && ~ isempty(rightfile)
-                load(folder(i).name)
-                filestoanalyze = [filestoanalyze, ',', folder(i).name(1:end-4)];
-            end
-            waitbar(i/(length(folder)*length(listpos)), h1, 'Looking for files')
-        end
-    end
-    
-    close(h1)
-    filestoanalyze = filestoanalyze(2:end);
-    
-    eval(['TimecourseSummary(', filestoanalyze, ');'])
+cd(datafolder)
+animals = fulllist(listpos);
+filestoanalyze = [];
+for i = 1:length(animals)
+    filestoanalyze =[filestoanalyze, ',''',animals{i}, ''''];
 end
+filestoanalyze =  filestoanalyze(2:end);
+
+eval(['TimecourseSummary(', filestoanalyze, ');']);
 
 
 
@@ -1181,12 +1156,13 @@ function PCA_PushButton_Callback(hObject, eventdata, handles)
 
 cd('C:\Users\Komiyama\Desktop\Output Data')
 
-sensor = 'GluSNFR';
+sensorused = inputdlg('Enter Sensor', '', 1,{'GCaMP'});
+sensorused = sensorused{1};
 
-datafile = fastdir(cd, [sensor, '_TrialDataSummary']);
+datafile = fastdir(cd, [sensorused, '_TrialDataSummary']);
 load(datafile{1})
 
-featuresfile = fastdir(cd, [sensor, '_TrialFeatures']);
+featuresfile = fastdir(cd, [sensorused, '_TrialFeatures']);
 load(featuresfile{1})
 
 TrialActivityPCA(TrialDataSummary, TrialFeatures);
@@ -1240,3 +1216,39 @@ filestoanalyze =  filestoanalyze(2:end);
 
 eval(['AlphaHistogram(', filestoanalyze, ')']);
 
+
+
+% --- Executes on button press in SpineVolume_PushButton.
+function SpineVolume_PushButton_Callback(hObject, eventdata, handles)
+% hObject    handle to SpineVolume_PushButton (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+listpos = get(handles.AnimalName_ListBox, 'Value');
+fulllist = get(handles.AnimalName_ListBox, 'String');
+animals = fulllist(listpos);
+filestoanalyze = [];
+for i = 1:length(animals)
+    filestoanalyze =[filestoanalyze, ',''',animals{i}, ''''];
+end
+filestoanalyze =  filestoanalyze(2:end);
+
+eval(['SpineVolumeSummary(', filestoanalyze, ')']);
+
+
+% --------------------------------------------------------------------
+function ThreshMethods_DropDown_Callback(hObject, eventdata, handles)
+% hObject    handle to ThreshMethods_DropDown (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+listpos = get(handles.AnimalName_ListBox, 'Value');
+fulllist = get(handles.AnimalName_ListBox, 'String');
+animals = fulllist(listpos);
+filestoanalyze = [];
+for i = 1:length(animals)
+    filestoanalyze =[filestoanalyze, ',''',animals{i}, ''''];
+end
+filestoanalyze =  filestoanalyze(2:end);
+
+eval(['ThresholdMethodsSummary(', filestoanalyze, ')']);

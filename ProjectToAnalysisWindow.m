@@ -13,7 +13,7 @@ else
         animal = regexp(gui_CaImageViewer.filename, '[A-Z]{2,3}[0-9]*', 'match');
     else
         a = get(gcf);
-        animal = regexp(a.FileName, '[A-Z]{2,3}0*[1-9]*', 'match')
+        animal = regexp(a.FileName, '[A-Z]{2,3}0*[1-9]*', 'match');
     end
     animal = animal{1};
 end

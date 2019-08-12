@@ -6,6 +6,9 @@ lookforfiles = cellfun(@(x) strcat(x, '_PredictionModel'), animalnames, 'uni', f
 pathchoice = 'C:\Users\Komiyama\Desktop\Output Data';
 cd(pathchoice)
 
+sensorused = inputdlg('Enter Sensor', '', 1,{'GCaMP'});
+sensorused = sensorused{1};
+
 for i = 1:length(lookforfiles)
     files(i) = fastdir(pathchoice,lookforfiles{i});
 end
@@ -25,11 +28,13 @@ for i = 1:length(files)
 end
 
 considersessions = ones(1,14);
-considersessions([4,9,14]) = 0;
+considersessions([4,5,9,10,14]) = 0;
 considersessions = logical(considersessions);
-sessions = 1:14; sessions = sessions(:,considersessions);
+sessions = 1:14; %sessions = sessions(:,considersessions);
 
-plot(sessions, allarray(:,considersessions)'); flex_plot(sessions, allarray(:,considersessions), 'nonparametric', 'k', 2);
+allarray(:,~considersessions) = nan;
+
+plot(sessions, allarray'); flex_plot(sessions, allarray, 'parametric', 'k', 2);
 ylabel('Prediction Accuray (R^2)')
 xlabel('Session')
 xlim([0 15])
@@ -40,34 +45,36 @@ xlim([0 15])
 %%%%% TrialActivityAnalysis code, and can be saved after running said code
 %%%%% with the same animals used here
 
-load('LongitudinalSpineTypeSummary')
+load([sensorused, '_TrialFeatures'])
 ClusteredSpinesBeta = cell(1,14);
 NonClusteredSpineBeta = cell(1,14);
 MovementSpinesBeta = cell(1,14);
 NonMovementSpineBeta = cell(1,14);
+NewSpinesBeta = cell(1,14);
 for filenum = 1:length(files)
     eval(['currentfile = ', files{filenum}(1:end-4)])
-    for session = 1:length(currentfile)
-        if ~isempty(currentfile{session})
-            ClusteredSpinesBeta{session} = [ClusteredSpinesBeta{session}; currentfile{session}.Model.Beta(features.ClusteredSpinesbyAnimal{session}{filenum})];
-            NonClusteredSpineBeta{session} = [NonClusteredSpineBeta{session}; currentfile{session}.Model.Beta(find(~ismember([1:size(currentfile{session}.Model.Beta,1)], features.ClusteredSpinesbyAnimal{session}{filenum}))')];
-            MovementSpinesBeta{session} = [MovementSpinesBeta{session}; currentfile{session}.Model.Beta(features.StatSpinesbyAnimal{session}{filenum})];
-            NonMovementSpineBeta{session} = [NonMovementSpineBeta{session}; currentfile{session}.Model.Beta(find(~ismember([1:size(currentfile{session}.Model.Beta,1)], features.StatSpinesbyAnimal{session}{filenum}))')];
-        end
+    for session = find(~cellfun(@isempty, currentfile))
+%         ClusteredSpinesBeta{session} = [ClusteredSpinesBeta{session}; currentfile{session}.Model.Beta(TrialFeatures.ClusteredSpinesbyAnimal{session}{filenum})];
+%         NonClusteredSpineBeta{session} = [NonClusteredSpineBeta{session}; currentfile{session}.Model.Beta(find(~ismember([1:size(currentfile{session}.Model.Beta,1)], TrialFeatures.ClusteredSpinesbyAnimal{session}{filenum}))')];
+        MovementSpinesBeta{session} = [MovementSpinesBeta{session}; currentfile{session}.Model.Beta(TrialFeatures.StatSpinesbyAnimal{session}{filenum})];
+        NonMovementSpineBeta{session} = [NonMovementSpineBeta{session}; currentfile{session}.Model.Beta(find(~ismember([1:size(currentfile{session}.Model.Beta,1)], TrialFeatures.StatSpinesbyAnimal{session}{filenum}))')];
     end
 end
-
+% 
 figure; 
-subplot(1,2,1);
-a = flex_plot(sessions, ClusteredSpinesBeta(:,considersessions),'parametric', 'k', 2);
-b = flex_plot(sessions, NonClusteredSpineBeta(:,considersessions), 'parametric', 'r', 2);
-legend([a,b], 'Clustered Spines', 'Nonclustered Spines')
-xlabel('Session')
-ylabel('Mean Coefficients')
-title('Betas for Clustered Spines')
+% subplot(1,2,1);
+% a = flex_plot(sessions, ClusteredSpinesBeta(:,considersessions),'parametric', 'k', 2);
+% b = flex_plot(sessions, NonClusteredSpineBeta(:,considersessions), 'parametric', 'r', 2);
+% legend([a,b], 'Clustered Spines', 'Nonclustered Spines')
+% xlabel('Session')
+% ylabel('Mean Coefficients')
+% title('Betas for Clustered Spines')
+
+MovementSpinesBeta(~considersessions) = {nan};
+NonMovementSpineBeta(~considersessions) = {nan};
 subplot(1,2,2);
-a = flex_plot(sessions, MovementSpinesBeta(:,considersessions),'parametric', 'k', 2);
-b = flex_plot(sessions, NonMovementSpineBeta(:,considersessions), 'parametric', 'r', 2);
+a = flex_plot(sessions, MovementSpinesBeta,'parametric', 'k', 2);
+b = flex_plot(sessions, NonMovementSpineBeta, 'parametric', 'r', 2);
 legend([a,b], 'Movement Spines', 'Nonclustered Spines')
 xlabel('Session')
 ylabel('Mean Coefficients')

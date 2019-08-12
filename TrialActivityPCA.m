@@ -1,5 +1,15 @@
 function TrialActivityPCA(trialdata, features)
 
+%%%%% PCA Notes: Rows of input correspond to observations (i.e. points in a
+%%%%% time series), while columns correspond to variables (e.g., in this
+%%%%% case, different spines/dendrites)
+%%%%% The output, coeff, produces a matrix with rows corresponding to each
+%%%%% of the variables, and with columns corresponding to each of the
+%%%%% principal components
+%%%%% For example, if you have a data array with 770 spines, observed over
+%%%%% ~3sec of the behavior (90frames if imaging at 30Hz), the input matrix
+%%%%% should be 90x770. The output, coeff, would be 770x(NumberofPCs)
+
 animalnumber = length(trialdata.TrialAverageByAnimal{1});
 
 coeffs = repmat({cell(1,animalnumber)},1,14);
@@ -15,20 +25,29 @@ Dexplained = repmat({cell(1,animalnumber)},1,14);
 
 sessionstouse = [1,2,3,6,7,8,11,12,13];
 
-for sessions = sessionstouse %%% Change based on the sessions you wish to use
+start = find(~isnan(nanmean(trialdata.TrialAverageByAnimal{1}{1}(:,:),1)), 1, 'first');
+finish = find(~isnan(nanmean(trialdata.TrialAverageByAnimal{1}{1}(:,:),1)), 1, 'last');
+
+for session = sessionstouse %%% Change based on the sessions you wish to use
     for animal = 1:animalnumber
-        if ~isempty(trialdata.TrialAverageByAnimal{sessions}{animal})
+        if ~isempty(trialdata.TrialAverageByAnimal{session}{animal})
 %             spinestouse = features.StatSpinesbyAnimal{sessions}{animal};
 %             spinestouse = features.ClusteredSpinesbyAnimal{sessions}{animal};
-            spinestouse = 1:size(trialdata.TrialAverageByAnimal{sessions}{animal},1);
-            [coeffs{sessions}{animal}, scores{sessions}{animal}, latent{sessions}{animal},tsquared{sessions}{animal}, explained{sessions}{animal}] = pca(trialdata.TrialAverageByAnimal{sessions}{animal}(spinestouse,:)');
-            coeffs{sessions}{animal} = abs(coeffs{sessions}{animal});
-            scores{sessions}{animal} = abs(scores{sessions}{animal});
+            spinestouse = 1:size(trialdata.TrialAverageByAnimal{session}{animal},1);
+            PCAdata = trialdata.TrialAverageByAnimal{session}{animal}(spinestouse,:);
+            PCAdata = PCAdata(:,start:finish);
+            anyact = ~any(isnan(PCAdata'));
+            PCAdata = PCAdata(anyact,:);
+            [coeffs{session}{animal}, scores{session}{animal}, latent{session}{animal},tsquared{session}{animal}, explained{session}{animal}] = pca(PCAdata');
+            coeffs{session}{animal} = abs(coeffs{session}{animal});
+            scores{session}{animal} = abs(scores{session}{animal});
         end
-        if size(trialdata.TrialDendriteAverageByAnimal{sessions}{animal},1) > 1
-            [Dcoeffs{sessions}{animal}, Dscores{sessions}{animal}, Dlatent{sessions}{animal},Dtsquared{sessions}{animal}, Dexplained{sessions}{animal}] = pca(trialdata.TrialDendriteAverageByAnimal{sessions}{animal}');
+        DendPCAdata = trialdata.TrialDendriteAverageByAnimal{session}{animal};
+%         DendPCAdata(isnan(DendPCAdata(:,start:finish)))=0;
+        if size(DendPCAdata,1) > 1
+            [Dcoeffs{session}{animal}, Dscores{session}{animal}, Dlatent{session}{animal},Dtsquared{session}{animal}, Dexplained{session}{animal}] = pca(DendPCAdata);
         else
-            Dexplained{animal}{sessions} = nan(2,1);
+            Dexplained{animal}{session} = nan(2,1);
         end
     end
 end
@@ -271,36 +290,62 @@ linkaxes([left,right], 'xy')
 %% Figure 4: Biplot of all loadings and scores
 
 figure('Position',[windowwidth, 50, windowwidth,windowheight]); 
-[coeffs, scores, latent,tsquared, explained] = pca(cell2mat(trialdata.TrialAverageAll(1:3)')'); 
-[coeffslate, scoreslate, latentlate,tsquaredlate, explainedlate] = pca(cell2mat(trialdata.TrialAverageAll(11:13)')'); 
+PCAdata = cell2mat(trialdata.TrialAverageAll(1:3)');
+PCAdata = PCAdata(:,start:finish);
+anyact = ~any(isnan(PCAdata'));
+PCAdata = PCAdata(anyact,:);
+[coeffs, scores, latent,tsquared, explained] = pca(PCAdata'); 
+PCAdataEarly = PCAdata;
+
+PCAdata = cell2mat(trialdata.TrialAverageAll(11:13)');
+PCAdata = PCAdata(:,start:finish);
+PCAdata(isnan(PCAdata)) = 0;
+[coeffslate, scoreslate, latentlate,tsquaredlate, explainedlate] = pca(PCAdata'); 
+PCAdataLate = PCAdata;
 
 left = subplot(2,2,1); biplot(coeffs(:,1:2), 'scores', scores(:,1:2));
 right = subplot(2,2,2); biplot(coeffslate(:,1:2), 'scores', scoreslate(:,1:2));
 linkaxes([left,right], 'xy')
 
-[Dcoeffs, Dscores, Dlatent,Dtsquared, Dexplained] = pca(cell2mat(trialdata.TrialDendriteAverageAll(1:3)')');
-[Dcoeffslate, Dscoreslate, Dlatentlate,Dtsquaredlate, Dexplainedlate] = pca(cell2mat(trialdata.TrialDendriteAverageAll(11:13)')');
+PCAdata = cell2mat(trialdata.TrialDendriteAverageAll(1:3)');
+PCAdata = PCAdata(:,start:finish);
+anyact = ~any(isnan(PCAdata'));
+PCAdata = PCAdata(anyact,:);
+[Dcoeffs, Dscores, Dlatent,Dtsquared, Dexplained] = pca(PCAdata');
+PCAdata = cell2mat(trialdata.TrialDendriteAverageAll(11:13)');
+PCAdata = PCAdata(:,start:finish);
+PCAdata(isnan(PCAdata)) = 0;
+[Dcoeffslate, Dscoreslate, Dlatentlate,Dtsquaredlate, Dexplainedlate] = pca(PCAdata');
 
 left = subplot(2,2,3); biplot(Dcoeffs(:,1:2), 'scores', Dscores(:,1:2));
 right = subplot(2,2,4); biplot(Dcoeffslate(:,1:2), 'scores', Dscoreslate(:,1:2));
 linkaxes([left,right], 'xy')
 
+AllPCAData = [PCAdataEarly;PCAdataLate];
+EarlySpines = length(PCAdataEarly);
+LateSpines = length(PCAdataLate);
+
 
 %% Figure 5: Activity Propagation through PCs during movement
 
 figure('Position', [(windowwidth)-windowwidth/2, (windowheight)-windowheight/2, windowwidth, windowheight])
+centermovement = features.CenterMovement;
+timeXlength = ceil((features.StartWindow+features.StopWindow+1)/10)*10; %%% 
+
 
 subplot(2,2,1)
 early = plot(scores(:,1), 'Color', black, 'Linewidth', 2);
 hold on; late = plot(scoreslate(:,1), 'Color', blue, 'Linewidth', 2);
 title('Spine activity propagation through PC1')
-set(gca, 'XTick', [180:20:300], 'XTickLabel', mat2cell(num2str([-40:20:100]'), ones(8,1),3))
-designatedmovcenter = 220;
+actualXscale = [0:10:timeXlength];
+relabeledXscale = [-features.StartWindow:10:timeXlength-features.StartWindow];
+set(gca, 'XTick', actualXscale , 'XTickLabel', mat2cell(num2str(relabeledXscale'), ones(length(actualXscale),1),3))
+designatedmovcenter = features.StartWindow;
 medmovduration = nanmedian([horzcat(features.MovementLengthDistribution{1}{:}),horzcat(features.MovementLengthDistribution{2}{:}),horzcat(features.MovementLengthDistribution{3}{:})])+designatedmovcenter;
 plotlims = get(gca, 'YLim');
 plot(designatedmovcenter*ones(1,length([plotlims(1):1:plotlims(2)])), plotlims(1):1:plotlims(2), '--', 'Color', lgreen)
 plot(medmovduration*ones(1,length([plotlims(1):1:plotlims(2)])), plotlims(1):1:plotlims(2), '--', 'Color', red)
-plot([180:20:300], zeros(1,length([180:20:300])), '--k')
+plot(actualXscale, zeros(1,length(actualXscale)), '--k')
 legend([early,late], {'Early', 'Late'}, 'Location', 'northwest')
 xlabel('Frames relative to movement')
 ylabel('PC score')
@@ -314,7 +359,7 @@ latemedmovduration = nanmedian([horzcat(features.MovementLengthDistribution{11}{
 plotlims = get(gca, 'YLim');
 plot(designatedmovcenter*ones(1,length([plotlims(1):1:plotlims(2)])), plotlims(1):1:plotlims(2), '--', 'Color', lgreen)
 plot(latemedmovduration*ones(1,length([plotlims(1):1:plotlims(2)])), plotlims(1):1:plotlims(2), '--', 'Color', red)
-plot([180:20:300], zeros(1,length([180:20:300])), '--k')
+plot(actualXscale, zeros(1,length(actualXscale)), '--k')
 legend([early,late], {'Early', 'Late'}, 'Location', 'northwest')
 xlabel('Frames relative to movement')
 ylabel('PC score')
@@ -327,7 +372,7 @@ set(gca, 'XTick', [180:20:300], 'XTickLabel', mat2cell(num2str([-40:20:100]'), o
 plotlims = get(gca, 'YLim');
 plot(designatedmovcenter*ones(1,length([plotlims(1):1:plotlims(2)])), plotlims(1):1:plotlims(2), '--', 'Color', lgreen)
 plot(medmovduration*ones(1,length([plotlims(1):1:plotlims(2)])), plotlims(1):1:plotlims(2), '--', 'Color', red)
-plot([180:20:300], zeros(1,length([180:20:300])), '--k')
+plot(actualXscale, zeros(1,length(actualXscale)), '--k')
 legend([early,late], {'Early', 'Late'}, 'Location', 'northwest')
 xlabel('Frames relative to movement')
 ylabel('PC score')
@@ -340,7 +385,7 @@ set(gca, 'XTick', [180:20:300], 'XTickLabel', mat2cell(num2str([-40:20:100]'), o
 plotlims = get(gca, 'YLim');
 plot(designatedmovcenter*ones(1,length([plotlims(1):1:plotlims(2)])), plotlims(1):1:plotlims(2), '--', 'Color', lgreen)
 plot(latemedmovduration*ones(1,length([plotlims(1):1:plotlims(2)])), plotlims(1):1:plotlims(2), '--', 'Color', red)
-plot([180:20:300], zeros(1,length([180:20:300])), '--k')
+plot(actualXscale, zeros(1,length(actualXscale)), '--k')
 legend([early,late], {'Early', 'Late'}, 'Location', 'northwest')
 xlabel('Frames relative to movement')
 ylabel('PC score')

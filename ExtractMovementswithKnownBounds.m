@@ -1,11 +1,12 @@
-function [Movements] = ExtractMovementswithKnownBounds(levertrace, framesofinterest, rewardperiods, secondspostmovementstart ,ImagingFrequency)
+function [Movements] = ExtractMovementswithKnownBounds(levertrace, framesofinterest, rewardperiods, TimingValues ,ImagingFrequency)
 
-PreMovementTimeBuffer = 0.5; %%% When looking at just behavior, I move back 0.4s before the start of the movement period;
+secondspremovementstart = TimingValues.SecondsPreMovement; %%% When looking at just behavior, move back Xs before the start of the movement period;
+secondspostmovementstart = TimingValues.SecondsPostMovement;
 
 % startbufferwindow = round(60*0.5);
 % stopbufferwindow = round(60*secondspostmovement); 
 
-startbufferwindow = round(ImagingFrequency*PreMovementTimeBuffer); 
+startbufferwindow = round(ImagingFrequency*secondspremovementstart); 
 stopbufferwindow = round(ImagingFrequency*secondspostmovementstart);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

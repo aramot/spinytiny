@@ -157,7 +157,7 @@ else
         spinethreshmultiplier = 3;       %%% 
         ImagingFrequency = 58.30;
     end 
-    spinesmoothwindow = round(ImagingFrequency)*0.5;
+    spinesmoothwindow = round(ImagingFrequency)*1;
     Dendthreshmultiplier = 3;
     dendsmoothwindow = spinesmoothwindow;
     alphaminimum = 0.5;

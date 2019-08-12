@@ -18,7 +18,7 @@ elseif strcmpi(sensor, 'GluSNFR')
     ImagingFrequency = 58.30;
 end
 seconds_to_smooth = 1;
-smoothwindow = round(ImagingFrequency*seconds_to_smooth);
+smoothwindow = round(ImagingFrequency*second);
 
 num_cells = size(df_matrix,1);
 

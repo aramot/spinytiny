@@ -1139,7 +1139,7 @@ ylabel('Correlation')
 title('Correlation with Rewarded Presses')
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Figure 16: Correlation of clustered spines DURING successful presses
+%%% Figure 16: Correlation of clustered spines DURING specified presses
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%% New Spines

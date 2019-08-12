@@ -212,8 +212,15 @@ if newspineanalysis || islong
     else
         date = datefromglobal;
     end
-    instanceofappearance = logical(strcmpi(sortrows(SpineRegistry.DatesAcquired), date));
+    if ~isempty(gui_CaImageViewer.NewSpineAnalysisInfo.CurrentSession)
+        instanceofappearance = gui_CaImageViewer.NewSpineAnalysisInfo.CurrentSession;
+    else
+        instanceofappearance = find(logical(strcmpi(sortrows(SpineRegistry.DatesAcquired), date)));
+    end
     SpineList = SpineRegistry.Data(:,instanceofappearance); %%% Note: Although the first ROI is always ROI0 (background), this is excluded (wrt indexing) for the final variables, so a direct translation of spine number is possible here
+    if length(SpineList)~=length(existing_ROI)-1
+        error('Longitudinal Spine List does not match number of ROIs; Check the Spine Registry File!')
+    end
     nullspines = find(SpineList==0);
         Fluorescence_Intensity = cell(length(SpineList),1);
         Total_Intensity = cell(length(SpineList),1);
@@ -498,9 +505,6 @@ if newspineanalysis || islong
     experimentlength = length(Fluorescence_Measurement{1});
     nullspinedata = nan(1,experimentlength);
     insert = mat2cell(repmat(nullspinedata,length(nullspines),1),ones(length(nullspines),1),experimentlength);
-    Fluorescence_Intensity(nullspines) = insert;
-    Total_Intensity(nullspines) = insert;
-    Pixel_Number(nullspines) = insert;
     Fluorescence_Measurement(nullspines) = insert;    
 end
 

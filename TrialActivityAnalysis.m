@@ -2,15 +2,23 @@ function [TrialDataSummary, TrialFeatures] = TrialActivityAnalysis(varargin)
 
 global gui_KomiyamaLabHub
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Get variables that inform which data to use and how
 
 if get(gui_KomiyamaLabHub.figure.handles.DendExcluded_CheckBox, 'Value')
     AnalysisType = 'Exclude';
 elseif get(gui_KomiyamaLabHub.figure.handles.DendSubtracted_CheckBox, 'Value')
     AnalysisType = 'Subtract';
+else
+    AnalysisType = 'Ignore';
 end
 
-animalnumber = length(varargin);
+sensorused = inputdlg('Enter Sensor', '', 1,{'GCaMP'});
+sensorused = sensorused{1};
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Variable initialization 
+animalnumber = length(varargin);
 sessionClusteredSpines = cell(1,14); %%% highly correlated movement-related spines for each session
 sessionStatSpines = cell(1,14);
 sessionNewSpines = cell(1,14);
@@ -27,15 +35,29 @@ MovementLengthDistribution = repmat({cell(1,animalnumber)},1,14);
 NewSpines = cell(1,14);
 NewSpinesByAnimal = cell(1,14);
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+if strcmpi(sensorused, 'GCaMP')
+    ImagingFrequency = 30;
+elseif strcmpi(sensorused, 'GluSNFR')
+    ImagingFrequency = 60;
+end
+SecondsPreMovement = 2;
+SecondsPostMovement = 2;
 
-startwindow = 15;   %%% Time (in frames) to subtract from the initiation of movement for inspection of beginning of trace
-stopwindow = 60;    %%% Time (in frames) to add to the initiation of movement for inspection of end of trace
+startwindow = round(ImagingFrequency*SecondsPreMovement);   %%% Time (in frames) to subtract from the initiation of movement for inspection of beginning of trace
+stopwindow = round(ImagingFrequency*SecondsPostMovement);    %%% Time (in frames) to add to the initiation of movement for inspection of end of trace
 
-centermovement = 90;   %%% Trials are of different lengths, so to compare them with a chosen t = 0, you must chose a value about which to center them (cannot actually be zero in an array with indices of positive, real values)
+centermovement = startwindow+stopwindow;   %%% Trials are of different lengths, so to compare them with a chosen t = 0, you must chose a value about which to center them (cannot actually be zero in an array with indices of positive, real values)
                         %%% Note: the entire movement period is assumed to
                         %%% be fewer than 2*(centermovement) frames. If you
                         %%% increase the start or stop window above, you
                         %%% might also have to increase centermovement
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+TrialFeatures.StartWindow = startwindow;
+TrialFeatures.StopWindow = stopwindow;
+TrialFeatures.CenterMovement = centermovement;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                                                
 foldertouse = 'C:\Users\Komiyama\Desktop\Output Data';
 cd(foldertouse)
@@ -47,7 +69,7 @@ h1 = waitbar(0, 'Collecting trial information');
 
 %%% Trial activity being used: trialdendsubactivity
 %%% Statistical classification of spines of interest:
-%%% DendSubMovementSpLiberal
+%%% DendSubMovementSp
 
 
 for sample = 1:animalnumber
@@ -102,6 +124,8 @@ for sample = 1:animalnumber
         %               statspines{session} = find(spinestatclass{session}.PreSuccessSpines);
                     case 'Subtract'
                         statspines{session} = find(spinestatclass{session}.DendSub_MovementSpines);
+                    case 'Ignore'
+                        statspines{session} = find(spinestatclass{session}.OverallMovementSpines);
                 end
                 statdends{session} = find(spinestatclass{session}.MovementDends);
                 
@@ -121,7 +145,13 @@ for sample = 1:animalnumber
                 else
                     ClusteredSpinesAll{session} = cell2mat(ClusteredSpinesAll{session}');
                 end
-                alignedtomovement{1,session} = nan(numspines(sample,session),2*centermovement,length(currentfile{session}));
+                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                 spinestoanalyze =
+%                 1:numspines(sample,session);
+                spinestoanalyze = StatSpinesByAnimal{session}{sample};
+                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+                alignedtomovement{1,session} = nan(length(spinestoanalyze),2*centermovement,length(currentfile{session}));
                 dendritealignedtomovement{1,session} = nan(numdends(sample,session),2*centermovement,length(currentfile{session}));
                 for trial = trialscounted(1):trialscounted(end)
                     if ~isempty(currentfile{session}{trial})
@@ -156,12 +186,14 @@ for sample = 1:animalnumber
                             end
                             switch AnalysisType
                                 case 'Exclude'
-                                    alignedtomovement{1,session}(1:numspines(sample,session),ChosenStart-MovementStart+centermovement:MovementEnd-MovementStart+centermovement,trial) =  zscore(currentfile{session}{trial}.trialactivity(1:numspines(sample,session), ChosenStart:MovementEnd),[],2);
+                                    alignedtomovement{1,session}(1:length(spinestoanalyze),ChosenStart-MovementStart+centermovement:MovementEnd-MovementStart+centermovement,trial) =  zscore(currentfile{session}{trial}.trialactivity(spinestoanalyze, ChosenStart:MovementEnd),[],2);
                                 case 'Subtract'
-                                    alignedtomovement{1,session}(1:numspines(sample,session),ChosenStart-MovementStart+centermovement:MovementEnd-MovementStart+centermovement,trial) =  zscore(currentfile{session}{trial}.trialdendsubactivity(1:numspines(sample,session), ChosenStart:MovementEnd),[],2);
+                                    alignedtomovement{1,session}(1:length(spinestoanalyze),ChosenStart-MovementStart+centermovement:MovementEnd-MovementStart+centermovement,trial) =  zscore(currentfile{session}{trial}.trialdendsubactivity(spinestoanalyze, ChosenStart:MovementEnd),[],2);
+                                case 'Ignore'
+                                    alignedtomovement{1,session}(1:length(spinestoanalyze),ChosenStart-MovementStart+centermovement:MovementEnd-MovementStart+centermovement,trial) =  zscore(currentfile{session}{trial}.trialactivity(spinestoanalyze, ChosenStart:MovementEnd),[],2);
                             end
                             dendritealignedtomovement{1,session}(1:numdends(sample,session),ChosenStart-MovementStart+centermovement:MovementEnd-MovementStart+centermovement,trial) =  zscore(currentfile{session}{trial}.DendriteActivity(1:numdends(sample,session), ChosenStart:MovementEnd),[],2);
-                            if any(alignedtomovement{1,session}(1:numspines(sample,session),ChosenStart-MovementStart+centermovement:MovementEnd-MovementStart+centermovement,trial)<0)
+                            if any(alignedtomovement{1,session}(1:length(spinestoanalyze),ChosenStart-MovementStart+centermovement:MovementEnd-MovementStart+centermovement,trial)<0)
                                 k = 'hey stop here there are sometimes errors';
                             end
 %                             figure; imagesc(currentfile{session}{trial}.trialdendsubactivity(1:numspines(sample,session), ChosenStart:MovementEnd))
@@ -232,10 +264,8 @@ TrialDataSummary.TrialDendriteAverageAll = trialdendriteaverage;
 TrialDataSummary.TrialDendriteAverageByAnimal = trialdendriteaveragebyanimal;
 TrialFeatures.MovementLengthDistribution = MovementLengthDistribution;
 
-sensorused = inputdlg('Enter sensor used', 'Sensor', 1,{'GCaMP'});
-
-save([sensorused{1}, 'TrialDataSummary'], 'TrialDataSummary')
-save([sensorused{1}, 'TrialFeatures'], 'TrialFeatures')
+save([sensorused, '_TrialDataSummary'], 'TrialDataSummary')
+save([sensorused, '_TrialFeatures'], 'TrialFeatures')
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -255,14 +285,14 @@ for i = 1:14
     subplot(2,7,i); 
     if ~isempty(trialaverage{1,i})
         [val, ind] = nanmax(trialaverage{1,i},[],2);
-        trialaverage{1,i}(trialaverage{1,i}>30) = 30;
-        trialaverage{1,i}(trialaverage{1,i}<0) = 0;
-        trialnormalized = trialaverage{1,i}./repmat(val,1,size(trialaverage{1,i},2));
+%         trialaverage{1,i}(trialaverage{1,i}>30) = 30;
+%         trialaverage{1,i}(trialaverage{1,i}<0) = 0;
+%         trialnormalized = trialaverage{1,i}./repmat(val,1,size(trialaverage{1,i},2));
 %         trialzscored = trialaverage{1,i}-repmat(nanmean(trialaverage{1,i},2),1,size(trialaverage{1,i},2))./repmat(nanstd(trialaverage{1,i},0,2),1,size(trialaverage{1,i},2));
-        trialzscored = zscore(trialaverage{1,i},[], 2);
+%         trialzscored = zscore(trialaverage{1,i},[], 2);
         [valsort, indsort] = sort(ind);
 %         imagesc(trialzscored(indsort,:)); hold on; drawnow;
-        imagesc(trialnormalized(indsort,:)); hold on; drawnow
+        imagesc(trialaverage{1,i}(indsort,:)); hold on; drawnow
         plot(centermovement*ones(size(trialaverage{1,i},1)), 1:size(trialaverage{1,i},1),':r')
         xlabel('Time (s)');
         valsort(valsort ==1) = nan;     %%% for many spines whose activity is nonexistent, the sorting/max algorithms return "1"; this messes up the median values and is not correct
@@ -270,27 +300,27 @@ for i = 1:14
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%^
         %%% Pick the type of spine you want to label 
-%         spinesofinterest = sessionStatSpines{i};
+        spinesofinterest = sessionStatSpines{i};
 %         spinesofinterest = sessionClusteredSpines{i};
-        spinesofinterest = sessionNewSpines{i};
+%         spinesofinterest = sessionNewSpines{i};
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
-        ispines = ismember(indsort, spinesofinterest);
-        ispinesloc = find(ispines);
-        ispinestiming{i} = (valsort(ispinesloc)-centermovement)/30;    %%% Subtract zero point and convert to seconds
-        arrows = repmat('-->', length(ispinesloc),1);
-        %%% Label all spines of interest with an arrow, but make exceptions
-        %%% for the first and last spines, for ease of reading
-        if isempty(find(ispinesloc==1)) && isempty(find(ispinesloc==size(trialaverage{1,i},1)))
-            set(gca, 'YTick', [1;ispinesloc; size(trialaverage{1,i},1)])
-            set(gca, 'YTickLabel', {'1', arrows, num2str(size(trialaverage{1,i},1))});
-        elseif ~isempty(find(ispinesloc==1)) && isempty(find(ispinesloc==size(trialaverage{1,i},1)))
-            set(gca, 'YTick', [ispinesloc; size(trialaverage{1,i},1)]);
-            set(gca, 'YTickLabel', {arrows, num2str(size(trialaverage{1,i},1))});
-        elseif isempty(find(ispinesloc==1)) && ~isempty(find(ispinesloc==size(trialaverage{1,i},1)))
-            set(gca, 'YTick', [1;ispinesloc]);
-            set(gca, 'YTickLabel', {'1', arrows(1:end-1,:), ['-->', num2str(size(trialaverage{1,i},1))]});
-        end    
+%         ispines = ismember(indsort, spinesofinterest);
+%         ispinesloc = find(ispines);
+%         ispinestiming{i} = (valsort(ispinesloc)-centermovement)/30;    %%% Subtract zero point and convert to seconds
+%         arrows = repmat('-->', length(ispinesloc),1);
+%         %%% Label all spines of interest with an arrow, but make exceptions
+%         %%% for the first and last spines, for ease of reading
+%         if isempty(find(ispinesloc==1)) && isempty(find(ispinesloc==size(trialaverage{1,i},1)))
+%             set(gca, 'YTick', [1;ispinesloc; size(trialaverage{1,i},1)])
+%             set(gca, 'YTickLabel', {'1', arrows, num2str(size(trialaverage{1,i},1))});
+%         elseif ~isempty(find(ispinesloc==1)) && isempty(find(ispinesloc==size(trialaverage{1,i},1)))
+%             set(gca, 'YTick', [ispinesloc; size(trialaverage{1,i},1)]);
+%             set(gca, 'YTickLabel', {arrows, num2str(size(trialaverage{1,i},1))});
+%         elseif isempty(find(ispinesloc==1)) && ~isempty(find(ispinesloc==size(trialaverage{1,i},1)))
+%             set(gca, 'YTick', [1;ispinesloc]);
+%             set(gca, 'YTickLabel', {'1', arrows(1:end-1,:), ['-->', num2str(size(trialaverage{1,i},1))]});
+%         end    
         ylim([0 size(trialaverage{1,i},1)])
 %         xlim([centermovement/2, centermovement*2])
         set(gca, 'XTick', [(centermovement)/2 centermovement centermovement+(centermovement/2), centermovement*2])
@@ -299,7 +329,7 @@ for i = 1:14
 end
 
 considersessions = ones(1,14); 
-considersessions([4,9,14]) = 0; considersessions = logical(considersessions);
+considersessions([4,5,9,10,14]) = 0; considersessions = logical(considersessions);
 sessions = 1:14; sessions = sessions(:,considersessions);
 
 figure; flex_plot(sessions,ispinestiming(:,considersessions),'parametric','k',2); hold on;
@@ -316,12 +346,12 @@ for i = 1:14
     subplot(2,7,i); 
     if ~isempty(trialdendriteaverage{1,i})
         [val, ind] = nanmax(trialdendriteaverage{1,i},[],2);
-        trialdendriteaverage{1,i}(trialdendriteaverage{1,i}>30) = 30;
-        trialdendriteaverage{1,i}(trialdendriteaverage{1,i}<0) = 0;
-        trialnormalized = trialdendriteaverage{1,i}./repmat(val,1,size(trialdendriteaverage{1,i},2));
+%         trialdendriteaverage{1,i}(trialdendriteaverage{1,i}>30) = 30;
+%         trialdendriteaverage{1,i}(trialdendriteaverage{1,i}<0) = 0;
+%         trialnormalized = trialdendriteaverage{1,i}./repmat(val,1,size(trialdendriteaverage{1,i},2));
         [valsort, indsort] = sort(ind);
 %         imagesc(trialzscored(indsort,:)); hold on; drawnow;
-        imagesc(trialnormalized(indsort,:)); hold on; drawnow
+        imagesc(trialdendriteaverage{1,i}(indsort,:)); hold on; drawnow
         plot(centermovement*ones(size(trialdendriteaverage{1,i},1)), 1:size(trialdendriteaverage{1,i},1),':r')
         xlabel('Time (s)');
         valsort(valsort ==1) = nan;     %%% for many spines whose activity is nonexistent, the sorting/max algorithms return "1"; this messes up the median values and is not correct

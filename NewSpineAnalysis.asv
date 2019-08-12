@@ -350,7 +350,7 @@ for animal = 1:length(varargin)-1
         earlysession = FieldData{f}.CalciumData{1}.Session;
         latesession = FieldData{f}.CalciumData{end}.Session;
         %%%%%%%%%%%%%%%%
-        FocusOnWhichMovements = 'Rewarded';    %%% Change this value between "Rewarded" and "All" to consider different categories of movements;
+        FocusOnWhichMovements = 'All';    %%% Change this value between "Rewarded" and "All" to consider different categories of movements;
         eval(['binarizedleverEarly = ', currentanimal, '_Aligned{',num2str(earlysession),'}.Binarized_Lever;']);
         eval(['successtraceEarly = ', currentanimal, '_Aligned{', num2str(earlysession), '}.SuccessfulPresses;']);
         eval(['levertraceEarly = ', currentanimal, '_Aligned{', num2str(earlysession), '}.LeverMovement;']);
@@ -1302,7 +1302,7 @@ for animal = 1:length(varargin)-1
                             %%% Find frequency-matched spines
                             OtherSpFreq = [];
                             for spf = 1:size(AllOtherSpineActivityAligned,1)
-                                OtherSpFreq(1,spf) = numel(find(diff(AllOtherSpineActivityAligned(spf,:))>0))/(length(AllOtherSpineActivityAligned)/(ImagingFrequency*60));
+                                OtherSpFreq(1,spf) = numel(find(diff(AllOtherSpineActivityAligned(spf,:))>0));
                             end
                             ElimSpFreq = numel(find(diff(ElimSpineActivityAligned)));
                                 [~, CompSpFreqMatchedtoES] = min(abs(OtherSpFreq-ElimSpFreq));
@@ -1378,17 +1378,12 @@ for animal = 1:length(varargin)-1
                                 CoActiveAntiClustMovementCorrwithModelMovement(closecount) = NaN;
                             end
                             framesofinterest = frames_during_allperiods(setdiff(1:length(frames_during_allperiods),CoActiveDuringMovement_Addresses));
-                            if ~isempty(framesofinterest)
-                                [SuccessfulPresseswithoutCoactivity] = ExtractMovementswithKnownBounds(levertraceEarly, framesofinterest, rewardperiodsEarly,TimingValues,ImagingFrequency);
-                                movementcorr = corrcoef([SuccessfulPresseswithoutCoactivity, ModelMovement']);
-                                movementcorr(1:1+size(movementcorr,1):numel(movementcorr)) = nan;
-                                thissessionmovementcorr = movementcorr(1:end-1, 1:end-1);
-                                OtherMovementCorrElimVersion(closecount) = nanmedian(thissessionmovementcorr(:));
-                                OtherCorrwithModelMovementElimVersion(closecount) = nanmedian(movementcorr(end,:));
-                            else
-                                OtherMovementCorrElimVersion(closecount) = NaN;
-                                OtherCorrwithModelMovementElimVersion(closecount) = NaN;
-                            end
+                            [SuccessfulPresseswithoutCoactivity] = ExtractMovementswithKnownBounds(levertraceEarly, framesofinterest, rewardperiodsEarly,TimingValues,ImagingFrequency);
+                            movementcorr = corrcoef([SuccessfulPresseswithoutCoactivity, ModelMovement']);
+                            movementcorr(1:1+size(movementcorr,1):numel(movementcorr)) = nan;
+                            thissessionmovementcorr = movementcorr(1:end-1, 1:end-1);
+                            OtherMovementCorrElimVersion(closecount) = nanmedian(thissessionmovementcorr(:));
+                            OtherCorrwithModelMovementElimVersion(closecount) = nanmedian(movementcorr(end,:));
                             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                             %%% Find the same features for freq-matched
                             %%% spine pairs

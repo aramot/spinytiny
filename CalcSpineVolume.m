@@ -11,16 +11,22 @@ if ~AveBox
     DisplayProjection('Ave')
 end
 
+if length(size(gui_CaImageViewer.ch1image))>2
+    imtouse = gui_CaImageViewer.ch1image(:,:,2);
+else
+    imtouse = gui_CaImageViewer.ch1image;
+end
+
 BackgroundROI = SpineROIs(1); %%% Assumes that the first ROI (actually labeled 'ROI 0') is the background
-BackgroundMask = createMask(BackgroundROI, gui_CaImageViewer.ch1image);
+BackgroundMask = createMask(BackgroundROI, imtouse);
 Backgroundreg = find(BackgroundMask);   %%% Number of points within the mask can be considered the number of pixels, and therefore the area of the ROI
-Background_Intensity = nanmean(gui_CaImageViewer.ch1image(Backgroundreg)); 
+Background_Intensity = nanmean(imtouse(Backgroundreg)); 
 
 for sp = 2:length(SpineROIs)
     currentROI = SpineROIs(sp);
-    ROImask = createMask(currentROI, gui_CaImageViewer.ch1image);
+    ROImask = createMask(currentROI, imtouse);
     ROIreg = find(ROImask);
-    ROIIntensity(sp-1) = (nanmean(gui_CaImageViewer.ch1image(ROIreg))-Background_Intensity).*length(ROIreg);
+    ROIIntensity(sp-1) = (nanmean(imtouse(ROIreg))-Background_Intensity).*length(ROIreg);
 end
 
 final.RawROIIntensity = ROIIntensity;
@@ -35,9 +41,9 @@ for p = 1:length(PolyROIs)
     PolyX_center(p,1) = PolyROIs(p).Center(1);     
     PolyY_center(p,1) = PolyROIs(p).Center(2);
     currentROI = PolyROIs(p);
-    ROImask = createMask(currentROI, gui_CaImageViewer.ch1image);
+    ROImask = createMask(currentROI, imtouse);
     ROIreg = find(ROImask);
-    PolyROIIntensity(p) = (nanmean(gui_CaImageViewer.ch1image(ROIreg))-Background_Intensity).*length(ROIreg);
+    PolyROIIntensity(p) = (nanmean(imtouse(ROIreg))-Background_Intensity).*length(ROIreg);
 end
 
 for sp = 2:length(SpineROIs)

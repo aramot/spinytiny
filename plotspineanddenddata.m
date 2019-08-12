@@ -70,6 +70,7 @@ else
         else
             File = varargin;
             SpineNo = randi(length(File.deltaF));
+            sensor = File.ImagingSensor;
         end
     else
         filechoice = varargin{1}{randi([1 length(varargin{1})], 1)};
@@ -77,7 +78,14 @@ else
         randdate = randi([1 length(filesearch)]);
         load(filesearch{randdate});
         eval(['File = ', filesearch{randdate}(1:end-4), ';']);
-        SpineNo = randi(length(File.deltaF));
+        SpineNo = randi(length(File.Fluorescence_Measurement));
+        sensor = File.ImagingSensor;
+    end
+    
+    if strcmpi(sensor, 'GCaMP')
+        ImagingFrequency = 30.49;
+    elseif strcmpi(sensor, 'GluSNFR')
+        ImagingFrequency = 58.30;
     end
     
     DendriteChoice =  find(~cell2mat(cellfun(@(x) isempty(find(x == SpineNo,1)), File.SpineDendriteGrouping, 'Uni', false))); %% Get the dendrite on which the chosen spine is located
@@ -89,6 +97,12 @@ else
         filename = regexp(File.Filename, '[A-Z]{2,3}0+\d+_\d{4,6}', 'match');
         filename = filename{1};
         session = File.Session;
+    ThirtyMinWindowinFrames = (1:30)*(ImagingFrequency*60); %%% 30 1-min demarcations in terms of imaging frames (for axis label)
+    LastMinuteIdx = find(ThirtyMinWindowinFrames-length(File.Fluorescence_Measurement{SpineNo})>=0,1);
+    set(gca, 'XTick', [0,ThirtyMinWindowinFrames(1:LastMinuteIdx)])
+    MinDelimiters = 0:0.5:length(ThirtyMinWindowinFrames(1:LastMinuteIdx));
+    set(gca, 'XTickLabel', cellfun(@num2str, num2cell(MinDelimiters), 'uni', false))
+    xlabel('Time (min)')
     title(['Comparison of traces for spine no. ', num2str(SpineNo), ' from ', filename, ' (Session ', num2str(session), ')'], 'Interpreter', 'none')
 
     h2 = subplot(2,3,4:6);
@@ -100,9 +114,20 @@ else
     p1 = plot(File.Processed_dFoF(SpineNo, :), 'k');
     p2 = plot(File.Processed_Dendrite_dFoF(DendriteChoice, :)/5-2, 'b', 'Linewidth', 2);
     linkaxes([h1,h2], 'x')
-
+    method = File.ThresholdMethod(SpineNo);
+    switch method
+        case 1
+            thresh_source = 'From Noise';
+        case 2
+            thresh_source = 'From Movement Artifact';
+        case 3
+            thresh_source = 'From Lower Min';
+    end
+    set(gca, 'XTick', [0,ThirtyMinWindowinFrames(1:LastMinuteIdx)])
+    set(gca, 'XTickLabel', cellfun(@num2str, num2cell(MinDelimiters), 'uni', false))
+    xlabel('Time (min)')
 
     legend([p1,p2,p3,p4,p5,p6],{'Processed Spine Trace', 'Processed Dend Trace', 'Binarized Spine', 'Binarized Dend', 'Dend-subtracted spine trace', 'Binarized dend-sub'})
 
-    title(['Comparison of traces for spine no. ', num2str(SpineNo)])
+    title(['Comparison of Traces for Spine No. ', num2str(SpineNo), '; Thresh Calc ', thresh_source])
 end

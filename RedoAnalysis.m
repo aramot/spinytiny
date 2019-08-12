@@ -1,6 +1,8 @@
 function RedoAnalysis(varargin)
 
-imagedsensor = 'GCaMP';
+sensor = inputdlg('Enter Sensor', '', 1,{'GCaMP'});
+
+imagedsensor = sensor{1};
 
 foldertouse = 'E:\ActivitySummary';
 cd(foldertouse)

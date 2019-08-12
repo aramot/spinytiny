@@ -37,15 +37,15 @@ end
 
 fornoise = raw;
 roundnum = 1;
-switch Options.ImagingSensor
-    case 'GCaMP'
-        multiplier = 1.5;
+if strcmpi(Options.ImagingSensor, 'GCaMP')
+        downsample_ratio = 20;
         windowsize = 30;
         stepforKDE = 20;
-    case 'GluSNFR'
-        multiplier = 1.5;
+elseif strcmpi(Options.ImagingSensor, 'GluSNFR')
+        downsample_ratio = 20;
         windowsize = 60;
         stepforKDE = 20;
+else
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -69,7 +69,25 @@ end
 %%% can be used to pad the data, which
 %%% reduces edge effects of estimation
 
-est_base = baseline_kde(raw', 20, windowsize, stepforKDE)';
+est_base = baseline_kde(raw', downsample_ratio, round(Options.ImagingFrequency*30), stepforKDE)';
+
+if strcmpi(Options.ImagingSensor, 'GluSNFR')
+    if ~isempty(Options.ImageFramesatBoutSeparations)
+        SecondsPostStarttoIgnore = 2;
+        AcqStartPoints = [1;Options.ImageFramesatBoutSeparations];
+        IgnoreWindows = AcqStartPoints + ceil(SecondsPostStarttoIgnore*Options.ImagingFrequency);
+        for bout = 1:size(AcqStartPoints,1)
+            if AcqStartPoints(bout)>length(raw)
+                continue
+            end
+            if IgnoreWindows(bout)>length(raw)
+                IgnoreWindows(bout) = length(raw);
+            end
+            raw(AcqStartPoints(bout):IgnoreWindows(bout)) = est_base(AcqStartPoints(bout):IgnoreWindows(bout))+(std(raw)/3)*randn(1,length(AcqStartPoints(bout):IgnoreWindows(bout)));
+        end
+    end
+end
+
 pad_length = 1000;
 paddeddata = [est_base(randi([1 1000], 1,pad_length)), raw, est_base(randi([length(est_base)-pad_length, length(est_base)], 1,pad_length))];
 
@@ -78,7 +96,7 @@ paddeddata = [est_base(randi([1 1000], 1,pad_length)), raw, est_base(randi([leng
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%% Kernel Density Estimation (Aki's method) %%%
-truebaseline_kde = baseline_kde(paddeddata',20,windowsize,stepforKDE);    %%% inputs = data,downsample ratio, window size, step
+truebaseline_kde = baseline_kde(paddeddata',downsample_ratio,windowsize,stepforKDE);    %%% inputs = data,downsample ratio, window size, step
 truebaseline_kde = truebaseline_kde(pad_length+1:end-pad_length);
 DriftBaseline = truebaseline_kde; 
 
@@ -108,11 +126,13 @@ if traceoption == 1
     %%% Final variable
     pad_length = 500;
     
-    newbaseline = baseline_kde(dFoF',20,windowsize,stepforKDE);    %%% inputs = data,downsample ratio, window size, step
+    newbaseline = baseline_kde(dFoF',downsample_ratio,windowsize,stepforKDE);    %%% inputs = data,downsample ratio, window size, step
     paddeddata = [newbaseline(randi([1 1000], 1,pad_length))', dFoF, newbaseline(randi([length(dFoF)-500, length(dFoF)], 1,pad_length))'];
     
+%     smooth_padded = smooth(paddeddata, filterwindow, 'loess');
     smooth_padded = smooth(paddeddata, filterwindow);
     processed_dFoF = smooth_padded(pad_length+1:end-pad_length);
+%     processed_dFoF = dFoF;
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 end

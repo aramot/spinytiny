@@ -16,6 +16,6 @@ else
     framestocut = (framestocut(1)-49):framestocut(end);
 end
 
-gui_CaImageViewer.GCaMP_Image = gui_CaImageViewer.GCaMP_Image(setdiff([1:length(gui_CaImageViewer.GCaMP_Image)], imagestocut));
+% gui_CaImageViewer.GCaMP_Image = gui_CaImageViewer.GCaMP_Image(setdiff([1:length(gui_CaImageViewer.GCaMP_Image)], imagestocut));
 
 gui_CaImageViewer.IgnoreFrames = framestocut; 

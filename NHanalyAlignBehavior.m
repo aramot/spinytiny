@@ -62,7 +62,7 @@ end
 
 numberofTrials = length(firsttrial:length(Behavior.Behavior_Frames));
 lasttrial = length(Behavior.Behavior_Frames);
-numberofSpines = length(Fluor.dF_over_F);
+numberofSpines = length(Fluor.Fluorescence_Measurement);
 imagingframestouse = [];
 trialstouse = zeros(numberofTrials,1);
 ch = find(strcmp(Behavior.xsg_data.channel_names,'Trial_number'));
@@ -119,6 +119,12 @@ for i = firsttrial:lasttrial
         continue
     end
     
+    if ~(i+1>lasttrial) %%%% The upcoming trial-length check doesn't work if this is the last trial...
+        if Behavior.Behavior_Frames{i}.states.state_0(2,1) > Behavior.Behavior_Frames{i+1}.states.state_0(1,2)+10 %%% Sometimes there is an error (bitcode readout?) that makes the trial incredibly long; this can be checked by seeing if the end of the trial exceeds the beginning of the next trial; this trial will be discarded (sometimes they overlap by 1 or so, but this is just due to rounding inconsistencies when esimating frames)
+            continue
+        end
+    end
+
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%% Behavior Section
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -179,6 +185,7 @@ for i = firsttrial:lasttrial
     if endcue-startcue > 60 || (Behavior.Behavior_Frames{i}.states.state_0(1,2)-60) < 0 %%% You want at least two seconds of data preceeding each movement, so the duration of cuestart:cueend should be > 60. If this is not the case, then move the "trial start" back 2 seconds (unless it's the first trial, in which case this is impossible). 
         trial_binary_cue{i} = cuemat;
         Trial{i}.trialactivity = Trial_Processed_dFoF{i}(:,1:end);
+        Trial{i}.overallbinaryactivity = Trial_OverallSpineActivity{i}(:,1:end);
         Trial{i}.synapseonlyactivity = Trial_SynapseOnlyActivity{i}(:,1:end);
         Trial{i}.trialbinaryactivity = Trial_SynapseOnlyBinarized{i}(:,1:end);
         Trial{i}.trialdendsubactivity = Trial_dFoF_DendriteSubtracted{i}(:,1:end); 
@@ -488,7 +495,8 @@ Aligned.PreMovement = premovement;
 Aligned.SuccessfulPresses = successful_behavior; 
 Aligned.RewardDelivery = reward_delivery;
 Aligned.Punishment = punishment; 
-Aligned.RawSpineActivity = cell2mat(Trial_Processed_dFoF);
+Aligned.ProcessedSpineActivity = Processed_dFoF_Data;
+Aligned.BinarizedOverallSpineData = OverallSpine_Data;
 Aligned.DendSubSpineActivity = cell2mat(Trial_dFoF_DendriteSubtracted);
 Aligned.SynapseOnlyBinarized = spinedatatouse;
 Aligned.DendSubSynapseOnlyBinarized = DendSubspinedatatouse;
@@ -620,42 +628,49 @@ Classified.MovementSpineReliability = MovementSpineReliability;
 %%%% binarized data
 
 optMLR = get(gui_KomiyamaLabHub.figure.handles.FitwithMLR_CheckBox, 'value');
+uselongitudinal = 0;
 
 if optMLR
-    activitydataformodel = spinedatatouse;
-    movementdataformodel = binary_behavior;
-
+%     activitydataformodel = spinedatatouse;
+%     movementdataformodel = binary_behavior;
+    activitydataformodel = cell2mat(Trial_dFoF_DendriteSubtracted);
+    movementdataformodel = lever_movement;
     animal = regexp(Fluor.Filename, '[A-Z]{2,3}\d+', 'match'); animal = animal{1};
     
-    if isfolder(['C:/Users/Komiyama/Desktop/Output Data/', animal, ' New Spine Analysis'])
-        persistent longitudinalModel
-        fieldsource = fastdir(['C:/Users/Komiyama/Desktop/Output Data/', animal, ' New Spine Analysis'], 'Field');
-        filecount = 1;
-        for f = 1:length(fieldsource)
-            load(['C:/Users/Komiyama/Desktop/Output Data/', animal, ' New Spine Analysis/', fieldsource{f}])
-            fieldnumber = regexp(fieldsource{f}, '\d+.Spine');
-            eval(['FieldData{', num2str(filecount), '} = SpineRegistry;']);
-            clear SpineRegistry
-            filecount = filecount+1;
-        end
-        currentdate = regexp(Fluor.Filename, '[0-9]{4,6}', 'match');
-        for i = 1:length(FieldData)
-            if sum(cell2mat(cellfun(@(x) strfind(x,currentdate), FieldData{i}.DatesAcquired, 'uni', false)))   %%% if the current file date is found within the current field data
-                datesused = sortrows(FieldData{i}.DatesAcquired);
-                instance = find(cell2mat(cellfun(@(x) ~isempty(logical(strfind(x,currentdate))), datesused, 'uni', false)));
-                if instance >1   %%% If the current file is the second instance of longitudinal data, USE THE FIRST INSTANCE'S MODEL!
-                    Model = longitudinalModel{i}{1};
-                    PredictedMovement = predict(Model, activitydataformodel');
-                    predictioncorrelation = corrcoef(movementdataformodel, PredictedMovement);
-                    PredictionAccuracy = (predictioncorrelation(1,2)).^2;
-                    if isnan(PredictionAccuracy)
-                        PredictionAccuracy = 0;
+    if uselongitudinal
+        if isfolder(['C:/Users/Komiyama/Desktop/Output Data/', animal, ' New Spine Analysis'])
+            persistent longitudinalModel
+            fieldsource = fastdir(['C:/Users/Komiyama/Desktop/Output Data/', animal, ' New Spine Analysis'], 'Field');
+            filecount = 1;
+            for f = 1:length(fieldsource)
+                load(['C:/Users/Komiyama/Desktop/Output Data/', animal, ' New Spine Analysis/', fieldsource{f}])
+                fieldnumber = regexp(fieldsource{f}, '\d+.Spine');
+                eval(['FieldData{', num2str(filecount), '} = SpineRegistry;']);
+                clear SpineRegistry
+                filecount = filecount+1;
+            end
+            currentdate = regexp(strpat, '_[1-9]{0,2}[0]{0,1}[1-9]{1,2}[0]{0,1}[1-9]{1,2}_', 'split');
+            currentdata = currentdata(2:end-1);
+            for i = 1:length(FieldData)
+                if sum(cell2mat(cellfun(@(x) strfind(x,currentdate), FieldData{i}.DatesAcquired, 'uni', false)))   %%% if the current file date is found within the current field data
+                    datesused = sortrows(FieldData{i}.DatesAcquired);
+                    instance = find(cell2mat(cellfun(@(x) ~isempty(logical(strfind(x,currentdate))), datesused, 'uni', false)));
+                    if instance >1   %%% If the current file is the second instance of longitudinal data, USE THE FIRST INSTANCE'S MODEL!
+                        Model = longitudinalModel{i}{1};
+                        PredictedMovement = predict(Model, activitydataformodel');
+                        predictioncorrelation = corrcoef(movementdataformodel, PredictedMovement);
+                        PredictionAccuracy = (predictioncorrelation(1,2)).^2;
+                        if isnan(PredictionAccuracy)
+                            PredictionAccuracy = 0;
+                        end
+                    else
+                       [Model,~, PredictionAccuracy] = PredictMovementfromSpineAct(activitydataformodel, movementdataformodel); 
+                       longitudinalModel{i}{instance} = Model;
                     end
-                else
-                   [Model,~, PredictionAccuracy] = PredictMovementfromSpineAct(activitydataformodel, movementdataformodel); 
-                   longitudinalModel{i}{instance} = Model;
                 end
             end
+        else
+            [Model,~, PredictionAccuracy] = PredictMovementfromSpineAct(activitydataformodel, movementdataformodel);
         end
     else
         [Model,~, PredictionAccuracy] = PredictMovementfromSpineAct(activitydataformodel, movementdataformodel);

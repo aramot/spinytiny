@@ -21,7 +21,7 @@ SpectralLengthConstant = 10;
 for j = 1:DendNum     
     firstspine = inputData.SpineDendriteGrouping{j}(1);
     lastspine = inputData.SpineDendriteGrouping{j}(end);
-    if j == DendNum && lastspine ~= length(inputData.dF_over_F)
+    if j == DendNum && lastspine ~= length(inputData.Fluorescence_Measurement)
         lastspine = length(inputData.dF_over_F);
     end
 %     if Choices.UseStatDends

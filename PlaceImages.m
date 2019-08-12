@@ -9,7 +9,9 @@ global zStack_Interface
 %%% object at the end of calling this function to easily resume normal
 %%% operations
 
-if ~strcmpi(CommandSource, 'Loader') 
+if strcmpi(CommandSource, 'Slider')
+    current_uiobject = 'ImageSlider_Slider';
+elseif ~strcmpi(CommandSource, 'Loader') 
     current_uiobject = get(gco, 'Tag');
 else 
     current_uiobject = [];
@@ -541,31 +543,33 @@ elseif strcmpi(CommandSource, 'Adjuster')
     end
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     OverlapFig = findobj('Type', 'figure', 'Name', 'RGB Overlap');
-    if ~isempty(OverlapFig)
-        AdjLow = GreenLower;
-        AdjHigh = GreenUpper;
-        OverlapAx = get(OverlapFig, 'Children');
-        axes(OverlapAx)
-        OverlapAxProp = get(OverlapAx);
-        OverlapImage = OverlapFig.UserData.OriginalImage;
-        CurrentImage = OverlapAxProp.Children.CData;
-        OldCAxis = OverlapFig.UserData.CAxis; OldRed = OldCAxis(:,1); OldGreen = OldCAxis(:,2); OldBlue = OldCAxis(:,3);
-        if ImageNum == 3
-           NewCAxis = [OldRed(1) OldGreen(1) AdjLow; OldRed(2) OldGreen(2) AdjHigh];
-           NewIm = imadjust(OverlapImage, NewCAxis, [], green_gamma);
-           OverlapFig.UserData.CAxis = NewCAxis;
-        elseif ImageNum == 2 %%% Channel 2/Session 1 is green!
-           NewCAxis = [OldRed(1) AdjLow OldBlue(1); OldRed(2) AdjHigh OldBlue(2)];
-           NewIm = imadjust(OverlapImage, NewCAxis,[], green_gamma);
-           OverlapFig.UserData.CAxis = NewCAxis;
-        elseif ImageNum == 1 %%% Channel 1/Session 1 is red!
-           NewCAxis = [AdjLow OldGreen(1) OldBlue(1); AdjHigh OldGreen(2) OldBlue(2)];
-           NewIm = imadjust(OverlapImage, NewCAxis, [], green_gamma);
-           OverlapFig.UserData.CAxis = NewCAxis;
-        else 
-           NewIm = CurrentImage;
+    if ImageNum<4
+        if ~isempty(OverlapFig)
+            AdjLow = GreenLower;
+            AdjHigh = GreenUpper;
+            OverlapAx = get(OverlapFig, 'Children');
+            axes(OverlapAx)
+            OverlapAxProp = get(OverlapAx);
+            OverlapImage = OverlapFig.UserData.OriginalImage;
+            CurrentImage = OverlapAxProp.Children.CData;
+            OldCAxis = OverlapFig.UserData.CAxis; OldRed = OldCAxis(:,1); OldGreen = OldCAxis(:,2); OldBlue = OldCAxis(:,3);
+            if ImageNum == 3 %%% Channel 3/Session 3 is blue!
+               NewCAxis = [OldRed(1) OldGreen(1) AdjLow; OldRed(2) OldGreen(2) AdjHigh];
+               NewIm = imadjust(OverlapImage, NewCAxis, [], green_gamma);
+               OverlapFig.UserData.CAxis = NewCAxis;
+            elseif ImageNum == 2 %%% Channel 2/Session 2 is green!
+               NewCAxis = [OldRed(1) AdjLow OldBlue(1); OldRed(2) AdjHigh OldBlue(2)];
+               NewIm = imadjust(OverlapImage, NewCAxis,[], green_gamma);
+               OverlapFig.UserData.CAxis = NewCAxis;
+            elseif ImageNum == 1 %%% Channel 1/Session 1 is red!
+               NewCAxis = [AdjLow OldGreen(1) OldBlue(1); AdjHigh OldGreen(2) OldBlue(2)];
+               NewIm = imadjust(OverlapImage, NewCAxis, [], green_gamma);
+               OverlapFig.UserData.CAxis = NewCAxis;
+            else 
+               NewIm = CurrentImage;
+            end
+            OverlapAxProp.Children.CData = NewIm;
         end
-        OverlapAxProp.Children.CData = NewIm;
     end
 end
 

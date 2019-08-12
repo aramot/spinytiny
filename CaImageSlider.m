@@ -45,14 +45,17 @@ if gui_CaImageViewer.NewSpineAnalysis && ~(SliderMax>3) %%% If a full image seri
         switch experimenter
             case 'Assaf'
                 gui_CaImageViewer.save_directory = ['Z:\People\',experimenter,'\Data\', animal, '\', dates(ImageNum,:),'\motion_corrected_tiffs\GFP\summed\'];
+            case 'Pantong'
+                gui_CaImageViewer.save_directory = ['Z:\People\',experimenter,'\Data\', animal, '\', dates(ImageNum,:),'\snfr\summed\'];
             otherwise
                 gui_CaImageViewer.save_directory = ['Z:\People\',experimenter,'\Data\', animal, '\', dates(ImageNum,:), '\summed\'];
         end
-        mostlikelyfile = fastdir(gui_CaImageViewer.save_directory, 'summed_50.tif');
-        gui_CaImageViewer.filename = mostlikelyfile{1};
+%         mostlikelyfile = fastdir(gui_CaImageViewer.save_directory, 'summed_50.tif');
+%         gui_CaImageViewer.filename = mostlikelyfile{1};
         gui_CaImageViewer.NewSpineAnalysisInfo.CurrentDate = dates(ImageNum,:);
     else
     end
+    gui_CaImageViewer.NewSpineAnalysisInfo.CurrentSession = ImageNum;
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

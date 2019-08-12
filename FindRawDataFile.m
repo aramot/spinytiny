@@ -52,6 +52,7 @@ if isfolder(targetdir)
                 filetoload = files{1};
             end
         else
+            cd([filestart, filesep, Experimenter, filesep, 'Data', filesep])
             [dirtouse, filetoload] = NoFileFound(folder, Date);
         end
     else
@@ -64,11 +65,13 @@ if isfolder(targetdir)
             check = 1;
         end
         if ~check
+            cd([filestart, filesep, Experimenter, filesep, 'Data', filesep])
             [dirtouse, filetoload] = NoFileFound(folder,Date);
         end
     end
 else
-    [dirtouse, filetoload] = NoFileFound(folder);
+    cd([filestart, filesep, Experimenter, filesep, 'Data', filesep])    %%% Make current directory the user's data folder for ease of use
+    [dirtouse, filetoload] = NoFileFound(folder, Date);
 end
 
 function latestfile = findlatestfile(targetdir, files)
@@ -84,6 +87,13 @@ function [dirtouse, filetoload] = NoFileFound(folder,Date)
 
 disp('Raw data file not found; PULLING FROM PREVIOUS ANALYSIS!!')
 dirtouse = 'E:\ActivitySummary';
-cd(dirtouse)
-files = fastdir(cd, {folder, Date}, {'Poly'});
-filetoload = files{1};
+files = fastdir(dirtouse, {folder, Date}, {'Poly'});
+if ~isempty(files)
+    filetoload = files{1};
+else
+    disp('No backup mechanisms were successful in finding file; select manually')
+    cd
+    [fname, pname] = uigetfile();
+    dirtouse = pname;
+    filetoload = fname;
+end

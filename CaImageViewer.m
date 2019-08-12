@@ -118,6 +118,7 @@ gui_CaImageViewer.NewSpineAnalysis = 0;
 gui_CaImageViewer.NewSpineAnalysisInfo.CurrentDate = [];
 gui_CaImageViewer.NewSpineAnalysisInfo.CurrentImagingField = [];
 gui_CaImageViewer.NewSpineAnalysisInfo.SpineList = [];
+gui_CaImageViewer.NewSpineAnalysisInfo.CurrentSession = [];
 set(handles.Autoscale_CheckBox, 'Value', 1);
 set(handles.Merge_ToggleButton, 'Enable', 'off');
 
@@ -156,6 +157,10 @@ gui_CaImageViewer.BackgroundROI = [];
 
 gui_CaImageViewer.GreenGraph_loc = get(handles.GreenGraph, 'Position');
 gui_CaImageViewer.RedGraph_loc = get(handles.RedGraph, 'Position');
+
+%%% Set the basic button down function for the whole figure to activate the
+%%% Image Slider uicontrol object, allowing you to scroll more easily
+set(gui_CaImageViewer.figure.handles.figure1, 'ButtonDownFcn', @(~,~)uicontrol(gui_CaImageViewer.figure.handles.ImageSlider_Slider), 'HitTest', 'On')
 
 function DlgChoice(hObject, eventdata, ~)
 
@@ -215,6 +220,10 @@ end
 gui_CaImageViewer.SelectedStopFrame = [];
 gui_CaImageViewer.IgnoreFrames = [];
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%% Get File Information %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 [filename, pathname] = uigetfile('.tif');
 
 if isnumeric(pathname) && isnumeric(filename)
@@ -228,18 +237,87 @@ timecourse_image_number = [];
 % fname = fname;
 CaImage_File_info = imfinfo(fname);
 timecourse_image_number = numel(CaImage_File_info);
-
-
 gui_CaImageViewer.filename = filename;
 gui_CaImageViewer.save_directory = pathname;
+
+seps = strfind(pathname, filesep);
+separation_indices = [0,seps];
+file_subdivs = mat2cell(pathname, 1, diff(separation_indices));
+
+
+
+experiment = regexp(gui_CaImageViewer.filename, '[A-Z]{2,3}\d+[_]\d+', 'match');
+experiment = experiment{1};
+animal = experiment(1:5);
+date = regexp(pathname, '\d{6}', 'match'); date = date{1};
+date_address = find(cellfun(@any, regexp(file_subdivs, date)));
+date_spec_folder = fullfile(file_subdivs{1:date_address});
+
+terminus = regexp(gui_CaImageViewer.save_directory, animal, 'end');
+parent_folder = gui_CaImageViewer.save_directory(1:terminus);
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%% Load Scan Image Values as needed into CaImageViewer %%%%%%%%%%
+sample_image_file = fastdir(date_spec_folder, '1_summary.mat');
+try
+    load([date_spec_folder, sample_image_file{1}], 'info_first');
+catch
+    cd(pathname)
+    [rootfile, rootpath] = uigetfile('.mat', 'Select first image summary file in directory');
+    load([rootpath, rootfile], 'info_first')
+end
+
+zoomvalueline = regexp(info_first.Software, 'SI.hRoiManager.scanZoomFactor = \d+.\d+', 'match');
+zoomvalue = regexp(zoomvalueline{1}, '\d+.\d+', 'match'); zoomvalue = zoomvalue{1};
+
+set(gui_CaImageViewer.figure.handles.Zoom_EditableText, 'String', zoomvalue);
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Longitudinal Analysis Section
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% This section finds the date of the file being loaded, and attempts to
+%%% locate that date within any saved Spine Registry files
+
+date = regexp(pathname, '[0-9]{4,6}', 'match'); date = date{1};
+gui_CaImageViewer.NewSpineAnalysisInfo.CurrentDate = date;
+file = gui_CaImageViewer.filename;
+file = file(1:end-4);
+session = [];
+if gui_CaImageViewer.NewSpineAnalysis
+    cd(parent_folder)
+    registryfiles = fastdir(parent_folder, 'Spine Registry'); %%% Find all files labeled as 'spine registry' in the parent folder
+    if isempty(registryfiles)
+        return
+    end
+    FieldsFound = cell2mat(cellfun(@cell2mat, cellfun(@(x) regexp(x, 'Field \d+', 'match'), registryfiles, 'uni', false), 'uni', false)); %%% Find the fields represented by all of the found files
+    FieldNumbersRepresented = FieldsFound(:,end);   %%% Extract the actual field number as opposed to "Field X"
+    [~,fieldsindex,~] = unique(FieldNumbersRepresented);     %%% Sometimes, there are multiple Spine Registry Files saved for the same field (e.g. between users). Although the spine data itself may differ between users, the dates used should be the same. Extrac the location of the first instance of unique numbers (i.e. the first 2 to appear) and use this as an index for the original fastdir results
+    datefound = false;
+    registrycounter = 1;
+    while ~datefound
+        load(registryfiles{registrycounter})
+        DatesUsedbyField = sortrows(SpineRegistry.DatesAcquired);  %%% Tack on the dates acquired with that field, eventually forming an exhaustive list of dates used for this animal
+        datefinder = cellfun(@(x) strcmpi(x,date), DatesUsedbyField);
+        if any(datefinder)
+            session = find(datefinder);
+            datefound = true;
+        end
+        clear SpineRegistry
+        registrycounter = registrycounter+1;
+        if registrycounter>length(fieldsindex)
+            break
+        end
+    end
+    gui_CaImageViewer.NewSpineAnalysisInfo.CurrentSession = session;
+end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 cd(pathname)
 twochannels = get(gui_CaImageViewer.figure.handles.TwoChannels_CheckBox, 'Value');
 
-%%% New Spine Analysis Section
-date = regexp(pathname, '[0-9]{4,6}', 'match'); date = date{1};
-gui_CaImageViewer.NewSpineAnalysisInfo.CurrentDate = date;
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%% Set Image Properties %%%
 
@@ -508,9 +586,7 @@ function BackgroundROI_ToggleButton_Callback(hObject, eventdata, handles)
 
 global gui_CaImageViewer
 
-% set(gui_CaImageViewer.figure.handles.ZoomIn_ToggleTool, 'state', 'off')
-% set(gui_CaImageViewer.figure.handles.ZoomOut_ToggleTool, 'state', 'off')
-% set(gui_CaImageViewer.figure.handles.Pan_ToggleTool, 'state', 'off')
+TurnOffTools
 
 BackgroundROI = get(gui_CaImageViewer.figure.handles.BackgroundROI_ToggleButton, 'Value');
 SpineROI = get(gui_CaImageViewer.figure.handles.SpineROI_ToggleButton, 'Value');
@@ -539,6 +615,8 @@ function SpineROI_ToggleButton_Callback(hObject, eventdata, handles)
 % Hint: get(hObject,'Value') returns toggle state of SpineROI_ToggleButton
 
 global gui_CaImageViewer
+
+TurnOffTools
 
 BackgroundROI = get(gui_CaImageViewer.figure.handles.BackgroundROI_ToggleButton, 'Value');
 SpineROI = get(gui_CaImageViewer.figure.handles.SpineROI_ToggleButton, 'Value');
@@ -586,6 +664,8 @@ function DrawOther_ToggleButton_Callback(hObject, eventdata, handles)
 
 global gui_CaImageViewer;
 
+TurnOffTools
+
 BackgroundROI = get(gui_CaImageViewer.figure.handles.BackgroundROI_ToggleButton, 'Value');
 SpineROI = get(gui_CaImageViewer.figure.handles.SpineROI_ToggleButton, 'Value');
 DrawOtherROI = get(gui_CaImageViewer.figure.handles.DrawOther_ToggleButton, 'Value');
@@ -617,6 +697,7 @@ function DendritePolyLines_ToggleButton_Callback(hObject, eventdata, handles)
 
 global gui_CaImageViewer;
 
+TurnOffTools
 
 BackgroundROI = get(gui_CaImageViewer.figure.handles.BackgroundROI_ToggleButton, 'Value');
 SpineROI = get(gui_CaImageViewer.figure.handles.SpineROI_ToggleButton, 'Value');
@@ -639,6 +720,16 @@ end
 if BackgroundROI == 0 && SpineROI == 0 && NearbySpineROI == 0 && Dendrite_PolyLines == 0
     set(gui_CaImageViewer.figure.handles.output, 'WindowButtonDownFcn', []);
 end
+
+ROIs = findobj(gui_CaImageViewer.figure.handles.GreenGraph, 'Type', 'images.roi.ellipse', '-and', {'-regexp', 'Tag', 'Dendrite'});
+
+for i = 1:length(ROIs)
+    ROIs(i).InteractionsAllowed = 'none';
+end 
+
+set(gui_CaImageViewer.figure.handles.EditDendrites_ToggleButton, 'Value', 0)
+
+
 
 
 
@@ -800,7 +891,7 @@ axes2 = glovar.figure.handles.RedGraph;
 try
     file = gui_CaImageViewer.filename;
     file = file(1:end-4);
-    experiment = regexp(gui_CaImageViewer.filename, '[A-Z]{2}\d+[_]\d+', 'match');
+    experiment = regexp(gui_CaImageViewer.filename, '[A-Z]{2,3}\d+[_]\d+', 'match');
     experiment = experiment{1};
     animal = experiment(1:5);
 catch
@@ -1101,11 +1192,21 @@ if glovar.NewSpineAnalysis
     try
         load([targ_folder, filesep,userspecificpart,'Imaging Field ', num2str(currentfield), ' Spine Registry'])
     catch
-        warning('No Spine Registry file found... make sure to make a new one or check if it was saved somewhere else!')
-        [fname, pname] = uigetfile();
-        load([pname, fname])
+        try
+            warning('No USER SPECIFIC spine registry file found... searching for any registry matching the field')
+            likelyfile = fastdir(targ_folder, ['Imaging Field ', num2str(currentfield), ' Spine Registry']);
+            load(likelyfile{1})
+        catch
+            warning('No Spine Registry file found... make sure to make a new one or check if it was saved somewhere else!')
+            [fname, pname] = uigetfile();
+            load([pname, fname])
+        end
     end
-    instanceofappearance = find(logical(strcmpi(sortrows(SpineRegistry.DatesAcquired), gui_CaImageViewer.NewSpineAnalysisInfo.CurrentDate)));
+    if ~isempty(gui_CaImageViewer.NewSpineAnalysisInfo.CurrentSession)
+        instanceofappearance = gui_CaImageViewer.NewSpineAnalysisInfo.CurrentSession;
+    else
+        instanceofappearance = find(logical(strcmpi(sortrows(SpineRegistry.DatesAcquired), gui_CaImageViewer.NewSpineAnalysisInfo.CurrentDate)));
+    end
     while isempty(instanceofappearance)
         cf = inputdlg('No field number found; Enter field number:', '1', 1);
         currentfield = str2num(cf{1});
@@ -1125,9 +1226,13 @@ if glovar.NewSpineAnalysis
             r = find(SpineRegistry.Data(:,instanceofappearance)==0);
             for i = 1:length(r)
                 ROIobject = findobj(glovar.figure.handles.GreenGraph, 'Type', 'images.roi.ellipse', 'Tag', ['ROI', num2str(r(i))]);
-                ROIobject.FaceAlpha = 1;
-                ROIobject.Color = 'r';
-                ROIobject.StripeColor = 'w';      
+                if ~isempty(ROIobject)
+                    ROIobject.FaceAlpha = 1;
+                    ROIobject.Color = 'r';
+                    ROIobject.StripeColor = 'w';      
+                else
+                    continue
+                end
             end
             glovar.NewSpineAnalysisInfo.SpineList(r) = 0;
         end
@@ -1379,16 +1484,22 @@ if gui_CaImageViewer.NewSpineAnalysis
         
         %%%%% Identify imaging field number
         currentimagingfield = gui_CaImageViewer.NewSpineAnalysisInfo.CurrentImagingField;
+        if isempty(currentimagingfield)
+            currentimagingfield = inputdlg('What field number is this?', 'Designate field number', 1, '1');
+            currentimagingfield = str2num(currentimagingfield);
+        end
+        %%%%% Identify current session of this field
+        currentsession = gui_CaImageViewer.NewSpineAnalysisInfo.CurrentSession;
         
         %%% Identify instance of appearance of this imaging field (i.e. is this the first time imaging here? the second? etc.) 
         prompt = 'What imaging instance (of this field) is this?';
         name = 'Designate imaging instance';
         numlines = 1;
         ImageNum = get(gui_CaImageViewer.figure.handles.Frame_EditableText, 'String');
-        defaultanswer = {ImageNum};
+        defaultanswer = {num2str(currentsession)};
         
         currentsession = inputdlg(prompt, name, numlines, defaultanswer);
-        currentsession = str2num(currentsession{1});
+        currentsession = str2num(num2str(currentsession{1}));
         
         try
             load([drawer, '_Imaging Field ', num2str(currentimagingfield), ' Spine Registry'])
@@ -1661,7 +1772,7 @@ h1 = waitbar(0, 'Loading images for session 1');
 
 gui_CaImageViewer.NewSpineAnalysis = 1;
 
-%%%%% Downsampled move folder names
+%%%%% Downsampled movie folder names
 
 user_folder = regexp(directory, ['People', filesep, '\[A-Z]\w*'], 'match'); foldersplit = regexp(user_folder{1}, filesep, 'split'); user = foldersplit{2};
 
@@ -2048,6 +2159,16 @@ drawtype = get(gui_CaImageViewer.ROI(1), 'Type');
 
 axes(gui_CaImageViewer.figure.handles.GreenGraph);
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+ColorOptions = get(handles.ROIColor_PopUpMenu, 'String');
+ColorSelection = get(handles.ROIColor_PopUpMenu, 'Value');
+ROIColor = ColorOptions{ColorSelection};
+
+if strcmpi(ROIColor, 'ROI Color')
+    ROIColor = 'white';
+end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 switch drawtype
     case 'rectangle'
         ROIs_original = round(cell2mat(cellfun(@(x) x(1:4), get(gui_CaImageViewer.ROI),'uni', false)));
@@ -2092,7 +2213,7 @@ for i = 1:length(ROIs_original)
     if isempty(stats)
         disp(['Could not auto shift ROI ', num2str(i)])
         gui_CaImageViewer.ROI(i) = drawellipse('Center', ROIs_original(i,:), 'SemiAxes', OriginalSemiAxes(i,:), 'RotationAngle', OriginalRotationAngle(i,:),...
-            'AspectRatio', OriginalAspectRatio(i,:), 'Tag', ['ROI', num2str(ROInum)], 'Color', [0.2 0.4 0.9], 'HandleVisibility', 'on', 'Label', '', 'Linewidth', 1, 'FaceAlpha', 0);
+            'AspectRatio', OriginalAspectRatio(i,:), 'Tag', ['ROI', num2str(ROInum)], 'Color', ROIColor, 'HandleVisibility', 'on', 'Label', '', 'Linewidth', 1, 'FaceAlpha', 0);
         roiget = get(gui_CaImageViewer.ROI(ROInum+1));
         c = roiget.UIContextMenu;
         uimenu(c, 'Label', 'Add Surround Background', 'Callback', @ModifyROI);
@@ -2109,7 +2230,7 @@ for i = 1:length(ROIs_original)
             gui_CaImageViewer.ROI(i) = rectangle('Position', [round(newpos(i,1)),round(newpos(i,2)),ROIs_original(i,3), ROIs_original(i,4)], 'EdgeColor', [0.2 0.4 0.9], 'Curvature', [1 1],'Tag', ['ROI', num2str(ROInum)], 'ButtonDownFcn', {@DragROI, ROInum, 'HomeWindow'}, 'Linewidth', 1, 'UIContextMenu', c1);
         case 'images.roi.ellipse'
             gui_CaImageViewer.ROI(i) = drawellipse('Center', newpos(i,:), 'SemiAxes', OriginalSemiAxes(i,:), 'RotationAngle', OriginalRotationAngle(i,:),...
-                'AspectRatio', OriginalAspectRatio(i,:), 'Tag', ['ROI', num2str(ROInum)], 'Color', [0.2 0.4 0.9], 'HandleVisibility', 'on', 'Label', '', 'Linewidth', 1, 'FaceAlpha', 0);
+                'AspectRatio', OriginalAspectRatio(i,:), 'Tag', ['ROI', num2str(ROInum)], 'Color', ROIColor, 'HandleVisibility', 'on', 'Label', '', 'Linewidth', 1, 'FaceAlpha', 0);
             roiget = get(gui_CaImageViewer.ROI(ROInum+1));
             c = roiget.UIContextMenu;
             uimenu(c, 'Label', 'Add Surround Background', 'Callback', @ModifyROI);
