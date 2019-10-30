@@ -1,5 +1,9 @@
-function [dirtouse, filetoload] = FindRawDataFile(File, Experimenter, Analyzer, isOpto)
+function [FileInfo] = FindRawDataFile(File, FileOptions)
 
+Experimenter = FileOptions.Experimenter; 
+Analyzer = FileOptions.Analyzer;
+isOpto = FileOptions.IsOpto;
+Router = FileOptions.Router;
 
 experimenter_initials = regexp(File, '[A-Z]{2}', 'match');
 experimenter_initials = experimenter_initials{1};
@@ -7,9 +11,9 @@ folder = regexp(File, [experimenter_initials, '\d+[^_]'], 'match');
 folder = folder{1};
 Date = regexp(File, '\d{4,6}', 'match');
 Date = Date{1};
-dirtouse = cd;
+FileInfo.dirtouse = cd;
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% ========================================================================
 if ispc
     filestart = ['Z:', filesep, 'People'];
 elseif isunix
@@ -35,9 +39,9 @@ switch Experimenter
         end
 end
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% ==========================================================================
 if isfolder(targetdir)
-    dirtouse = targetdir;
+    FileInfo.dirtouse = targetdir;
     cd(targetdir)
     files = fastdir(targetdir, {'Analyzed', Analyzer});
     check = 0;    
@@ -46,33 +50,42 @@ if isfolder(targetdir)
         if ~isempty(files)
             if length(files)>1
                 latestfile = findlatestfile(targetdir, files);
-                filetoload = latestfile;
+                FileInfo.filetoload = latestfile;
                 check = 1;
             else
-                filetoload = files{1};
+                FileInfo.filetoload = files{1};
             end
         else
             cd([filestart, filesep, Experimenter, filesep, 'Data', filesep])
-            [dirtouse, filetoload] = NoFileFound(folder, Date);
+            [FileInfo] = NoFileFound(folder, Date);
         end
     else
         if length(files)>1      
             latestfile = findlatestfile(targetdir, files);
-            filetoload = latestfile;
+            FileInfo.filetoload = latestfile;
             check = 1;
         else
-            filetoload = files{1};
+            FileInfo.filetoload = files{1};
             check = 1;
         end
         if ~check
             cd([filestart, filesep, Experimenter, filesep, 'Data', filesep])
-            [dirtouse, filetoload] = NoFileFound(folder,Date);
+            [FileInfo] = NoFileFound(folder,Date);
         end
     end
 else
     cd([filestart, filesep, Experimenter, filesep, 'Data', filesep])    %%% Make current directory the user's data folder for ease of use
-    [dirtouse, filetoload] = NoFileFound(folder, Date);
+    [FileInfo] = NoFileFound(folder, Date);
 end
+
+switch Router
+    case 'Redo'
+        dirtouse = 'E:\ActivitySummary';
+        filefind = fastdir(dirtouse, {File, 'Summary'}, 'Poly');
+        filetoload = filefind{1};   %%% Shouldn't need to use any backup mechanisms as this file should have already been found within the RedoAnalysis startup (i.e. that's why it's looking for it in the first place)
+        FileInfo.PreviousFile = [dirtouse, filesep, filetoload];
+end
+
 
 function latestfile = findlatestfile(targetdir, files)
 
@@ -83,17 +96,17 @@ end
 [~,I] = max(filedate);
 latestfile = files{I};
 
-function [dirtouse, filetoload] = NoFileFound(folder,Date)
+function [FileInfo] = NoFileFound(folder,Date)
 
 disp('Raw data file not found; PULLING FROM PREVIOUS ANALYSIS!!')
-dirtouse = 'E:\ActivitySummary';
-files = fastdir(dirtouse, {folder, Date}, {'Poly'});
+FileInfo.dirtouse = 'E:\ActivitySummary';
+files = fastdir(FileInfo.dirtouse, {folder, Date}, {'Poly'});
 if ~isempty(files)
-    filetoload = files{1};
+    FileInfo.filetoload = files{1};
 else
     disp('No backup mechanisms were successful in finding file; select manually')
     cd
     [fname, pname] = uigetfile();
-    dirtouse = pname;
-    filetoload = fname;
+    FileInfo.dirtouse = pname;
+    FileInfo.filetoload = fname;
 end

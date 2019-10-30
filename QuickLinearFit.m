@@ -1,5 +1,6 @@
 function QuickLinearFit(x,y,sp)
 
+
 x = x(~isnan(y));
 y = y(~isnan(y));
 
@@ -8,9 +9,11 @@ b = X\y;
 
 yCalc = X*b;
 
-
-% figure; 
-subplot(1,2,sp)
+if nargin<3
+    figure
+else
+    subplot(1,2,sp)
+end
 plot(x,y, '.k', 'Markersize', 14)
 hold on; plot(x,yCalc, 'r', 'Linewidth', 2)
 

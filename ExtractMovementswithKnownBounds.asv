@@ -15,32 +15,31 @@ stopbufferwindow = round(ImagingFrequency*secondspostmovementstart);
 % %%%%%%%%%%%% inspecting all movements)
 UsedBlocks = [];
 % 
-for i = 1:length(framesofinterest)
-    movementstart = framesofinterest{i}(1); %%% These frames are define by when the movement starts in an acceptable cue period, so frame 1 = movement onset
+% for i = 1:length(framesofinterest)
+%     movementstart = framesofinterest{i}(1); %%% These frames are define by when the movement starts in an acceptable cue period, so frame 1 = movement onset
 %     rewardstart = find(rewardperiods(framesofinterest{i}), 1, 'first')+movementstart;
-    %%% Choose whether to start from movement start or reward start!
-    start = movementstart-startbufferwindow;
-%     start = rewardstart-startbufferwindow;
-    if start<1
-        startbuffershift = levertrace(1)*ones(abs(start)+1,1);
-        start = 1;
-    else
-        startbuffershift = [];
-    end
-    stop = start+(startbufferwindow+stopbufferwindow)-length(startbuffershift);
-    if stop > length(levertrace)
-        stopbuffer = levertrace(end)*ones(abs(stop-length(levertrace)),1);
-        stop = length(levertrace);
-    else
-        stopbuffer = [];
-    end
-    ExtractedMovements{i} = [startbuffershift; levertrace(start:stop); stopbuffer];
-    targetdifference = TimingValues.TargetLength-length(ExtractedMovements{i});
-    if targetdifference
-        ExtractedMovements{i} = [ExtractedMovements{i}; ExtractedMovements{i}(end)*ones(targetdifference,1)];
-    end
-    UsedBlocks = [UsedBlocks, i];
-end
+%     %%% Choose whether to start from movement start or reward start!
+%     start = movementstart-startbufferwindow;
+%     if start<1
+%         startbuffershift = levertrace(1)*ones(abs(start)+1,1);
+%         start = 1;
+%     else
+%         startbuffershift = [];
+%     end
+%     stop = start+(startbufferwindow+stopbufferwindow)-length(startbuffershift);
+%     if stop > length(levertrace)
+%         stopbuffer = levertrace(end)*ones(abs(stop-length(levertrace)),1);
+%         stop = length(levertrace);
+%     else
+%         stopbuffer = [];
+%     end
+%     ExtractedMovements{i} = [startbuffershift; levertrace(start:stop); stopbuffer];
+%     targetdifference = TimingValues.TargetLength-length(ExtractedMovements{i});
+%     if targetdifference
+%         ExtractedMovements{i} = [ExtractedMovements{i}; ExtractedMovements{i}(end)*ones(targetdifference,1)];
+%     end
+%     UsedBlocks = [UsedBlocks, i];
+% end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
@@ -71,49 +70,40 @@ end
 %     end
 % end
 
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%% Align to activity
-% UsedBlocks = [];
-% for i = 1:length(framesofinterest)
-%     startpoint = 1;
-% end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%% Aligned to NEAREST movement in the block
-% UsedBlocks = [];
-% ExtractedMovements = cell(1,length(framesofinterest));
-% for i = 1:length(framesofinterest)
-%     if length(levertrace(framesofinterest{i}))<5
-%         continue
-%     end
-%     if isempty(findpeaks(abs(levertrace(framesofinterest{i}))))
-%        continue
-%     end
-%     [peaks, locs] = findpeaks(-levertrace); 
-%     
-%     
-% %     [~,zeropoint] = min(levertrace(framesofinterest{i}));
-%     if framesofinterest{i}(zeropoint)-startbufferwindow<1
-%         start = 1;
-%         startbuffershift = levertrace(framesofinterest{i}(1))*ones(abs(framesofinterest{i}(zeropoint)-startbufferwindow)+1,1);
-%     else
-%         start = framesofinterest{i}(zeropoint)-startbufferwindow;
-%         startbuffershift = [];
-%     end
-%     stop = framesofinterest{i}(zeropoint)+stopbufferwindow;
-%     if stop>length(levertrace)
-%         stop = length(levertrace);
-%         stopbuffer = levertrace(end)*ones(abs(framesofinterest{i}(zeropoint)+stopbufferwindow-length(levertrace)),1);
-%     else
-%         stopbuffer = [];
-%     end
-%     ExtractedMovements{i} = [startbuffershift; levertrace(start:stop); stopbuffer];
-%     targetdifference = TimingValues.TargetLength-length(ExtractedMovements{i});
-%     if targetdifference
-%         ExtractedMovements{i} = [ExtractedMovements{i}; ExtractedMovements{i}(end)*ones(targetdifference,1)];
-%     end
-%     UsedBlocks = [UsedBlocks, i];
-% end
+UsedBlocks = [];
+ExtractedMovements = cell(1,length(framesofinterest));
+for i = 1:length(framesofinterest)
+    if length(levertrace(framesofinterest{i}))<5
+        continue
+    end
+    if isempty(findpeaks(abs(levertrace(framesofinterest{i}))))
+       continue
+    end
+    
+%     [~,zeropoint] = min(levertrace(framesofinterest{i}));
+    if framesofinterest{i}(zeropoint)-startbufferwindow<1
+        start = 1;
+        startbuffershift = levertrace(framesofinterest{i}(1))*ones(abs(framesofinterest{i}(zeropoint)-startbufferwindow)+1,1);
+    else
+        start = framesofinterest{i}(zeropoint)-startbufferwindow;
+        startbuffershift = [];
+    end
+    stop = framesofinterest{i}(zeropoint)+stopbufferwindow;
+    if stop>length(levertrace)
+        stop = length(levertrace);
+        stopbuffer = levertrace(end)*ones(abs(framesofinterest{i}(zeropoint)+stopbufferwindow-length(levertrace)),1);
+    else
+        stopbuffer = [];
+    end
+    ExtractedMovements{i} = [startbuffershift; levertrace(start:stop); stopbuffer];
+    targetdifference = TimingValues.TargetLength-length(ExtractedMovements{i});
+    if targetdifference
+        ExtractedMovements{i} = [ExtractedMovements{i}; ExtractedMovements{i}(end)*ones(targetdifference,1)];
+    end
+    UsedBlocks = [UsedBlocks, i];
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

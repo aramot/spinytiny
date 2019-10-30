@@ -93,6 +93,10 @@ if length(countedasfirsttrial) > 1 && firsttrial == 1 && countedasfirsttrial(end
     end
 end
 
+while bitcode(end).behavior_trial_num == 0
+    bitcode = bitcode(1:end-1);
+end
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 for i = firsttrial:lasttrial
@@ -157,7 +161,7 @@ for i = firsttrial:lasttrial
     Trial_SynapseOnlyBinarized{i} = Fluor.SynapseOnlyBinarized(:,Behavior.Behavior_Frames{i}.states.state_0(1,2):Behavior.Behavior_Frames{i}.states.state_0(2,1));
     Trial_CausalBinarized{i} = Fluor.CausalBinarized(:,Behavior.Behavior_Frames{i}.states.state_0(1,2):Behavior.Behavior_Frames{i}.states.state_0(2,1));
     Trial_SynapseOnlyBinarized_DendriteSubtracted{i} = Fluor.SynapseOnlyBinarized_DendriteSubtracted(:,Behavior.Behavior_Frames{i}.states.state_0(1,2):Behavior.Behavior_Frames{i}.states.state_0(2,1));
-    Trial_Dendrite_dFoF{i} = Fluor.Dendrite_dFoF(:,Behavior.Behavior_Frames{i}.states.state_0(1,2):Behavior.Behavior_Frames{i}.states.state_0(2,1));
+    Trial_Dendrite_dFoF{i} = Fluor.Processed_Dendrite_dFoF(:,Behavior.Behavior_Frames{i}.states.state_0(1,2):Behavior.Behavior_Frames{i}.states.state_0(2,1));
     Trial_Dendrite_Binarized{i} = Fluor.Dendrite_Binarized(:,Behavior.Behavior_Frames{i}.states.state_0(1,2):Behavior.Behavior_Frames{i}.states.state_0(2,1));
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -172,18 +176,18 @@ for i = firsttrial:lasttrial
     %%% following will go backwards to the previous trial and get ITI data to fill this role,
     %%% if available. 
    
-    starttrial_imframes = Behavior.Behavior_Frames{i}.states.state_0(1,2);
+    starttrial_imframes = Behavior.Behavior_Frames{i}.states.state_0(1,2);  %%% The trial starts at this imaging frame, thus both imaging data and the trial should be aligned to this point (i.e. subtract this point to give them the same starting time).
     endtrial_imframes = Behavior.Behavior_Frames{i}.states.state_0(2,1)-starttrial_imframes;
     startcue = Behavior.Behavior_Frames{i}.states.cue(1,1)-starttrial_imframes;
         if startcue == 0
             startcue = 1;
         end
     endcue = Behavior.Behavior_Frames{i}.states.cue(1,2)-starttrial_imframes;
-    cuemat = zeros(1,length(start_trial:end_trial));
+    cuemat = zeros(1,length(Behavior.Behavior_Frames{i}.states.state_0(1,2):Behavior.Behavior_Frames{i}.states.state_0(2,1)));
     cuemat(startcue:endcue) = 1;
+    trial_cue{i} = cuemat;
     
     if endcue-startcue > 60 || (Behavior.Behavior_Frames{i}.states.state_0(1,2)-60) < 0 %%% You want at least two seconds of data preceeding each movement, so the duration of cuestart:cueend should be > 60. If this is not the case, then move the "trial start" back 2 seconds (unless it's the first trial, in which case this is impossible). 
-        trial_binary_cue{i} = cuemat;
         Trial{i}.trialactivity = Trial_Processed_dFoF{i}(:,1:end);
         Trial{i}.overallbinaryactivity = Trial_OverallSpineActivity{i}(:,1:end);
         Trial{i}.synapseonlyactivity = Trial_SynapseOnlyActivity{i}(:,1:end);
@@ -194,7 +198,6 @@ for i = firsttrial:lasttrial
         Trial{i}.DendriteBinarized = Trial_Dendrite_Binarized{i}(:,1:end);
         Trial{i}.TrialBacktrack = 0;
     else
-        trial_binary_cue{i} = cuemat;
         backtrack = 60-(endcue-startcue);
         Trial{i}.trialactivity = Fluor.Processed_dFoF(:,Behavior.Behavior_Frames{i}.states.state_0(1,2)-backtrack:Behavior.Behavior_Frames{i}.states.state_0(2,1));
         Trial{i}.synapseonlyactivity = Fluor.SynapseOnlyActivity(:,Behavior.Behavior_Frames{i}.states.state_0(1,2)-backtrack:Behavior.Behavior_Frames{i}.states.state_0(2,1));
@@ -218,18 +221,11 @@ for i = firsttrial:lasttrial
     
     [n, d] = rat(numimframes/length(trial_lever_force{i}));
     DownsampleRatios{i} = [n,d];
-    trial_lever_force_shifted = trial_lever_force{i}-nanmedian(trial_lever_force{i});   %%% Resampling always works better when the baseline is zero; otherwise, you get weird
+    trial_lever_force_shifted = trial_lever_force{i}-trial_lever_force{i}(1);   %%% Resampling always works better when the baseline is zero; otherwise, you get weird
     trial_movement_downsampled{i} = resample(trial_lever_force_shifted,n,d)+nanmedian(trial_lever_force{i});
     trial_binary_behavior_downsampled{i} = resample(double(trial_binary_behavior{i}),n,d);
-    trial_cue_downsampled{i} = resample(trial_binary_cue{i},n,d);
-    %%% Correct edge-effects of resampling (Note, this strategy works ONLY
-    %%% because this is a very long trace)
-    trial_movement_downsampled{i}(1:10) = repmat(median(Behavior.lever_force_smooth),1,10); %%% Cannot assume that the baseline is zero for the raw lever data
-    trial_movement_downsampled{i}(end-9:end) = repmat(median(Behavior.lever_force_smooth),1,10);
     trial_binary_behavior_downsampled{i}(trial_binary_behavior_downsampled{i}>=0.5) = 1;
     trial_binary_behavior_downsampled{i}(trial_binary_behavior_downsampled{i}<0.5) = 0;
-    trial_cue_downsampled{i}(trial_cue_downsampled{i}>=0.5) = 1;
-    trial_cue_downsampled{i}(trial_cue_downsampled{i}<0.5) = 0;
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     ImageDataLengthComparator = Trial_SynapseOnlyActivity{i};
@@ -239,8 +235,8 @@ for i = firsttrial:lasttrial
     if length(trial_binary_behavior_downsampled{i}) ~= size(ImageDataLengthComparator,2)
         trial_binary_behavior_downsampled{i} = trial_binary_behavior_downsampled{i}(1:size(ImageDataLengthComparator,2));
     end
-    if length(trial_cue_downsampled{i}) ~= size(ImageDataLengthComparator,2)
-        trial_cue_downsampled{i} = trial_cue_downsampled{i}(1:size(ImageDataLengthComparator,2));
+    if length(trial_cue{i}) ~= size(ImageDataLengthComparator,2)
+        trial_cue{i} = trial_cue{i}(1:size(ImageDataLengthComparator,2));
     end
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -343,7 +339,7 @@ end
 %%% Main Variable Selection Section
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-if ~exist('trial_cue_downsampled') || ~exist('trial_binary_behavior_downsampled')
+if ~exist('trial_cue') || ~exist('trial_binary_behavior_downsampled')
     Correlations = [];
     Classified = [];
     Trial = [];
@@ -351,23 +347,30 @@ if ~exist('trial_cue_downsampled') || ~exist('trial_binary_behavior_downsampled'
     return
 end
 
-binarycue = cell2mat(trial_cue_downsampled);
+binarycue = cell2mat(trial_cue);
 lever_movement = cell2mat(trial_movement_downsampled');
 binary_behavior = cell2mat(trial_binary_behavior_downsampled');
-floored_behavior = abs(lever_movement).*binary_behavior;
 successful_behavior = cell2mat(trial_rewarded_presses_downsampled');
-OverallSpine_Data = cell2mat(Trial_OverallSpineActivity);
-Processed_dFoF_Data = cell2mat(Trial_Processed_dFoF);
-Dend = cell2mat(Trial_Dendrite_Binarized);
-spinedatatouse = cell2mat(Trial_SynapseOnlyBinarized);
+
+Processed_dFoF_Spine_Data = cell2mat(Trial_Processed_dFoF);
+DendSub_Spine_Data = cell2mat(Trial_dFoF_DendriteSubtracted);
+Dendrite_Data = cell2mat(Trial_Dendrite_dFoF);
+
+OverallSpine_Data_Binarized = cell2mat(Trial_OverallSpineActivity);
+DendBinarized = cell2mat(Trial_Dendrite_Binarized);
+synapseonlyBinarized = cell2mat(Trial_SynapseOnlyBinarized);
 causal_Data = cell2mat(Trial_CausalBinarized);
-DendSubspinedatatouse = cell2mat(Trial_SynapseOnlyBinarized_DendriteSubtracted);
+DendSubBinarized = cell2mat(Trial_SynapseOnlyBinarized_DendriteSubtracted);
 movementduringcue = binarycue.*binary_behavior';
 reward_delivery = cell2mat(reward_period');
 punishment = cell2mat(punish_period');
 
-floored_spine_data =  spinedatatouse.*cell2mat(Trial_Processed_dFoF);
-floored_dendsub_spine_data = DendSubspinedatatouse.*cell2mat(Trial_dFoF_DendriteSubtracted);
+floored_behavior = abs(lever_movement).*binary_behavior;
+floored_successful_behavior = abs(lever_movement).*successful_behavior;
+floored_overall_spine_data = OverallSpine_Data_Binarized.*cell2mat(Trial_Processed_dFoF);
+floored_synonly_spine_data =  synapseonlyBinarized.*cell2mat(Trial_Processed_dFoF);
+floored_dendsub_spine_data = DendSubBinarized.*DendSub_Spine_Data;
+floored_dend_data = DendBinarized.*Dendrite_Data;
 
 
 %%
@@ -375,6 +378,17 @@ floored_dendsub_spine_data = DendSubspinedatatouse.*cell2mat(Trial_dFoF_Dendrite
 %%% Broaden select binarized variables' activity window
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+switch Fluor.ImagingSensor
+    case 'GCaMP'
+        ImagingFrequency = 30.03;
+    case 'GluSNFR' 
+        ImagingFrequency = 58.3;
+end
+PreMovementWindow = round(ImagingFrequency*1);
+BroaderMovementWindow = round(ImagingFrequency*0.15); %%% 150ms taken from Peters et al., 2014
+MuchBroaderWindow = round(ImagingFrequency*0.5);
+RewardWindow = round(ImagingFrequency*0.15);
+        
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Pre - Movement Activity %%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -385,15 +399,15 @@ if b(end)==1
     b(end)=0;
 end
 
-window_frame = 60;
+window_frame = PreMovementWindow;
 
-temp1 = b; temp2 = find(diff(b)>0); temp3 = temp2-window_frame; temp3(temp3<0)= 1; temp3(temp3==0)=1;
-for i = 1:length(temp2)
-    temp1(temp3(i):temp2(i)) = 1;
-end
-temp1 = temp1-b;
-temp1(temp1<0) = 0;
-premovement = temp1';
+PM = b; movestart = find(diff(b)>0); backshift = movestart-window_frame; backshift(backshift<=0)= 1;
+
+PM(cell2mat(arrayfun(@(x,y) x:y, backshift, movestart, 'uni', false)')) = 1;
+
+PM = PM-b;
+PM(PM<0) = 0;
+premovement = PM';
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Broader movement window %%%
@@ -407,7 +421,7 @@ if b(end)==1
     b(end)=0;
 end
 
-window_frame = 5;   %%% This value is taken  from Peters et al., 2014
+window_frame = BroaderMovementWindow;  
 
 temp1 = b;
 temp2 = find(diff(b)>0); 
@@ -437,8 +451,8 @@ if b(end)==1
     b(end)=0;
 end
 
-pre_movement_frame = 15;
-post_movement_frame = 15;
+pre_movement_frame = MuchBroaderWindow;
+post_movement_frame = MuchBroaderWindow;
 
 temp1 = b;
 temp2 = find(diff(b)>0); 
@@ -468,7 +482,7 @@ if b(end)==1
     b(end)=0;
 end
 
-window_frame = 5;
+window_frame = RewardWindow;
 
 temp1 = b;
 temp2 = find(diff(b)>0); 
@@ -495,34 +509,56 @@ Aligned.PreMovement = premovement;
 Aligned.SuccessfulPresses = successful_behavior; 
 Aligned.RewardDelivery = reward_delivery;
 Aligned.Punishment = punishment; 
-Aligned.ProcessedSpineActivity = Processed_dFoF_Data;
-Aligned.BinarizedOverallSpineData = OverallSpine_Data;
-Aligned.DendSubSpineActivity = cell2mat(Trial_dFoF_DendriteSubtracted);
-Aligned.SynapseOnlyBinarized = spinedatatouse;
-Aligned.DendSubSynapseOnlyBinarized = DendSubspinedatatouse;
-Aligned.BinaryDendrite = Dend;
+Aligned.ProcessedSpineActivity = Processed_dFoF_Spine_Data;
+Aligned.BinarizedOverallSpineData = OverallSpine_Data_Binarized;
+Aligned.DendSubSpineActivity = DendSub_Spine_Data;
+Aligned.SynapseOnlyBinarized = synapseonlyBinarized;
+Aligned.DendSubSynapseOnlyBinarized = DendSubBinarized;
+Aligned.BinaryDendrite = DendBinarized;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%
 %%%% Correlation Coefficients %%%
 
-[r_Overallspine, p_Overallspine] = corrcoef([binarycue', binary_behavior,wide_window, premovement', successful_behavior,wide_succ_window,movementduringcue', reward_delivery, punishment, OverallSpine_Data', Dend']);
-[r_spine, p_spine] = corrcoef([binarycue',binary_behavior,wide_window, premovement', successful_behavior,wide_succ_window,movementduringcue',reward_delivery,punishment, spinedatatouse', Dend']);
-[r_DSspine, p_DSspine] = corrcoef([binarycue',binary_behavior,wide_window, premovement', successful_behavior,wide_succ_window,movementduringcue',reward_delivery,punishment, DendSubspinedatatouse', Dend']);
+switch Fluor.ImagingSensor
+    case 'GluSNFR'
+        spinedatafor_overall_correlations = Processed_dFoF_Spine_Data';
+        spinedatafor_synonly_correlations = floored_synonly_spine_data';
+        spinedatafor_dendsub_correlations = DendSub_Spine_Data';
+        denddatafor_correlations = Dendrite_Data';
+        spinedataformoveperiodcorr = Processed_dFoF_Spine_Data;
+        dendsubdataformoveperiodcorr = DendSub_Spine_Data;
+    case 'GCaMP'
+        spinedatafor_overall_correlations = Processed_dFoF_Spine_Data';
+        spinedatafor_synonly_correlations = floored_synonly_spine_data';
+        spinedatafor_dendsub_correlations = DendSub_Spine_Data';
+        denddatafor_correlations = Dendrite_Data';
+        spinedataformoveperiodcorr = floored_synonly_spine_data;
+        dendsubdataformoveperiodcorr = DendSub_Spine_Data;
+end
+
+[r_Overallspine, p_Overallspine] = corrcoef([binarycue', floored_behavior,wide_window, premovement', floored_successful_behavior,wide_succ_window,movementduringcue', reward_delivery, punishment, spinedatafor_overall_correlations, denddatafor_correlations]);
+[r_spine, p_spine] = corrcoef([binarycue',floored_behavior,wide_window, premovement', floored_successful_behavior,wide_succ_window,movementduringcue',reward_delivery,punishment, spinedatafor_synonly_correlations, denddatafor_correlations]);
+[r_DSspine, p_DSspine] = corrcoef([binarycue',floored_behavior,wide_window, premovement', floored_successful_behavior,wide_succ_window,movementduringcue',reward_delivery,punishment, spinedatafor_dendsub_correlations, denddatafor_correlations]);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-SpineActMovePeriods = spinedatatouse'.*repmat(binary_behavior,1,size(spinedatatouse,1));
-SpineActStillPeriods = spinedatatouse'.*~repmat(binary_behavior,1,size(spinedatatouse,1));
-DendSubSpineActMovePeriods = DendSubspinedatatouse'.*repmat(binary_behavior,1,size(spinedatatouse,1));
-DendSubSpineActStillPeriods = DendSubspinedatatouse'.*~repmat(binary_behavior,1,size(spinedatatouse,1));
+frameslist = 1:length(binary_behavior);
+bounds = find(diff([Inf; binary_behavior; Inf])~=0);
+frames_separated = mat2cell(frameslist', diff(bounds));
+frames_during_movements = cell2mat(frames_separated(cellfun(@any, mat2cell(binary_behavior, diff(bounds)))));
+frames_during_stillness = cell2mat(frames_separated(~cellfun(@any, mat2cell(binary_behavior, diff(bounds)))));
 
+SpineActMovePeriods = spinedataformoveperiodcorr(:,frames_during_movements);
+SpineActStillPeriods = spinedataformoveperiodcorr(:,frames_during_stillness);
+DendSubSpineActMovePeriods = dendsubdataformoveperiodcorr(:,frames_during_movements);
+DendSubSpineActStillPeriods = dendsubdataformoveperiodcorr(:,frames_during_stillness);
 
-[r_mov, ~] = corrcoef(SpineActMovePeriods);
-[r_still, ~] = corrcoef(SpineActStillPeriods);
-[r_causal, p_causal] = corrcoef([binarycue', binary_behavior,wide_window, premovement', successful_behavior,wide_succ_window,movementduringcue', reward_delivery, punishment, causal_Data', Dend']);
-[Ds_r_mov,~] = corrcoef(DendSubSpineActMovePeriods);
-[Ds_r_still,~] = corrcoef(DendSubSpineActStillPeriods);
+[r_mov, ~] = corrcoef(SpineActMovePeriods');
+[r_still, ~] = corrcoef(SpineActStillPeriods');
+[r_causal, p_causal] = corrcoef([binarycue', floored_behavior,wide_window, premovement', successful_behavior,wide_succ_window,movementduringcue', reward_delivery, punishment, causal_Data', DendBinarized']);
+[Ds_r_mov,~] = corrcoef(DendSubSpineActMovePeriods');
+[Ds_r_still,~] = corrcoef(DendSubSpineActStillPeriods');
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%% Save Correlation Variables in Structure %%%%%%%%%%%%%%%%%%%%%
@@ -546,14 +582,27 @@ Correlations.CausalPValues = p_causal;
 
 %%% Statistical Classification of ROIs 
 
-[Classified.OverallCueSpines,~,~] = mv_related_classifi(OverallSpine_Data, binarycue, 'cue');
-[Classified.OverallMovementSpines,~, ~] = mv_related_classifi(OverallSpine_Data, binary_behavior', 'movement');
-[Classified.OverallMovementDuringCueSpines, ~,~] = mv_related_classifi(OverallSpine_Data, movementduringcue, 'movement-during-cue');
-[Classified.OverallPreSuccessSpines,~,~] = mv_related_classifi(OverallSpine_Data, premovement, 'premovement');
-[Classified.OverallSuccessSpines,~,~] = mv_related_classifi(OverallSpine_Data, successful_behavior', 'successful movement');
-[Classified.OverallRewardSpines,~,~] = mv_related_classifi(OverallSpine_Data,reward_delivery', 'reward');
-[Classified.OverallMovementSpLiberal, ~, ~] = mv_related_classifi(OverallSpine_Data, wide_window', 'extended movement');
+switch Fluor.ImagingSensor
+    case 'GluSNFR'
+        OverallDatatouse = Processed_dFoF_Spine_Data;
+        spinedatatouse = Processed_dFoF_Spine_Data;
+        DendSubspinedatatouse = DendSub_Spine_Data;
+    case 'GCaMP'
+        OverallDatatouse = Processed_dFoF_Spine_Data;
+        spinedatatouse = Processed_dFoF_Spine_Data;
+        DendSubspinedatatouse = DendSub_Spine_Data;
+end
 
+%%% Overall data (only processed, not considering dendrite signal)
+[Classified.OverallCueSpines,~,~] = mv_related_classifi(OverallDatatouse, binarycue, 'cue');
+[Classified.OverallMovementSpines,~, ~] = mv_related_classifi(OverallDatatouse, binary_behavior', 'movement');
+[Classified.OverallMovementDuringCueSpines, ~,~] = mv_related_classifi(OverallDatatouse, movementduringcue, 'movement-during-cue');
+[Classified.OverallPreSuccessSpines,~,~] = mv_related_classifi(OverallDatatouse, premovement, 'premovement');
+[Classified.OverallSuccessSpines,~,~] = mv_related_classifi(OverallDatatouse, successful_behavior', 'successful movement');
+[Classified.OverallRewardSpines,~,~] = mv_related_classifi(OverallDatatouse,reward_delivery', 'reward');
+[Classified.OverallMovementSpLiberal, ~, ~] = mv_related_classifi(OverallDatatouse, wide_window', 'extended movement');
+
+%%% "Synapse only" data (i.e. dendrite signal periods excluded)
 [Classified.CueSpines,~,~] = mv_related_classifi(spinedatatouse, binarycue, 'cue');
 [Classified.MovementSpines,~, ~] = mv_related_classifi(spinedatatouse, binary_behavior', 'movement');
 [Classified.MovementDuringCueSpines, ~,~] = mv_related_classifi(spinedatatouse, movementduringcue, 'movement-during-cue');
@@ -562,6 +611,7 @@ Correlations.CausalPValues = p_causal;
 [Classified.RewardSpines,~,~] = mv_related_classifi(spinedatatouse,reward_delivery', 'reward');
 [Classified.MovementSpLiberal, ~, ~] = mv_related_classifi(spinedatatouse, wide_window', 'extended movement');
 
+%%% Dendrite-subttracted data
 [Classified.DendSub_CueSpines,~,~] = mv_related_classifi(DendSubspinedatatouse, binarycue, 'cue');
 [Classified.DendSub_MovementSpines,~, ~] = mv_related_classifi(DendSubspinedatatouse, binary_behavior', 'movement');
 [Classified.DendSub_MovementDuringCueSpines, ~,~] = mv_related_classifi(DendSubspinedatatouse, movementduringcue, 'movement-during-cue');
@@ -570,12 +620,13 @@ Correlations.CausalPValues = p_causal;
 [Classified.DendSub_RewardSpines,~,~] = mv_related_classifi(DendSubspinedatatouse,reward_delivery', 'reward');
 [Classified.DendSub_MovementSpLiberal, ~, ~] = mv_related_classifi(DendSubspinedatatouse, wide_window', 'extended movement');
 
-[Classified.CueDends, ~, ~] = mv_related_classifi(Dend', binarycue, 'cue (dendrite)');
-[Classified.MovementDends, ~, ~] = mv_related_classifi(Dend', binary_behavior', 'movement (dendrite)');
-[Classified.PreSuccessDends, ~,~] = mv_related_classifi(Dend', premovement, 'premovement (dendrite)');
-[Classified.SuccessDends, ~, ~] = mv_related_classifi(Dend', successful_behavior', 'successful movement (dendrite)');
-[Classified.MovementDuringCueDends, ~, ~] = mv_related_classifi(Dend', movementduringcue, 'movement during cue (dendrite)');
-[Classified.RewardDends, ~, ~] = mv_related_classifi(Dend', reward_delivery', 'reward (dendrite)');
+%%% Dendrite data 
+[Classified.CueDends, ~, ~] = mv_related_classifi(DendBinarized', binarycue, 'cue (dendrite)');
+[Classified.MovementDends, ~, ~] = mv_related_classifi(DendBinarized', binary_behavior', 'movement (dendrite)');
+[Classified.PreSuccessDends, ~,~] = mv_related_classifi(DendBinarized', premovement, 'premovement (dendrite)');
+[Classified.SuccessDends, ~, ~] = mv_related_classifi(DendBinarized', successful_behavior', 'successful movement (dendrite)');
+[Classified.MovementDuringCueDends, ~, ~] = mv_related_classifi(DendBinarized', movementduringcue, 'movement during cue (dendrite)');
+[Classified.RewardDends, ~, ~] = mv_related_classifi(DendBinarized', reward_delivery', 'reward (dendrite)');
 
 [Classified.CausalMovementSpines, ~, ~] = mv_related_classifi(causal_Data, binary_behavior', 'causal movement');
 [Classified.CausalMovementSpLiberal, ~,~] = mv_related_classifi(causal_Data, wide_window', 'extended causal movement');

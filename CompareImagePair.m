@@ -56,10 +56,17 @@ shiftedimage = cell(1,length(im));
 %%%%%%%%%%%%%%%%%%%%%%%
 
 alignchoice = get(findobj('Tag', 'Alignment_CheckBox'), 'Value');
+refheight = size(centeredimage,1);
 
 if alignchoice 
     for al = 2:length(im)
         mobileimage = im{al};        %%% When moving ROIs, you usually move session 1 ROIs to match the position of session 2, so for this purpose it usually makes sense for the mobile image to be from session 1 
+        imheight = size(mobileimage,1);
+        imwidth = size(mobileimage,2);
+        if imheight~=refheight
+            heightdiff = abs(refheight-imheight);
+            mobileimage = [zeros(heightdiff/2,imwidth); mobileimage; zeros(heightdiff/2,imwidth)];
+        end
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %[RESULTS, WARP, WARPEDiMAGE] = ECC(IMAGE, TEMPLATE, LEVELS, NOI, TRANSFORM, DELTA_P_INIT)
         levels = 5 ;

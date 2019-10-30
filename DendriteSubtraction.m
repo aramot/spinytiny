@@ -135,27 +135,30 @@ for i = 1:DendNum
             continue
         end
         %%% Step 2: Check criteria for alpha values
-        if alpha{i}(2,j) <= 0 %%% Indicates a bad fit, which often reflects that the spine might not actually be part of the dendrite
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            disp(['Spine ', num2str(j), ' was not fit properly'])
-            if isfield(File, 'QuestionableSpines')
-                File.QuestionableSpines = [File.QuestionableSpines, j];
-            else
-                File.QuestionableSpines = j;
+        if ~strcmpi(File.ImagingSensor, 'GluSNFR') %%% None of this applies to sensors that don't show strong dendritic signals
+            if alpha{i}(2,j) <= 0 %%% Indicates a bad fit, which often reflects that the spine might not actually be part of the dendrite
+                %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                disp(['Spine ', num2str(j), ' was not fit properly'])
+                if isfield(File, 'QuestionableSpines')
+                    File.QuestionableSpines = [File.QuestionableSpines, j];
+                else
+                    File.QuestionableSpines = j;
+                end
+                %%% CHOOSE HOW TO HANDLE THESE DATA!!! 
+                %%% If the dendrite is active AND the fit is bad, then this
+                %%% probably means the spine should not be considered. If,
+                %%% however, the dendrite is NOT active, then this should
+                %%% be kept, as an active spine on a silent dendrite MIGHT
+                %%% also lead to this...
+                if sum(logical(diff([Inf, File.Dendrite_Binarized(i,:), Inf])>0)) < 2
+                    disp(['Spine ', num2str(j), ' is assumed to be on a silent dendrite... check this!'])
+                    File.Processed_dFoF_DendriteSubtracted(j,:) = File.Processed_dFoF(j,:);
+                else
+                    File.Processed_dFoF_DendriteSubtracted(j,:) = nan(1,length(File.Processed_dFoF(j,:)));
+                end
+                continue
             end
-            %%% CHOOSE HOW TO HANDLE THESE DATA!!! 
-            %%% If the dendrite is active AND the fit is bad, then this
-            %%% probably means the spine should not be considered. If,
-            %%% however, the dendrite is NOT active, then this should
-            %%% be kept, as an active spine on a silent dendrite MIGHT
-            %%% also lead to this...
-            if sum(logical(diff([Inf, File.Dendrite_Binarized(i,:), Inf])>0)) < 5
-                disp(['Spine ', num2str(j), 'is assumed to be on a silent dendrite... check this!'])
-                File.Processed_dFoF_DendriteSubtracted(j,:) = File.Processed_dFoF(j,:);
-            else
-                File.Processed_dFoF_DendriteSubtracted(j,:) = nan(1,length(File.Processed_dFoF(j,:)));
-            end
-            continue
+        else
         end
         %%% Step 3: Dictate what Alpha value to use
         if UseMinAlpha
@@ -192,14 +195,19 @@ end
 Options.Threshold = File.SpineThresholds;
 Options.ImagingSensor = File.ImagingSensor;
 
-[square_Ds,floored_Dsubtracted,trueeventcount_Dsubtracted, ~, ~] =  DetectEvents2(File.Processed_dFoF_DendriteSubtracted, Options);
+% [square_Ds,floored_Dsubtracted, ~, ~] =  DetectEvents2(File.Processed_dFoF_DendriteSubtracted, Options);
 
+square_Ds = nan(numberofSpines, length(File.Processed_dFoF));
+floored_Dsubtracted = nan(numberofSpines, length(File.Processed_dFoF));
+frequency_Dsubtracted = nan(numberofSpines,1);
 for i = 1:numberofSpines
-    frequency_Dsubtracted(i,1) = (nnz(diff(trueeventcount_Dsubtracted(i,:)>0.5)>0)/((length(File.Time)/30.49)/60))';
+    square_Ds(i,:) = File.Processed_dFoF_DendriteSubtracted(i,:)>Options.Threshold.UpperThreshold(i);
+    floored_Dsubtracted(i,:) = square_Ds(i,:).*File.Processed_dFoF_DendriteSubtracted(i,:);
+    frequency_Dsubtracted(i,1) = (nnz(diff(square_Ds(i,:)>0.5)>0)/((length(File.Time)/30.49)/60))';
 end
 
 File.Floored_DendriteSubtracted = floored_Dsubtracted;
-File.ActivityMap_DendriteSubtracted = trueeventcount_Dsubtracted;
+File.ActivityMap_DendriteSubtracted = square_Ds;
 % File.MeanEventAmp = amp;
 
 File.Frequency_DendriteSubtracted = frequency_Dsubtracted;

@@ -33,7 +33,7 @@ use_cells = find(~discard_cells);
 caEvents = nan(size(df_matrix));
 
 % Set threshold parameters
-thresh_lower_lim = 0.01;
+thresh_lower_lim = 0.2;
 if isstruct(thresh)
     UseThreshMethod = 'Value';  %%% For using pre-calculated threshold values
     Upper = thresh.UpperThreshold;
@@ -61,7 +61,7 @@ for curr_cell = use_cells'
         case 'Value'
             high_thresh = Upper(curr_cell);
             lo_thresh = Lower(curr_cell);
-            if Upper<thresh_lower_lim
+            if Upper(curr_cell)<thresh_lower_lim
                 high_thresh = thresh_lower_lim;
             end
         case 'Multiplier'

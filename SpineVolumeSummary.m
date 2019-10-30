@@ -6,6 +6,8 @@ h1 = waitbar(0, 'Initializing...');
 overalldendritecount = 1;
 Spine1Address = 10;
 
+DendritesbyAnimal = cell(1,length(varargin));
+
 for animal = 1:length(varargin)
     waitbar(animal/length(varargin), h1, ['Animal ', num2str(animal), '/', num2str(length(varargin))])
     experimentnames = varargin{animal}; 
@@ -26,6 +28,44 @@ for animal = 1:length(varargin)
     end
     NumFields = length(FieldData{animal});
     FieldChanges = cell(1,NumFields);
+    
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%% Load Behavioral Data %%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+    behdata = fastdir(OutputDataFolder, [experimentnames, '_SummarizedBehavior']);
+    if ~isempty(behdata)
+        load([OutputDataFolder,filesep, behdata{1}]);
+    else
+        disp(['Cannot load behavior data for animal ', experimentnames, '!']);
+    end
+    eval(['fullbehaviordata = ', experimentnames, '_SummarizedBehavior;'])
+    clear(behdata{1}(1:end-4))
+
+    BehaviorSummary{animal}.WithinSessionsCorr = diag(fullbehaviordata.MovementCorrelation);
+        y = diag(fullbehaviordata.MovementCorrelation);
+        x = [1:length(y)]';
+        x = x(~isnan(y));
+        y = y(~isnan(y));
+
+        X = [ones(length(x),1),x];
+        b = X\y;
+
+        yCalc = X*b;
+        LearningCurve = (yCalc(end)-yCalc(1))/length(x);
+    BehaviorSummary{animal}.WithinSessionsSlope = LearningCurve;
+    BehaviorSummary{animal}.AcrossSessionsCorr = diag(fullbehaviordata.MovementCorrelation,1);
+        y = diag(fullbehaviordata.MovementCorrelation,1);
+        x = [2:length(diag(fullbehaviordata.MovementCorrelation,1))+1]';
+        x = x(~isnan(y));
+        y = y(~isnan(y));
+
+        X = [ones(length(x),1),x];
+        b = X\y;
+
+        yCalc = X*b;
+        LearningCurve = (yCalc(end)-yCalc(1))/length(x);
+    BehaviorSummary{animal}.AcrossSessionsSlope = LearningCurve;
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     voldatadir = [OutputDataFolder, filesep, experimentnames, ' Spine Volume Data'];
     if ~isdir(voldatadir)
@@ -114,6 +154,7 @@ for animal = 1:length(varargin)
             end
         end 
         clear('statclass')
+ 
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %%%%%%%%%%%%%%%%% Load Behavioral Correlation Data %%%%%%%%%%%%%%%%%%%%
@@ -158,7 +199,7 @@ for animal = 1:length(varargin)
         ClusteredLateMovementSpines = SpineDynamics.ClusteredLateMoveSpines{fieldcount};
         ClusteredNewSpines = SpineDynamics.ClusteredNewSpines{fieldcount};
         AntiClusteredMovementSpines = SpineDynamics.AntiClusteredMoveSpines{fieldcount};
-        AntiClusteredElimSpines = SpineDynamics.AnitClusteredElimSpines{fieldcount};
+        AntiClusteredElimSpines = SpineDynamics.AntiClusteredElimSpines{fieldcount};
         
         %%% Find the change in spine volume
         DeltaSpineVolume{fieldcount} = FieldData{animal}{fieldcount}.SpineVolumeData(:,:)./FieldData{animal}{fieldcount}.SpineVolumeData(:,1);
@@ -190,7 +231,7 @@ for animal = 1:length(varargin)
         NumberofDendrites = length(DGrouping);
         for d = 1:NumberofDendrites
             DendriteData(overalldendritecount,1:9) = FieldData{animal}{fieldcount}.Correlations{1}.OverallSpineCorrelations(1:9, Spine1Address+NumberofSpines+(d-1)); %%% Dendrite behavioral feature correlation FROM EARLY SESSIONS
-            DendriteData(overalldendritecount,10:18) = FieldData{animal}{fieldcount}.Correlations{end}.OverallSpineCorrelations(1:9, Spine1Address+NumberofSpines+(d-1)); %%% Dendrite behavioral feature correlation FROM EARLY SESSIONS
+            DendriteData(overalldendritecount,10:18) = FieldData{animal}{fieldcount}.Correlations{end}.OverallSpineCorrelations(1:9, Spine1Address+NumberofSpines+(d-1)); %%% Dendrite behavioral feature correlation FROM LATE SESSIONS
             DendriteData(overalldendritecount,19) = sum(ismember(NewSpines, DGrouping{d}))/length(DGrouping{d}); %%% Number of spine additions (normalized by total spine number on dendrite)
             DendriteData(overalldendritecount,20) = sum(ismember(ElimSpines, DGrouping{d}))/length(DGrouping{d}); %%% Number of spine eliminations (normalized by total spine number on dendrite)
             DendriteData(overalldendritecount,21) = sum(nanmean(DeltaSpineVolume{fieldcount}(DGrouping{d},2:end),2)>=1)/length(DGrouping{d}); %%% Number of spines showing stable or increased volume (normalized by total spine number on dend)
@@ -201,6 +242,8 @@ for animal = 1:length(varargin)
             DendriteData(overalldendritecount,26) = sum(ismember(union(ClusteredEarlyMovementSpines,ClusteredLateMovementSpines), DGrouping{d}))/length(DGrouping{d}); %%% Fraction of spines that are clustered movement-related spines at any session
             DendriteData(overalldendritecount,27) = sum(ismember(ClusteredNewSpines, DGrouping{d}))/length(DGrouping{d}); %%% Fraction of spines that are clustered new spines
             DendriteData(overalldendritecount,28) = sum(ismember(AntiClusteredElimSpines, DGrouping{d}))/length(DGrouping{d}); %%% Fraction of spines that are anti-clustered eliminated spines
+            DendriteData(overalldendritecount,29) = animal;
+            DendritesbyAnimal{animal} = [DendritesbyAnimal{animal}, overalldendritecount];
             overalldendritecount = overalldendritecount+1;
         end
         

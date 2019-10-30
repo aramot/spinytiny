@@ -102,7 +102,7 @@ for i = 1:length(D)
         timecourse_image_number = timecourse_image_number + 1;
         feat_sep = regexp(D(i).name, '_');
         for f = 1:length(feat_sep)-1
-            findacqpattern{f} = regexp(D(i).name(feat_sep(f)+1:feat_sep(f+1)-1), '[0]{2,5}\d');
+            findacqpattern{f} = regexp(D(i).name(feat_sep(f)+1:feat_sep(f+1)-1), '[0]{3,5}[0-9]*');
         end
         first_acquisition_delimiter = find(~cell2mat(cellfun(@isempty, findacqpattern, 'uni', false)),1,'first');
 %         acquisition_step = [acquisition_step; D(i).name(feat_sep(2)+1:feat_sep(3)-1)];

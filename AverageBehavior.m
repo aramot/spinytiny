@@ -8,6 +8,7 @@ MovingAtTrialStartFaults = nan(length(varargin),14);
 MoveDurationBeforeIgnoredTrials = nan(length(varargin),14);
 NumberofMovementsDuringITIPreIgnoredTrials = nan(length(varargin),14);
 FractionITISpentMoving = nan(length(varargin),14);
+VarExpbyFirstComp = nan(length(varargin),14);
 
 %%%%%%%%%%%%%%%%%%%%%%
 %%Color Information%%%
@@ -35,16 +36,20 @@ NumberofMovementsDuringITIPreRewardedTrials = nan(length(varargin), 14);
 FractionITISpentMovingPreRewardedTrials = nan(length(varargin), 14);
 
 for i = 1:length(varargin)
-    rewards(i,varargin{i}.UsedSessions) = varargin{i}.rewards(varargin{i}.UsedSessions);
-    ReactionTime(i,varargin{i}.UsedSessions) = varargin{i}.ReactionTime(varargin{i}.UsedSessions);
-    CuetoReward(i,varargin{i}.UsedSessions) = varargin{i}.CuetoReward(varargin{i}.UsedSessions);
-    missingsessions = setdiff([1:14], varargin{i}.UsedSessions);
-    MovingAtTrialStartFaults(i,varargin{i}.UsedSessions) = varargin{i}.MovingAtTrialStartFaults(varargin{i}.UsedSessions);
-    MoveDurationBeforeIgnoredTrials(i,varargin{i}.UsedSessions) = varargin{i}.MoveDurationBeforeIgnoredTrials(varargin{i}.UsedSessions);
-    NumberofMovementsDuringITIPreIgnoredTrials(i,varargin{i}.UsedSessions) = varargin{i}.NumberofMovementsDuringITIPreIgnoredTrials(varargin{i}.UsedSessions);
-    FractionITISpentMovingPreIgnoredTrials(i,varargin{i}.UsedSessions) = varargin{i}.FractionITISpentMovingPreIgnoredTrials(varargin{i}.UsedSessions);
-    NumberofMovementsDuringITIPreRewardedTrials(i,varargin{i}.UsedSessions) = varargin{i}.NumberofMovementsDuringITIPreRewardedTrials(varargin{i}.UsedSessions);
-    FractionITISpentMovingPreRewardedTrials(i,varargin{i}.UsedSessions) = varargin{i}.FractionITISpentMovingPreRewardedTrials(varargin{i}.UsedSessions);
+    %%%%
+    FilteredSessions = find(cellfun(@(x) size(x,1),varargin{i}.MovementMat)>10);
+    FilteredSessions = FilteredSessions(FilteredSessions<=14);
+    %%%
+    rewards(i,FilteredSessions) = varargin{i}.rewards(FilteredSessions);
+    ReactionTime(i,FilteredSessions) = varargin{i}.ReactionTime(FilteredSessions);
+    CuetoReward(i,FilteredSessions) = varargin{i}.CuetoReward(FilteredSessions);
+    missingsessions = setdiff([1:14], FilteredSessions);
+    MovingAtTrialStartFaults(i,FilteredSessions) = varargin{i}.MovingAtTrialStartFaults(FilteredSessions);
+    MoveDurationBeforeIgnoredTrials(i,FilteredSessions) = varargin{i}.MoveDurationBeforeIgnoredTrials(FilteredSessions);
+    NumberofMovementsDuringITIPreIgnoredTrials(i,FilteredSessions) = varargin{i}.NumberofMovementsDuringITIPreIgnoredTrials(FilteredSessions);
+    FractionITISpentMovingPreIgnoredTrials(i,FilteredSessions) = varargin{i}.FractionITISpentMovingPreIgnoredTrials(FilteredSessions);
+    NumberofMovementsDuringITIPreRewardedTrials(i,FilteredSessions) = varargin{i}.NumberofMovementsDuringITIPreRewardedTrials(FilteredSessions);
+    FractionITISpentMovingPreRewardedTrials(i,FilteredSessions) = varargin{i}.FractionITISpentMovingPreRewardedTrials(FilteredSessions);
 
     
     if ~isempty(missingsessions)
@@ -59,10 +64,11 @@ for i = 1:length(varargin)
         sessionstoadd = setdiff(missingsessions, sessionsaccountedfor);
         newlength = length(varargin{i}.MovementCorrelation)+length(sessionstoadd);
         newmat = nan(newlength,newlength);
-        newmat(varargin{i}.UsedSessions,varargin{i}.UsedSessions) = varargin{i}.MovementCorrelation(varargin{i}.UsedSessions,varargin{i}.UsedSessions);
+        newmat(FilteredSessions,FilteredSessions) = varargin{i}.MovementCorrelation(FilteredSessions,FilteredSessions);
         varargin{i}.MovementCorrelation = newmat;
     end
     MovementCorrelation(:,:,i) = varargin{i}.MovementCorrelation(1:14,1:14);
+    VarExpbyFirstComp(i,FilteredSessions) = cellfun(@(x) x(1), varargin{i}.PCA_VarianceExplained(FilteredSessions));
 end
 
 rewards = rewards(:,1:14);
@@ -86,9 +92,9 @@ subnum = ceil(sqrt(length(varargin)));
 
 for i = 1:length(varargin)
     ax(i) = subplot(subnum,subnum,i); hold on;
-    plot(varargin{i}.UsedSessions,varargin{i}.rewards(varargin{i}.UsedSessions)/100, 'Color', black, 'Linewidth', 2)
-    plot(varargin{i}.UsedSessions,varargin{i}.ReactionTime(varargin{i}.UsedSessions)./nanmax(varargin{i}.ReactionTime(varargin{i}.UsedSessions)), 'Color',red, 'Linewidth', 2)
-    plot(varargin{i}.UsedSessions,varargin{i}.CuetoReward(varargin{i}.UsedSessions)./nanmax(varargin{i}.CuetoReward(varargin{i}.UsedSessions)), 'Color', lblue, 'Linewidth', 2)
+    plot(FilteredSessions,varargin{i}.rewards(FilteredSessions)/100, 'Color', black, 'Linewidth', 2)
+    plot(FilteredSessions,varargin{i}.ReactionTime(FilteredSessions)./nanmax(varargin{i}.ReactionTime(FilteredSessions)), 'Color',red, 'Linewidth', 2)
+    plot(FilteredSessions,varargin{i}.CuetoReward(FilteredSessions)./nanmax(varargin{i}.CuetoReward(FilteredSessions)), 'Color', lblue, 'Linewidth', 2)
     withinsessions = diag(MovementCorrelation(1:14,1:14,i));
     plot(1:14,withinsessions./nanmax(withinsessions), 'Color', green, 'Linewidth', 2)
     acrosssessions = diag(MovementCorrelation(1:14,1:14, i),+1);
@@ -165,14 +171,16 @@ else
 end
 text(14.5, max(nanmean(source,1)), statmessage, 'Color', [0.5 0.5 0.5])
 
-legend([withinplot, acrossplot], {'Within sessions', 'Across sessions'})
+PCAplot = flex_plot(1:14, VarExpbyFirstComp./100, stattype, 'r', 4);
+
+legend([withinplot, acrossplot, PCAplot], {'Within sessions', 'Across sessions', 'Expl. by PC1'})
 ylabel('Correlation')
 xlabel('Session')
 xlim([0 16])
 ylim([0 1])
 set(gca, 'XTick', 1:14)
 
-stattype = 'nonparametric';
+stattype = 'parametric';
 
 figure('Position', scrsz); subplot(2,2,1); hold on; 
 plot(MovingAtTrialStartFaults', 'Color', [ 0.7 0.7 0.7])

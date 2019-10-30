@@ -262,15 +262,20 @@ parent_folder = gui_CaImageViewer.save_directory(1:terminus);
 sample_image_file = fastdir(date_spec_folder, '1_summary.mat');
 try
     load([date_spec_folder, sample_image_file{1}], 'info_first');
+    zoomvalueline = regexp(info_first.Software, 'SI.hRoiManager.scanZoomFactor = \d+', 'match');
+    zoomvalue = regexp(zoomvalueline{1}, '\d+', 'match'); zoomvalue = zoomvalue{1};
 catch
     cd(pathname)
     [rootfile, rootpath] = uigetfile('.mat', 'Select first image summary file in directory');
-    load([rootpath, rootfile], 'info_first')
+    try
+        load([rootpath, rootfile], 'info_first')
+        zoomvalueline = regexp(info_first.Software, 'SI.hRoiManager.scanZoomFactor = \d+', 'match');
+        zoomvalue = regexp(zoomvalueline{1}, '\d+', 'match'); zoomvalue = zoomvalue{1};
+    catch
+        manualzoominput = inputdlg('No raw data files; enter zoom', 'Zoom value', 1, {'12.1'});
+        zoomvalue = str2num(manualzoominput{1});
+    end
 end
-
-zoomvalueline = regexp(info_first.Software, 'SI.hRoiManager.scanZoomFactor = \d+.\d+', 'match');
-zoomvalue = regexp(zoomvalueline{1}, '\d+.\d+', 'match'); zoomvalue = zoomvalue{1};
-
 set(gui_CaImageViewer.figure.handles.Zoom_EditableText, 'String', zoomvalue);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1485,8 +1490,8 @@ if gui_CaImageViewer.NewSpineAnalysis
         %%%%% Identify imaging field number
         currentimagingfield = gui_CaImageViewer.NewSpineAnalysisInfo.CurrentImagingField;
         if isempty(currentimagingfield)
-            currentimagingfield = inputdlg('What field number is this?', 'Designate field number', 1, '1');
-            currentimagingfield = str2num(currentimagingfield);
+            currentimagingfield = inputdlg('What field number is this?', 'Designate field number', 1, {'1'});
+            currentimagingfield = str2num(currentimagingfield{1});
         end
         %%%%% Identify current session of this field
         currentsession = gui_CaImageViewer.NewSpineAnalysisInfo.CurrentSession;
@@ -2141,7 +2146,7 @@ function ShiftROIsBetweenSessions_DropDown_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 %%% To use this code, you need a 2x3 matrix, the "warp matrix", that is
-%%% dreived from motion correction between the two images. If you run
+%%% derived from motion correction between the two images. If you run
 %%% the "Compare Image Pair" code from the "Multiple Sessions Analysis"
 %%% window, or otherwise run the function ecc on two images, you can get
 %%% this matrix as an output. The "directionality" of the transformationF

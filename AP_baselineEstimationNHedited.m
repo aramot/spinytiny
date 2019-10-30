@@ -1,7 +1,9 @@
-function [roi_trace_df roi_trace_baseline] = AP_baselineEstimationNHedited(roi_trace_long,framerate)
+function [roi_trace_df roi_trace_baseline] = AP_baselineEstimationNHedited(roi_trace_long,Options)
 % [roi_trace_df roi_trace_baseline] = AP_baselineEstimation(roi_trace_long,framerate)
 % roi_trace_df: the df/f normalized trace
 % roi_trace_baseline (optional): the estimated baseline of the trace
+
+framerate = Options.ImagingFrequency;
 
 baseline_est_runs = 2;
 
@@ -37,6 +39,26 @@ curr_trace = roi_trace_long;
         curr_trace = inpaint_nans(curr_trace);
         roi_trace_long = curr_trace;
     end
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    est_base = baseline_kde(curr_trace', 20, round(Options.ImagingFrequency), 20)'; %%% estimate baseline over 1-min window
+
+    if strcmpi(Options.ImagingSensor, 'GluSNFR')
+        if ~isempty(Options.ImageFramesatBoutSeparations)
+            SecondsPostStarttoIgnore = 2;
+            AcqStartPoints = [1;Options.ImageFramesatBoutSeparations];
+            IgnoreWindows = AcqStartPoints + ceil(SecondsPostStarttoIgnore*Options.ImagingFrequency);
+            for bout = 1:size(AcqStartPoints,1)
+                if AcqStartPoints(bout)>length(curr_trace)
+                    continue
+                end
+                if IgnoreWindows(bout)>length(curr_trace)
+                    IgnoreWindows(bout) = length(curr_trace);
+                end
+                curr_trace(AcqStartPoints(bout):IgnoreWindows(bout)) = est_base(AcqStartPoints(bout):IgnoreWindows(bout))+(std(curr_trace)/3)*randn(1,length(AcqStartPoints(bout):IgnoreWindows(bout)));
+            end
+        end
+    end
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     
     % Estimate baseline, get rid of active zones, run baseine again.
     for baseline_est = 1:baseline_est_runs

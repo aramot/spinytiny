@@ -125,7 +125,12 @@ subcount = subcount+1;
 %==========================================================================
 ActivityDataBasics.AnimalList = varargin;
 ActivityDataBasics.Frequency = Frequency;
+ActivityDataBasics.AllFrequencyValues = AllFreq;
 ActivityDataBasics.Amplitude = Amp;
+ActivityDataBasics.PercentTimeActive = PercentTimeActive;
+ActivityDataBasics.AllPercentTimeActiveValues = All_PercentTimeActive;
+ActivityDataBasics.TotalIntegratedActivity = TotalActivity;
+ActivityDataBasics.AllTotalIntegratedActivityValues = All_TotalActivity;
 ActivityDataBasics.DendriticFrequency = Dendritic_Freq;
 ActivityDataBasics.DendriticAmplitude = Dendritic_Amp; 
 date_string = datestr(datetime('today'));

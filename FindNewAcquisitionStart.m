@@ -2,7 +2,8 @@ function [framenumatboutdividers] = FindNewAcquisitionStart(imfilesfolder)
 cd(imfilesfolder)
 filestoscan = fastdir(imfilesfolder, '_summary.mat');
 while isempty(filestoscan)
-    imfilesfolder = uigetdir();
+    disp(['Cannot find raw imaging files in ', imfilesfolder])
+    imfilesfolder = uigetdir(imfilesfolder);
     filestoscan = fastdir(imfilesfolder, '_summary.mat');
 end
 imfilestoscan = fastdir(imfilesfolder, '_corrected.tif');

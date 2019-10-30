@@ -32,13 +32,13 @@ for s = 1:NumberofSpines
     ParentDend =  logical(~cell2mat(cellfun(@(x) isempty(find(x == s,1)), File.SpineDendriteGrouping, 'Uni', false))); 
     File.ModifiedSpineThreshold = NewSpineThreshold;
     CurrentSpineActivity = File.Processed_dFoF(s,:);
-    [square, ~,trueeventcount, ~, ~] = DetectEvents2(CurrentSpineActivity, Options);
-    NewActivityTrace = square-File.Dendrite_Binarized(ParentDend,:);
+    [square, ~, ~, ~] = DetectEvents2(CurrentSpineActivity, Options);
+    NewActivityTrace = square;%%-File.Dendrite_Binarized(ParentDend,:);
     NewActivityTrace(NewActivityTrace<0) = 0;
     File.SynapseOnlyBinarized(s,:) = NewActivityTrace;
-    File.Frequency(s) = (nnz(diff(trueeventcount>0.5)>0)/((length(File.Time)/ImagingFrequency)/60))';
+    File.Frequency(s) = (nnz(diff(square>0.5)>0)/((length(File.Time)/ImagingFrequency)/60))';
     CurrentDendSubSpineActivity = File.Processed_dFoF_DendriteSubtracted(s,:);
-    [square, ~,trueeventcount, ~, ~] = DetectEvents2(CurrentDendSubSpineActivity, Options);
+    [square, ~, ~, ~] = DetectEvents2(CurrentDendSubSpineActivity, Options);
     File.SynapseOnlyBinarized_DendriteSubtracted(s,:) = square;
-    File.Frequency_DendriteSubtracted(s) = (nnz(diff(trueeventcount>0.5)>0)/((length(File.Time)/ImagingFrequency)/60))';
+    File.Frequency_DendriteSubtracted(s) = (nnz(diff(square>0.5)>0)/((length(File.Time)/ImagingFrequency)/60))';
 end
