@@ -202,7 +202,7 @@ global gui_CaImageViewer
 %%% Get file information %%%
 
 if ispc
-    cd('Z:\People\Nathan\Data')
+    cd('C:\Users\Komiyama\Google Drive\For Nathan')
 elseif isunix 
     cd('/usr/local/lab/People/Nathan/Data')
 end
@@ -246,32 +246,32 @@ file_subdivs = mat2cell(pathname, 1, diff(separation_indices));
 
 
 
-experiment = regexp(gui_CaImageViewer.filename, '[A-Z]{2,3}\d+[_]\d+', 'match');
-experiment = experiment{1};
-animal = experiment(1:5);
-date = regexp(pathname, '\d{6}', 'match'); date = date{1};
-date_address = find(cellfun(@any, regexp(file_subdivs, date)));
-date_spec_folder = fullfile(file_subdivs{1:date_address});
-
-terminus = regexp(gui_CaImageViewer.save_directory, animal, 'end');
-parent_folder = gui_CaImageViewer.save_directory(1:terminus);
+% experiment = regexp(gui_CaImageViewer.filename, '[A-Z]{2,3}\d+[_]\d+', 'match');
+% experiment = experiment{1};
+% animal = experiment(1:5);
+% date = regexp(pathname, '\d{6}', 'match'); date = date{1};
+% date_address = find(cellfun(@any, regexp(file_subdivs, date)));
+% date_spec_folder = fullfile(file_subdivs{1:date_address});
+% 
+% terminus = regexp(gui_CaImageViewer.save_directory, animal, 'end');
+% parent_folder = gui_CaImageViewer.save_directory(1:terminus);
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%% Load Scan Image Values as needed into CaImageViewer %%%%%%%%%%
-sample_image_file = fastdir(date_spec_folder, '1_summary.mat');
-try
-    load([date_spec_folder, sample_image_file{1}], 'info_first');
-catch
-    cd(pathname)
-    [rootfile, rootpath] = uigetfile('.mat', 'Select first image summary file in directory');
-    load([rootpath, rootfile], 'info_first')
-end
-
-zoomvalueline = regexp(info_first.Software, 'SI.hRoiManager.scanZoomFactor = \d+.\d+', 'match');
-zoomvalue = regexp(zoomvalueline{1}, '\d+.\d+', 'match'); zoomvalue = zoomvalue{1};
-
-set(gui_CaImageViewer.figure.handles.Zoom_EditableText, 'String', zoomvalue);
+% sample_image_file = fastdir(date_spec_folder, '1_summary.mat');
+% try
+%     load([date_spec_folder, sample_image_file{1}], 'info_first');
+% catch
+%     cd(pathname)
+%     [rootfile, rootpath] = uigetfile('.mat', 'Select first image summary file in directory');
+%     load([rootpath, rootfile], 'info_first')
+% end
+% 
+% zoomvalueline = regexp(info_first.Software, 'SI.hRoiManager.scanZoomFactor = \d+.\d+', 'match');
+% zoomvalue = regexp(zoomvalueline{1}, '\d+.\d+', 'match'); zoomvalue = zoomvalue{1};
+% 
+% set(gui_CaImageViewer.figure.handles.Zoom_EditableText, 'String', zoomvalue);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Longitudinal Analysis Section
@@ -279,7 +279,7 @@ set(gui_CaImageViewer.figure.handles.Zoom_EditableText, 'String', zoomvalue);
 %%% This section finds the date of the file being loaded, and attempts to
 %%% locate that date within any saved Spine Registry files
 
-date = regexp(pathname, '[0-9]{4,6}', 'match'); date = date{1};
+date =regexp(filename, '[0-9]{4}_[0-9]{1,2}_[0-9]{2}', 'match'); date = date{1};
 gui_CaImageViewer.NewSpineAnalysisInfo.CurrentDate = date;
 file = gui_CaImageViewer.filename;
 file = file(1:end-4);
@@ -360,6 +360,7 @@ if twochannels
     set(handles.RedGraph, 'Position', [Red_loc(1), Red_loc(2),  Red_loc(3), Red_loc(4)]);
 else
     for i = 1:timecourse_image_number
+        warning('off', 'MATLAB:imagesci:tiffmexutils:libtiffWarning')
         TifLink.setDirectory(i);
         gui_CaImageViewer.GCaMP_Image{1,Green_Frame} = TifLink.read();
         Green_Frame = Green_Frame+1;
@@ -394,7 +395,7 @@ gui_CaImageViewer.imageserieslength = imageserieslength;
 set(handles.ImageSlider_Slider, 'Value', 1);
 set(handles.ImageSlider_Slider, 'Min', 1);
 set(handles.ImageSlider_Slider, 'Max', imageserieslength);
-set(handles.ImageSlider_Slider, 'SliderStep', [(1/(imageserieslength-1)) (32/(imageserieslength-1))]);  %%% The Slider Step values indicate the minor and major transitions, which should be represented by the desired transition as the numerator and the length of the series as the denominator
+set(handles.ImageSlider_Slider, 'SliderStep', [(1/(imageserieslength-1)) (10/(imageserieslength-1))]);  %%% The Slider Step values indicate the minor and major transitions, which should be represented by the desired transition as the numerator and the length of the series as the denominator
 set(handles.Frame_EditableText, 'String', 1);
 set(handles.SmoothingFactor_EditableText, 'String', '1');
 
@@ -1755,9 +1756,7 @@ function MultiSession_DropDown_Callback(hObject, eventdata, handles)
 
 global gui_CaImageViewer
 
-animal = regexp(gui_CaImageViewer.save_directory, '[A-Z]{2,3}0*[0-9]*', 'match');
-fileparts = regexp(gui_CaImageViewer.save_directory, '[A-Z]{2,3}0*[0-9]*', 'split');
-directory = [fileparts{1}, animal{1}];
+directory = gui_CaImageViewer.save_directory;
 
 exp_folder = dir(directory);
 
@@ -1766,7 +1765,7 @@ numsessions = length(exp_folder)-2;
 choice = listdlg('PromptString', 'Which type of projection do you want to use?', 'ListString', {'Average Projection', 'Max Projection'}, 'SelectionMode', 'single');
 
 scrsz = get(0, 'ScreenSize');
-OverSessionsFigure = figure('Position', scrsz, 'Name', ['Multiple Sessions Analysis of ', animal{1}], 'NumberTitle', 'off');
+OverSessionsFigure = figure('Position', scrsz, 'Name', ['Multiple Sessions Display'], 'NumberTitle', 'off');
 set(OverSessionsFigure, 'UserData', zeros(1,14));
 h1 = waitbar(0, 'Loading images for session 1');
 

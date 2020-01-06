@@ -26,6 +26,8 @@ axes2 = glovar.figure.handles.RedGraph;
 twochannels = get(glovar.figure.handles.TwoChannels_CheckBox, 'Value');
 Merge = get(gui_CaImageViewer.figure.handles.Merge_ToggleButton, 'Value');
 
+parentframe = gui_CaImageViewer.figure.handles.Frame_EditableText.String;
+
 
 newROI = findobj(gcf, 'Type', 'images.roi.ellipse', 'Tag', ['tempROI', num2str(ROInum)]);
 newROIpos = newROI.Center;
