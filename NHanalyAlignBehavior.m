@@ -2,6 +2,7 @@ function [Aligned, Correlations, Classified, Trial, PredictionModel] = NHanalyAl
 
 %%% Note: The data contained in the behavior file is confusing, but is
 %%% organized in the following way:
+
 %%% All of the lever measurements are given in terms of behavioral frames
 %%% as acquired by Dispatcher. These are acquired at 10,000Hz, then down-
 %%% sampled to 1000Hz.
@@ -17,7 +18,6 @@ function [Aligned, Correlations, Classified, Trial, PredictionModel] = NHanalyAl
 %%% BEHAVIOR FRAME at which the cue was given. 
 
 global LeverTracePlots
-global gui_KomiyamaLabHub
 
 Correlations = [];
 Classified = [];
@@ -66,15 +66,19 @@ numberofSpines = length(Fluor.Fluorescence_Measurement);
 imagingframestouse = [];
 trialstouse = zeros(numberofTrials,1);
 ch = find(strcmp(Behavior.xsg_data.channel_names,'Trial_number'));
-bitcode = parse_behavior_bitcode(Behavior.xsg_data.channels(:,ch),10000,Fluor.Session);
+
+bitcode = parse_behavior_bitcode(Behavior.xsg_data.channels(:,ch), 10000,Fluor.Session);
+
 bitcode_offset = [bitcode.behavior_trial_num]-(1:length(bitcode));
 
 if ~isempty(find(abs(diff(bitcode_offset))>1, 1))
     trialerror = find(abs(diff(bitcode_offset))>1)+1;
+
     if length(trialerror) > 1
         trialerror = trialerror(1);
     end
     if trialerror<20            %%% This assumes that if the jump is early, then something bad happened with the early sessions, so you can start recording after this point
+
         firsttrial = trialerror;
     else
         lasttrial = trialerror-1;
@@ -113,6 +117,7 @@ for i = firsttrial:lasttrial
     if i>length(bitcode_offset)
         continue
     end
+
     if bitcode_offset(i) == bitcode(end).behavior_trial_num    %%% Occasionally, the first trial is accidentally overwritten, and this becomes counted as the last trial
         continue
     end
@@ -138,6 +143,7 @@ for i = firsttrial:lasttrial
         continue
     end
     used_trial = [used_trial; i_bitcode];
+
     if i_bitcode<=0
         continue
     end
@@ -208,6 +214,7 @@ for i = firsttrial:lasttrial
         Trial{i}.DendriteBinarized = Fluor.Dendrite_Binarized(:,Behavior.Behavior_Frames{i}.states.state_0(1,2)-backtrack:Behavior.Behavior_Frames{i}.states.state_0(2,1));
         Trial{i}.TrialBacktrack = backtrack;
     end
+
     triallength(1,i) = length(startcue:endtrial_imframes);
     Trial{i}.TrialStart = starttrial_imframes;
     Trial{i}.CueStart = startcue+Trial{i}.TrialBacktrack;
@@ -296,6 +303,7 @@ for i = firsttrial:lasttrial
 %             Trial{i}.failureactivity{punish} = Trial_SynapseOnlyBinarized_DendriteSubtracted{i}(startcue:endtrial_imframes);
 %             continue
 %         end
+
         alltrialframes = 1:endtrial_imframes;
         allmovement = trial_binary_behavior{i}(1:endtrial_imframes);
         alltrialmovementframes = alltrialframes(logical(allmovement));
@@ -311,6 +319,7 @@ for i = firsttrial:lasttrial
     Trial{i}.movementduringcueactivity = zeros(Fluor.NumberofSpines,length(Trial_SynapseOnlyBinarized{i}));
     Trial{i}.movementduringcueactivity(:,startcue:endcue) = Trial_SynapseOnlyBinarized{i}(:,startcue:endcue).*repmat(trial_movement_downsampled{i}(startcue:endcue)', Fluor.NumberofSpines,1);
     if ~mod(Behavior.Behavior_Frames{i}.states.state_0(1,2),1) %%% Test if integer value (any integer value put into 'mod(X,1)' (e.g. mod(3,1)) returns zero. Any non-integer returns a nonzero. So using a 'not' boolean means the value is an integer)
+
         trial_frames(i,1:2) = [Behavior.Behavior_Frames{i}.states.state_0(1,2), Behavior.Behavior_Frames{i}.states.state_0(2,1)];
         imagingframestouse = [imagingframestouse,Behavior.Behavior_Frames{i}.states.state_0(1,2):Behavior.Behavior_Frames{i}.states.state_0(2,1)];  %%% Designates the imaging frames to use according to when Dispatcher starts each trials
         trialstouse(i,1) = 1;
@@ -318,7 +327,6 @@ for i = firsttrial:lasttrial
         trial_frames(i,1:2) = nan(1,2);
         trialstouse(i,1) = 0;
     end
-    
     figure(LeverTracePlots.figure);
     if Fluor.Session>14
         continue
@@ -344,6 +352,7 @@ if ~exist('trial_cue') || ~exist('trial_binary_behavior_downsampled')
     Classified = [];
     Trial = [];
     PredictionModel= [];
+
     return
 end
 
@@ -371,7 +380,6 @@ floored_overall_spine_data = OverallSpine_Data_Binarized.*cell2mat(Trial_Process
 floored_synonly_spine_data =  synapseonlyBinarized.*cell2mat(Trial_Processed_dFoF);
 floored_dendsub_spine_data = DendSubBinarized.*DendSub_Spine_Data;
 floored_dend_data = DendBinarized.*Dendrite_Data;
-
 
 %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -559,6 +567,7 @@ DendSubSpineActStillPeriods = dendsubdataformoveperiodcorr(:,frames_during_still
 [r_causal, p_causal] = corrcoef([binarycue', floored_behavior,wide_window, premovement', successful_behavior,wide_succ_window,movementduringcue', reward_delivery, punishment, causal_Data', DendBinarized']);
 [Ds_r_mov,~] = corrcoef(DendSubSpineActMovePeriods');
 [Ds_r_still,~] = corrcoef(DendSubSpineActStillPeriods');
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%% Save Correlation Variables in Structure %%%%%%%%%%%%%%%%%%%%%

@@ -742,6 +742,7 @@ if length(listpos) == 1
             if currentsession>16
                 continue
             end
+
             for j = 1:length(Beh_folder)
                 areboth = strncmp(Beh_folder(j).name, Activity(currentsession), 12);    %%% Match the behavior file with the name of the activity file
                 if areboth
