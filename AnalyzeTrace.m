@@ -90,17 +90,17 @@ end
 
 %%% Replace Designated parts of the trace with noise (last-ditch manual
 %%% artifact exclusion)
-start = 17400;
-stop = 18200;
-raw(start:stop) = est_base(start:stop)+(nanstd(raw)*randn(1,length(start:stop)));
-start = 11500;
-stop = 12600;
-raw(start:stop) = est_base(start:stop)+nanstd(raw)*randn(1,length(start:stop));
+% start = 17600;
+% stop = 17900;
+% raw(start:stop) = est_base(start:stop)+(nanstd(raw)*randn(1,length(start:stop)));
+% start = 11500;
+% stop = 12600;
+% raw(start:stop) = est_base(start:stop)+nanstd(raw)*randn(1,length(start:stop));
 % start = 25400;
 % stop = 25630; 
 % raw(start:stop) = est_base(start:stop)+nanstd(raw)*randn(1,length(start:stop));
-% start = 28790;
-% stop = 29070;
+% start = 19000;
+% stop = 20500;
 % raw(start:stop) = est_base(start:stop)+nanstd(raw)*randn(1,length(start:stop));
 
 pad_length = 1000;

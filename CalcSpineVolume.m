@@ -4,32 +4,51 @@ global gui_CaImageViewer
 
 SpineROIs = flipud(findobj(gui_CaImageViewer.figure.handles.GreenGraph, 'Type', 'images.roi.ellipse', '-and', '-not', {'-regexp', 'Tag', 'Dendrite'}));
 
-AveBox = get(gui_CaImageViewer.figure.handles.AveProjection_CheckBox, 'Value');
+imagetype = gui_CaImageViewer.BeingDisplayed;
 
-if ~AveBox
-    set(gui_CaImageViewer.figure.handles.AveProjection_CheckBox, 'Value', 1)
-    DisplayProjection('Ave')
-end
+switch imagetype
+    case 'TimeSeries'
+        AveBox = get(gui_CaImageViewer.figure.handles.AveProjection_CheckBox, 'Value');
 
-if length(size(gui_CaImageViewer.ch1image))>2
-    imtouse = gui_CaImageViewer.ch1image(:,:,2);
-else
-    imtouse = gui_CaImageViewer.ch1image;
+        if ~AveBox
+            set(gui_CaImageViewer.figure.handles.AveProjection_CheckBox, 'Value', 1)
+            DisplayProjection('Ave')
+        end
+
+        if length(size(gui_CaImageViewer.ch1image))>2
+            imtouse = gui_CaImageViewer.ch1image(:,:,2);
+        else
+            imtouse = gui_CaImageViewer.ch1image;
+        end
+    case 'SessionComparison'
+        imtouse = gui_CaImageViewer.ch1image;
 end
 
 BackgroundROI = SpineROIs(1); %%% Assumes that the first ROI (actually labeled 'ROI 0') is the background
 BackgroundMask = createMask(BackgroundROI, imtouse);
 Backgroundreg = find(BackgroundMask);   %%% Number of points within the mask can be considered the number of pixels, and therefore the area of the ROI
-Background_Intensity = nanmean(imtouse(Backgroundreg)); 
+Background_Intensity = imtouse(Backgroundreg);
+Background99thPrctile = prctile(Background_Intensity,99);
+MeanBackgroundIntensity = nanmean(imtouse(Backgroundreg)); 
+
+final.MeanBackgroundIntensity = MeanBackgroundIntensity;
 
 for sp = 2:length(SpineROIs)
     currentROI = SpineROIs(sp);
     ROImask = createMask(currentROI, imtouse);
     ROIreg = find(ROImask);
-    ROIIntensity(sp-1) = (nanmean(imtouse(ROIreg))-Background_Intensity).*length(ROIreg);
+    ROI_intensity = imtouse(ROIreg);   
+%     ROIIntensity(sp-1) = (nanmean(ROI_intensity)).*sum((ROI_intensity-Background_Intensity)>Background_Intensity);
+    IntInt(sp-1) = sum(ROI_intensity(ROI_intensity>Background99thPrctile)-Background99thPrctile);  %%% If you have each indivdual pixel value, the integrand is just the sum of the intensity values of each pixel
+    MeanInt(sp-1) = nanmean(ROI_intensity);
+    %%% save image of spine
+    [r,c] = find(ROImask);
+    spineimage{sp-1} = imtouse(min(r):max(r), min(c):max(c));
 end
 
-final.RawROIIntensity = ROIIntensity;
+final.SpineImages = spineimage;
+final.IntegratedIntensity = IntInt;
+final.MeanROIIntensity = MeanInt;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%% Dendrite Normalization Section %%%%%%%%%%%%%%%%%%%%%%%
@@ -43,27 +62,35 @@ for p = 1:length(PolyROIs)
     currentROI = PolyROIs(p);
     ROImask = createMask(currentROI, imtouse);
     ROIreg = find(ROImask);
-    PolyROIIntensity(p) = (nanmean(imtouse(ROIreg))-Background_Intensity).*length(ROIreg);
+    ROI_intensity = imtouse(ROIreg)-MeanBackgroundIntensity;    %%% You only want to consider the brightness of the dendrite, not 'volume', so integrated intensity should not be considered (plus, it's much more sensitive to ROI size)
+    PolyROIIntensity(p) = nanmean(ROI_intensity);
 end
 
+final.PolyROIIntensity = PolyROIIntensity;
+
+numberofnearbyPolyROIstoconsider = 5;
 for sp = 2:length(SpineROIs)
     spine_pos = SpineROIs(sp).Center;        
     [~, index] = sort(sqrt(((PolyX_center-spine_pos(1)).^2)+(PolyY_center-spine_pos(2)).^2));
-    localdend = nanmean(PolyROIIntensity(index(1:4)));
-    DendriteNormalizedSpineIntensity(sp-1) = ROIIntensity(sp-1)/localdend;
+    localdend = nanmean(PolyROIIntensity(index(1:numberofnearbyPolyROIstoconsider)));
+    DendriteNormalizedIntegratedSpineIntensity(sp-1) = IntInt(sp-1)/localdend;
+    DendriteNormalizedMeanSpineIntensity(sp-1) = MeanInt(sp-1)/localdend;
 end
 
-final.DendriteNormalizedSpineIntensity = DendriteNormalizedSpineIntensity;
+final.DendriteNormalizedIntegratedSpineIntensity = DendriteNormalizedIntegratedSpineIntensity;
+final.DendriteNormalizedMeanSpineIntensity = DendriteNormalizedMeanSpineIntensity;
 
 filename = gui_CaImageViewer.filename;
 
-filesearchpattern = regexp(filename, '[A-Z]{2,3}0[0-9]{2,3}_[0-9]{4,6}', 'match'); filesearchpattern = filesearchpattern{1};
+currentdate = gui_CaImageViewer.NewSpineAnalysisInfo.CurrentDate;
 
-savefilepattern = [filesearchpattern, '_SpineIntensitySummary'];
+animal = regexp(filename, '[A-Z]{2,3}0[0-9]{2,3}', 'match'); animal = animal{1};
+
+filepattern = [animal, '_', currentdate];
+
+savefilepattern = [filepattern, '_SpineIntensitySummary'];
 
 eval([savefilepattern, ' = final;'])
-
-animal = regexp(filesearchpattern, '[A-Z]{2,3}0[0-9]{2,3}', 'match'); animal = animal{1};
 
 repositing_folder = ['C:\Users\Komiyama\Desktop\Output Data\', animal, ' Spine Volume Data'];
 
@@ -105,7 +132,7 @@ a.OtherROINumber = length(gui_CaImageViewer.ROIother);
 a.NumberofDendrites = gui_CaImageViewer.Dendrite_Number;
 a.DendritePolyPointNumber = gui_CaImageViewer.DendritePolyPointNumber;
 
-fname = [filesearchpattern, '_SpineVolumeROIs', '_DrawnBy', drawer];
+fname = [filepattern, '_SpineVolumeROIs', '_DrawnBy', drawer];
 eval([fname,'= a'])
 
 target_dir = gui_CaImageViewer.save_directory;

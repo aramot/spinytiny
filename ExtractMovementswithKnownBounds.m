@@ -37,7 +37,11 @@ for i = 1:length(framesofinterest)
     ExtractedMovements{i} = [startbuffershift; levertrace(start:stop); stopbuffer];
     targetdifference = TimingValues.TargetLength-length(ExtractedMovements{i});
     if targetdifference
-        ExtractedMovements{i} = [ExtractedMovements{i}; ExtractedMovements{i}(end)*ones(targetdifference,1)];
+        if targetdifference>0
+            ExtractedMovements{i} = [ExtractedMovements{i}; ExtractedMovements{i}(end)*ones(targetdifference,1)];
+        else
+            ExtractedMovements{i} = [ExtractedMovements{i}(1:end+targetdifference)];
+        end
     end
     UsedBlocks = [UsedBlocks, i];
 end

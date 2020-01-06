@@ -350,7 +350,7 @@ end
     default_upper = str2num(get(gui_CaImageViewer.figure.handles.UpperLUT_EditableText, 'String'));
     default_lower = str2num(get(gui_CaImageViewer.figure.handles.LowerLUT_EditableText, 'String'));
 
-    waitbar(3/steps, wb, 'Caclulating raw fluorescence values...');
+    waitbar(3/steps, wb, 'Calculating raw fluorescence values...');
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%% Calculate all ROI values %%%
@@ -388,7 +388,11 @@ end
             else
                 filepattern = [save_directory, gui_CaImageViewer.filename];
             end
-            CaImage_File_info = imfinfo(filepattern);
+            if isfile(filepattern)
+                CaImage_File_info = imfinfo(filepattern);
+            else
+            end
+            
             all_images = read_tiff(filepattern,CaImage_File_info);
 
             for k = 1:length(CaImage_File_info)

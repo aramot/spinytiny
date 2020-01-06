@@ -11,6 +11,8 @@ for i = 1:length(selectedaxes)
     xlabel(['Imaging field ', imagingfieldlabel], 'Color', 'k');
 end
 
+gui_CaImageViewer.NewSpineAnalysisInfo.CurrentImagingField = str2num(imagingfieldlabel);
+
 dates = sortrows(dates);
 
 figtitle = regexp(get(gcf, 'Name'), '[A-Z]{2,3}0+\d+', 'match');
@@ -50,8 +52,14 @@ experimenter = experimenter(strfind(experimenter, '\')+1:end);
 
 fullpath = gui_CaImageViewer.save_directory;
 allseps = strfind(fullpath, filesep);
-% stepsup = 2;
-% newpath = fullpath(1:allseps(end-stepsup)-1); %%% move two steps up in the path directory to get bath to the main animal folder (e.g. Z:/People/Nathan/Data/NH004 instead of Z:/People/Nathan/Data/NH004/160316/summed)
+animal_handle_location = strfind(fullpath, animal);
+animal_handle_start = find(allseps-animal_handle_location>0,1);
+if ~isempty(animal_handle_start)
+    parentpath = fullpath(1:animal_handle_start-1);
+else
+    parentpath = fullpath;
+end
+    
 cd(fullpath)
 
 %%%%%%
@@ -64,7 +72,7 @@ else
 end
 
 try
-    targ = fastdir(newpath,[userspecificpart, 'Imaging Field ', imagingfieldlabel, ' Spine Registry']);
+    targ = fastdir(parentpath,[userspecificpart, 'Imaging Field ', imagingfieldlabel, ' Spine Registry']);
     load(targ{1})
     registryexists = 1;
 catch
@@ -82,9 +90,6 @@ if ~registryexists
     SpineRegistry.RowName = [];
     SpineRegistry.DatesAcquired = flipud(mat2cell(dates,ones(1,length(selectedaxes)), 6));
 else
-    if ~isfield(SpineRegistry, 'ColumnNames')
-        SpineRegistry.ColumnNames = cellfun(@(x) ['Day ', num2str(x)], mat2cell(1:length(selectedaxes), 1, ones(1,length(selectedaxes))), 'Uni', false);
-    end
     if ~isfield(SpineRegistry, 'Data')
         SpineRegistry.Data = [];
     end

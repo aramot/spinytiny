@@ -725,22 +725,47 @@ experiment = regexp(FileInfo.filetoload, '[A-Z]{2,3}\d+[_]\d+', 'match');
 experiment = experiment{1};
 animal = experiment(1:5);
 date = regexp(dirtouse, '\d{6}', 'match'); 
-if ~isempty(date)
-    date = date{1};
-    date_address = find(cellfun(@any, regexp(file_subdivs, date)));
-    date_spec_folder = fullfile(file_subdivs{1:date_address});
 
-    sample_image_file = fastdir(date_spec_folder, '1_summary.mat');
-    load([date_spec_folder, sample_image_file{1}], 'info_first');
-    zoomvalueline = regexp(info_first.Software, 'SI.hRoiManager.scanZoomFactor = \d+.\d+', 'match');
-    zoomvalue = regexp(zoomvalueline{1}, '\d+.\d+', 'match'); zoomvalue = zoomvalue{1};
-    File.ZoomValue = zoomvalue;
-    analyzed.ZoomValue = zoomvalue;
-    clear info_first
-else
-    manualzoominput = inputdlg('No raw data files; enter zoom', 'Zoom value', 1, {'12.1'});
-    zoomvalue = str2num(manualzoominput{1});
+
+%%% If image series is still on the server 
+switch Router
+    case 'Original'
+        file_parts_list = regexp(dirtouse, filesep, 'split');
+        numparts = length(file_parts_list);
+        notfound = 1;
+        maxcycles = 20;
+        cycle = 1;
+        while notfound
+            if ~isempty(fastdir(fullfile(file_parts_list{1:numparts}), '1_summary.mat'))
+                notfound = 0;
+                targ_imseries_dir = fullfile(file_parts_list{1:numparts});
+            else
+                numparts = numparts-1;
+            end
+            cycle = cycle+1;
+            if cycle>maxcycles
+                return
+            end
+        end
+        if notfound
+            zoomvalue = File.ZoomValue
+        else
+            sample_image_file = fastdir(targ_imseries_dir, '1_summary.mat');
+            load([targ_imseries_dir,filesep, sample_image_file{1}], 'info_first');
+            zoomvalueline = regexp(info_first.Software, 'SI.hRoiManager.scanZoomFactor = \d+.\d+', 'match');
+            zoomvalue = regexp(zoomvalueline{1}, '\d+.\d+', 'match'); zoomvalue = zoomvalue{1};
+            File.ZoomValue = zoomvalue;
+            analyzed.ZoomValue = zoomvalue;
+            clear info_first
+        end
+    case 'Redo'
+        zoomvalue = File.ZoomValue
 end
+%     manualzoominput = inputdlg('No raw data files; enter zoom', 'Zoom value', 1, {'12.1'});
+%     zoomvalue = str2num(manualzoominput{1});
+
+
+%    zoomvalue = File.ZoomValue
 
 switch Router
     case 'Original'
@@ -856,14 +881,11 @@ switch Router
         analyzed.DendriteLengthValues = Mic_Dist;
         analyzed.SpineToSpineDistance = Distances;
         analyzed.DistanceHeatMap = SpineToSpineDistance;
+        analyzed.SpineAddresses = spine_address;
         clear ROIfile;
     case 'Redo'
-
         nonnan = find(~isnan(File.DistanceHeatMap));
 end
-
-
-analyzed.SpineAddresses = spine_address;
 
 [r_all, ~] = corrcoef(square');
 r_all(isnan(r_all)) = 0;

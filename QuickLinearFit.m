@@ -1,8 +1,14 @@
 function QuickLinearFit(x,y,sp)
 
+x(y==Inf) = nan;
+y(y==Inf) = nan;
 
 x = x(~isnan(y));
 y = y(~isnan(y));
+
+x = x(~isnan(x));
+y = y(~isnan(x));
+
 
 X = [ones(length(x),1),x];
 b = X\y;

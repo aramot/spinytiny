@@ -71,7 +71,7 @@ end
 %%% a designated cut-off
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-reactionTimeCutoff = 2000;
+reactionTimeCutoff = 8000;
 
 %==========================================================================
 ExcludeSlowReactionTrials = 0;
@@ -227,7 +227,6 @@ end
 %%%%%%%% Repeat the above for licking data, if available 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-trialstopwindow = 5000;
 if successful_mvmt_start+(trialstopwindow-shift) > length(File.lick_data_smooth)
     endingbuffer = nan(abs(length(File.lick_data_smooth)-(successful_mvmt_start+(trialstopwindow-shift))),1);
     File.lick_data_smooth = [File.lick_data_smooth; endingbuffer];

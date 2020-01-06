@@ -12,7 +12,6 @@ switch OtherVariables.LearningPhase
         binarizedlever = MovementBlocks.binarizedleverLate;
         successtrace = MovementBlocks.successtraceLate;
         rewardperiods = MovementBlocks.rewardperiodsLate;
-        blocksatcriteria = MovementBlocks.targetblocksmeetingcriteriaLate;
     case 'Early'
         boundstouse = MovementBlocks.boundstouseEarly;
         allmovementbounds = MovementBlocks.AllMovementBoundsEarly;
@@ -23,7 +22,6 @@ switch OtherVariables.LearningPhase
         binarizedlever = MovementBlocks.binarizedleverEarly;
         successtrace = MovementBlocks.successtraceEarly;
         rewardperiods = MovementBlocks.rewardperiodsEarly;
-        blocksatcriteria = MovementBlocks.targetblocksmeetingcriteriaEarly;
 end
 
 TimingValues = OtherVariables.TimingValues;
@@ -40,9 +38,8 @@ AlignmentMethod = 1;
 
 trace_separated = mat2cell(activitytrace', diff(boundstouse));   %%% Separate the co-active trace according to the boundaries defined above (e.g. all movements or successful movements); should be the full length of the data
 trace_during_targetperiods = trace_separated(cell2mat(cellfun(@any, allperiodblocks, 'uni', false)));   %%% Parse the co-active trace into only those regions of interest defined above (e.g. the traces that correspond to the periods of movement or success)
-trace_during_targetperiods = trace_during_targetperiods(blocksatcriteria);
 ActivityDuringMovement_Addresses  = find(cellfun(@any, trace_during_targetperiods));  %%% Find periods of co-activity among the trace already separated into the target periods (i.e. periods are already separated into target periods, e.g. movements, agnostic to co-activity; find these target periods that contain co-activity)
-% TargetMovementswithCoactivity = lever_trace_during_targetperiods(ActivtiyDuringMovement_Addresses ); %%% These are the full movement traces corresponding to cluster co-activity; probably not as useful as the refined version found below using ExtractMovementswithKnownBounds;
+% TargetMovementswithCoactivity = lever_trace_during_targetperiods(ActivtiyDuringMovement_Addresses ); %%% These are the full movement traces corresponding to cluster co-activity; probably not as useful as the refined version found below using ExtractMovementswithKnownBounds
 framesofinterest = frames_during_targetperiods(ActivityDuringMovement_Addresses);
 actualactivityduringblocksofinterest = trace_during_targetperiods(ActivityDuringMovement_Addresses );
 

@@ -88,7 +88,7 @@ for i = 1:length(experimentnames)
     FrequencyMatchedControlCorrelation{i} = cell2mat(currentdata.FrequencyMatchedControlCorrelation);
     MovementSpineDistanceMatchedControlCorrelation{i} = cell2mat(cellfun(@cell2mat, currentdata.MovementSpineDistanceMatchedControlCorrelation(~cell2mat(cellfun(@isempty, currentdata.MovementSpineDistanceMatchedControlCorrelation, 'uni', false))), 'uni', false));
     TaskCorrelationofClusteredNewSpines{i} = cell2mat(currentdata.TaskCorrelationofClusteredNewSpines);
-    NewSpinesCorrwithNearbyEarlyMRSs{i} = cell2mat(currentdata.NewSpinesCorrwithNearbyEarlyMRSs);
+    NewSpinesCorrwithNearbyEarlyMRSs{i} = cell2mat(horzcat(currentdata.NewSpinesCorrwithNearbyEarlyMRSs{:}));
     TaskCorrelationofNearbyEarlyMRSs{i} = cell2mat(currentdata.TaskCorrelationofNearbyEarlyMRSs);
     MovementReliabilityofNearbyEarlyMRSs{i} = cell2mat(currentdata.MovementReliabilityofNearbyEarlyMRSs');
     MovementReliabilityofOtherMoveSpines{i} = cell2mat(currentdata.MovementReliabilityofOtherMoveSpines');
@@ -161,6 +161,9 @@ for i = 1:length(experimentnames)
     MoveCentricDistanceMatchedtoAntiClustCorrelation{i} = cell2mat(cellfun(@cell2mat,currentdata.MoveCentricDistanceMatchedtoAntiClustCorrelation(~cell2mat(cellfun(@isempty, currentdata.MoveCentricDistanceMatchedtoAntiClustCorrelation, 'uni', false))),'uni', false));
     MoveCentricFrequencyMatchedCorrelation{i} = cell2mat(cellfun(@cell2mat,currentdata.MoveCentricFrequencyMatchedCorrelation(~cell2mat(cellfun(@isempty, currentdata.MoveCentricFrequencyMatchedCorrelation, 'uni', false))),'uni', false));
     
+    AllClusterCorrelationsbyNewSpine{i} = currentdata.AllClusterCorrelationsbyNewSpine;
+    AllMoveCentricClusterCorrelationsbyNewSpine{i} = currentdata.AllMoveCentricClusterCorrelationsbyNewSpine;
+    
     CombinedClusterActivityCorrwithMovement{i} = cell2mat(cellfun(@cell2mat,currentdata.CombinedClusterActivityCorrwithMovement(~cell2mat(cellfun(@isempty, currentdata.CombinedClusterActivityCorrwithMovement, 'uni', false))),'uni', false));
     CombinedClusterActivityCorrwithSuccess{i} = cell2mat(cellfun(@cell2mat,currentdata.CombinedClusterActivityCorrwithSuccess(~cell2mat(cellfun(@isempty, currentdata.CombinedClusterActivityCorrwithSuccess, 'uni', false))),'uni', false));
     ClusterMovementReliability{i} = cell2mat(cellfun(@cell2mat,currentdata.ClusterMovementReliability(~cell2mat(cellfun(@isempty, currentdata.ClusterMovementReliability, 'uni', false))),'uni', false));
@@ -217,9 +220,21 @@ for i = 1:length(experimentnames)
     ClusteredNewSpineFrequency{i} = cell2mat(currentdata.ClusteredNewSpineFrequency');
     OtherSpineFrequencyOnDendswithClusters{i} = cell2mat(currentdata.OtherSpineFrequencyOnDendswithClusters');
     OtherSpineFrequencyOnDendswithoutClusters{i} = cell2mat(currentdata.OtherSpineFrequencyOnDendswithoutClusters');
+    ClusteredMoveSpineDeltaFrequency{i} = cell2mat(currentdata.ClusteredMoveSpineDeltaFrequency');
+    OtherSpineDeltaFrequencyOnDendswithClusters{i} = cell2mat(currentdata.OtherSpineDeltaFrequencyOnDendswithClusters');
+    OtherSpineDeltaFrequencyOnDendswithoutClusters{i} = cell2mat(currentdata.OtherSpineDeltaFrequencyOnDendswithoutClusters');
+
+    ClusteredMoveSpineAmplitude{i} = cell2mat(currentdata.ClusteredMoveSpineAmplitude);
+    ClusteredNewSpineAmplitude{i} = cell2mat(currentdata.ClusteredNewSpineAmplitude);
+    OtherSpineAmplitudeOnDendswithClusters{i} = cell2mat(currentdata.OtherSpineAmplitudeOnDendswithClusters);
+    OtherSpineAmplitudeOnDendswithoutClusters{i} = cell2mat(currentdata.OtherSpineAmplitudeOnDendswithoutClusters);
+    ClusteredMoveSpineDeltaAmplitude{i} = cell2mat(currentdata.ClusteredMoveSpineDeltaAmplitude);
+    OtherSpineDeltaAmplitudeOnDendswithClusters{i} = cell2mat(currentdata.OtherSpineDeltaAmplitudeOnDendswithClusters);
+    OtherSpineDeltaAmplitudeOnDendswithoutClusters{i} = cell2mat(currentdata.OtherSpineDeltaAmplitudeOnDendswithoutClusters);
     
     MovementswithClusteredCoActivity{i} = currentdata.MovementswithClusteredCoActivity;
     MovementswithClusteredCoActivitybyCluster{i} = currentdata.MovementswithClusteredCoActivitybyCluster;
+    MedianMovementCorrelationbyNewSpine{i} = currentdata.MedianMovementCorrelationbyNewSpine;
     MovementswithFMControlCoActivity{i} = currentdata.MovementswithFMControlCoActivity;
     MovementswithMRSOnlyActivity{i} = currentdata.MovementswithMRSOnlyActivity;
     MovementswithNSOnlyActivity{i} = currentdata.MovementswithNSOnlyActivity;
@@ -264,6 +279,8 @@ for i = 1:length(experimentnames)
     DendsWithBothClustDynamics{i} = cell2mat(currentdata.DendsWithBothClustDynamics);
     
     CoActivityDifferenceOptimizationCurve{i} = currentdata.CoActivityDifferenceOptimizationCurve;
+    
+    ClusteredMovementSpineVolume{i} = currentdata.ClusteredMovementSpineVolume;
 
     clear currentdata
 end
@@ -573,7 +590,7 @@ xtickangle(gca, 45)
 ylabel('Probability')
 title('Interaction of Clustering and Persistence of MRSs')
 
-if ranksum([PofA.*PofB], PofAnB)<0.05
+if signrank([PofA.*PofB], PofAnB)<0.05
     text(1.4, maxline+0.03, '*')
 else
     text(1.4, maxline+0.03, 'ns')
@@ -1753,42 +1770,46 @@ subplot(sub1,sub2,subcount)
 bar(1:length(datamat), cell2mat(cellfun(@nanmedian, datamat, 'uni', false)), 'FaceColor', lblue); hold on;
 
 Y = cell(1,length(datamat));
-for i = 1:length(datamat)
-    try
-        plot(linspace(i-0.25,i+0.25,length(datamat{i})), datamat{i}, '.k', 'Markersize', 14)
-        Y{i} = bootci(bootstrpnum, {@median, datamat{i}(~isnan(datamat{i}))}, 'alpha', 0.05);
-        line([i,i], [Y{i}(1), Y{i}(2)], 'linewidth', 0.5, 'color', 'r');
-    catch
-        Y{i} = [];
-    end
-end
-set(gca, 'XTick', [1:length(datamat)])
-set(gca, 'XTickLabel', {'With CoActive Clusters', 'With Any Clust Act', 'MRS only', 'NS only', 'MRSDM', 'Freq matched pairs', 'All Other'})
-xtickangle(gca, 45)
-ylabel('Correlation')
-title('Mv. Corr. by Mv. Pairs')
-
-maxline = max(cell2mat(Y'));
-statline_increment = nanmedian(datamat{1})/5;
-
-cand = find(~cellfun(@isempty, Y)); cand = cand(2:end);
-for i = cand
-    [p,~] = ranksum(datamat{1},datamat{i});
-    if p<0.05
-        if p < 0.001
-            statsymbol = '***';
-        elseif p<0.01
-            statsymbol = '**';
-        elseif p<0.05
-            statsymbol = '*';
+if any(cellfun(@(x) length(x)>10000, datamat))
+    disp('Too many data points to display; for stats, run manually')
+else
+    for i = 1:length(datamat)
+        try
+            plot(linspace(i-0.25,i+0.25,length(datamat{i})), datamat{i}, '.k', 'Markersize', 14)
+            Y{i} = bootci(bootstrpnum, {@median, datamat{i}(~isnan(datamat{i}))}, 'alpha', 0.05);
+            line([i,i], [Y{i}(1), Y{i}(2)], 'linewidth', 0.5, 'color', 'r');
+        catch
+            Y{i} = [];
         end
-        plot(1:i, (maxline+0.01)*ones(1,i), '-', 'Linewidth', 2, 'Color', 'g')
-        text(mean([1,(i)])-0.1, maxline+0.01, statsymbol)
-    else
-        plot(1:i, (maxline+0.01)*ones(1,i), '-', 'Linewidth', 2, 'Color', 'r')
-        text(mean([1,(i)])-0.1, maxline+0.01, 'ns')
     end
-    maxline = maxline+statline_increment;
+    set(gca, 'XTick', [1:length(datamat)])
+    set(gca, 'XTickLabel', {'With CoActive Clusters', 'With Any Clust Act', 'MRS only', 'NS only', 'MRSDM', 'Freq matched pairs', 'All Other'})
+    xtickangle(gca, 45)
+    ylabel('Correlation')
+    title('Mv. Corr. by Mv. Pairs')
+
+    maxline = max(cell2mat(Y'));
+    statline_increment = nanmedian(datamat{1})/5;
+
+    cand = find(~cellfun(@isempty, Y)); cand = cand(2:end);
+    for i = cand
+        [p,~] = ranksum(datamat{1},datamat{i});
+        if p<0.05
+            if p < 0.001
+                statsymbol = '***';
+            elseif p<0.01
+                statsymbol = '**';
+            elseif p<0.05
+                statsymbol = '*';
+            end
+            plot(1:i, (maxline+0.01)*ones(1,i), '-', 'Linewidth', 2, 'Color', 'g')
+            text(mean([1,(i)])-0.1, maxline+0.01, statsymbol)
+        else
+            plot(1:i, (maxline+0.01)*ones(1,i), '-', 'Linewidth', 2, 'Color', 'r')
+            text(mean([1,(i)])-0.1, maxline+0.01, 'ns')
+        end
+        maxline = maxline+statline_increment;
+    end
 end
 
 
@@ -1799,7 +1820,7 @@ end
 %%% cluster co-activity, taken across any of the late sessions). The
 %%% assumption here is that cluster co-activity might represent a larger
 %%% circuit-wide movement scheme 
-subcount = subcount +1;
+subcount = 6;
 
 % datamat = [{horzcat(MovementswithClusteredCoActivity{:})}, {cellfun(@(x,y,z) [x,y,z], horzcat(MovementswithClusteredCoActivity{:}), horzcat(MovementswithMRSOnlyActivity{:}), horzcat(MovementswithNSOnlyActivity{:}), 'uni', false)},{horzcat(AllOtherMovements{:})}, {horzcat(MovementswithMRSOnlyActivity{:})}, {horzcat(MovementswithNSOnlyActivity{:})}, {horzcat(MovementswithFMControlCoActivity{:})}];
 % datamat = [{cell2mat(horzcat(MovementswithClusteredCoActivity{:}))}, {cell2mat(cellfun(@(x,y,z) [x,y,z], horzcat(MovementswithClusteredCoActivity{:}), horzcat(MovementswithMRSOnlyActivity{:}), horzcat(MovementswithNSOnlyActivity{:}), 'uni', false))},{cell2mat(horzcat(AllOtherMovements{:}))}, {cell2mat(horzcat(MovementswithMRSOnlyActivity{:}))}, {cell2mat(horzcat(MovementswithNSOnlyActivity{:}))}, {cell2mat(horzcat(MovementswithFMControlCoActivity{:}))}];
@@ -2130,42 +2151,179 @@ AllClustMovs = horzcat(temp{:});
 
 temp = horzcat(WithoutGroupMovements{:});
 WithoutGroupMovs = horzcat(temp{:});
+% 
+% [coeffs, scores, ~, ~, explained, ~] = pca([AllClustMovs'; WithoutGroupMovs']);
+% 
+% figure; hold on; 
+% 
+% subplot(1,2,1); 
+% plot(scores(1:size(AllClustMovs,2),1), scores(1:size(AllClustMovs,2),2), 'o', 'MarkerEdgeColor', lblue, 'markerfacecolor', lblue); hold on;
+% plot(scores(size(AllClustMovs,2)+1:size(AllClustMovs,2)+size(WithoutGroupMovs,2),1), scores(size(AllClustMovs,2)+1:size(AllClustMovs,2)+size(WithoutGroupMovs,2),2), 'o', 'MarkerEdgeColor', 'k', 'markerfacecolor', gray)
+% xlabel('PC1')
+% ylabel('PC2')
+% 
+% subplot(1,2,2); %%% Summarize PC1 scores for the different movement groups
+% datamat = [{scores(1:size(AllClustMovs,2),1)},{scores(size(AllClustMovs,2)+1:size(AllClustMovs,2)+size(WithoutGroupMovs,2),1)}];
+% bar(1:length(datamat), cell2mat(cellfun(@nanmedian, datamat, 'uni', false)), 'FaceColor', lblue); hold on;
+% 
+% for i = 1:length(datamat)
+%     plot(linspace(i-0.25,i+0.25,length(datamat{i})), datamat{i}, '.k', 'Markersize', 14)
+%     Y = bootci(bootstrpnum, {@median, datamat{i}(~isnan(datamat{i}))}, 'alpha', 0.05);
+%     line([i,i], [Y(1), Y(2)], 'linewidth', 0.5, 'color', 'r');
+% end
+% set(gca, 'XTick', [1:length(datamat)])
+% set(gca, 'XTickLabel', {'With CoActive Clusters', 'Without', 'Freq matched pairs'})
+% xtickangle(gca, 45)
+% ylabel('PC1 Score')
+% title('Comparison of PC1 scores for Movement Classes')
+% 
+% maxline = max([nanmedian(datamat{1}), nanmedian(datamat{2})]);
+% plot(1:2, (maxline+0.01)*ones(1,2), 'k', 'Linewidth', 2)
+% 
+% [p,~] = ranksum(datamat{1},datamat{2});
+% 
+% if p<0.05
+%     text(1.4, maxline+0.05, ['* p =', num2str(p)])
+% else
+%     text(1.4, maxline+0.05, ['ns, p = ', num2str(p)])
+% end
 
-[coeffs, scores, ~, ~, explained, ~] = pca([AllClustMovs'; WithoutGroupMovs']);
+ClustMovsbyAnimal = cellfun(@(x) horzcat(x{:}), MovementswithClusteredCoActivity, 'uni', false);
+OtherMovsbyAnimal = cellfun(@(x) horzcat(x{:}), WithoutGroupMovements, 'uni', false);
 
-figure; hold on; 
+for i = 1:length(ClustMovsbyAnimal)
+    if ~isempty(ClustMovsbyAnimal{i})
+        Data{i} = zscore([ClustMovsbyAnimal{i}'; OtherMovsbyAnimal{i}'],[],2);
+        [coeffs{i}, scores{i},~,~,explained{i}, ~] = pca(Data{i});
+        clustcorrs = corrcoef([coeffs{i}(:,1), ClustMovsbyAnimal{i}]);
+        clustcorrwithPC1{i} = nanmedian(clustcorrs(1,2:end));
+        othercorrs = corrcoef([coeffs{3}(:,1), OtherMovsbyAnimal{i}]);
+        othercorrwithPC1{i} = nanmedian(othercorrs(1,2:end));
+%         PC1proj{i} = scores{i}(:,1)'*Data{i};
+%         PC2proj{i} = scores{i}(:,2)'*Data{i};
+%         PC3proj{i} = scores{i}(:,3)'*Data{i};
+        [NMFcoeffs{i}, NMFscores{i}] = nnmf(Data{i}',10);
+        indbyanimal{i} = size(ClustMovsbyAnimal{i},2);
+    end
+end
 
-subplot(1,2,1); 
-plot(scores(1:size(AllClustMovs,2),1), scores(1:size(AllClustMovs,2),2), 'o', 'MarkerEdgeColor', lblue, 'markerfacecolor', lblue); hold on;
-plot(scores(size(AllClustMovs,2)+1:size(AllClustMovs,2)+size(WithoutGroupMovs,2),1), scores(size(AllClustMovs,2)+1:size(AllClustMovs,2)+size(WithoutGroupMovs,2),2), 'o', 'MarkerEdgeColor', 'k', 'markerfacecolor', gray)
-xlabel('PC1')
-ylabel('PC2')
+clustPC1scoresbyanimal = cellfun(@nanmedian, cellfun(@abs, cellfun(@(x,y) x(1:y,1), scores(~cellfun(@isempty, scores)), indbyanimal(~cellfun(@isempty, scores)), 'uni', false), 'uni', false));
+otherPC1scoresbyanimal = cellfun(@nanmedian, cellfun(@abs, cellfun(@(x,y) x(y+1:end,1), scores(~cellfun(@isempty, scores)), indbyanimal(~cellfun(@isempty, scores)), 'uni', false), 'uni', false));
 
-subplot(1,2,2); %%% Summarize PC1 scores for the different movement groups
-datamat = [{scores(1:size(AllClustMovs,2),1)},{scores(size(AllClustMovs,2)+1:size(AllClustMovs,2)+size(WithoutGroupMovs,2),1)}];
-bar(1:length(datamat), cell2mat(cellfun(@nanmedian, datamat, 'uni', false)), 'FaceColor', lblue); hold on;
+clustPC2scoresbyanimal = cellfun(@nanmedian, cellfun(@abs, cellfun(@(x,y) x(1:y,2), scores(~cellfun(@isempty, scores)), indbyanimal(~cellfun(@isempty, scores)), 'uni', false), 'uni', false));
+otherPC2scoresbyanimal = cellfun(@nanmedian, cellfun(@abs, cellfun(@(x,y) x(y+1:end,2), scores(~cellfun(@isempty, scores)), indbyanimal(~cellfun(@isempty, scores)), 'uni', false), 'uni', false));
 
+clustNNMFscoresbyanimal = cellfun(@nanmedian, cellfun(@(x,y) x(1,1:y), NMFscores(~cellfun(@isempty, NMFscores)), indbyanimal(~cellfun(@isempty, NMFscores)), 'uni', false));
+otherNNMFscoresbyanimal = cellfun(@nanmedian, cellfun(@(x,y) x(1,y+1:end), NMFscores(~cellfun(@isempty, NMFscores)), indbyanimal(~cellfun(@isempty, NMFscores)), 'uni', false));
+
+figure; subplot(1,2,1)
+datamat = [{clustPC1scoresbyanimal}, {otherPC1scoresbyanimal}, {clustPC2scoresbyanimal}, {otherPC2scoresbyanimal}];
+
+bar(1:length(datamat), cellfun(@nanmedian, datamat), 'FaceColor', lblue); hold on;
+Y = cell(1,length(datamat));
 for i = 1:length(datamat)
-    plot(linspace(i-0.25,i+0.25,length(datamat{i})), datamat{i}, '.k', 'Markersize', 14)
-    Y = bootci(bootstrpnum, {@median, datamat{i}(~isnan(datamat{i}))}, 'alpha', 0.05);
-    line([i,i], [Y(1), Y(2)], 'linewidth', 0.5, 'color', 'r');
+    try
+        plot(linspace(i-0.25,i+0.25,length(datamat{i})), datamat{i}, '.k', 'Markersize', 14)
+        Y{i} = bootci(bootstrpnum, {@median, datamat{i}(~isnan(datamat{i}))}, 'alpha', 0.05);
+        line([i,i], [Y{i}(1), Y{i}(2)], 'linewidth', 0.5, 'color', 'r');
+    catch
+        Y{i} = [];
+    end
 end
 set(gca, 'XTick', [1:length(datamat)])
-set(gca, 'XTickLabel', {'With CoActive Clusters', 'Without', 'Freq matched pairs'})
+set(gca, 'XTickLabel', {'Clust PC1', 'Other PC1', 'Clust PC2', 'Other PC2'})
 xtickangle(gca, 45)
 ylabel('Correlation')
-title('Corr. of Mvmts with Model')
+title('Principal Component Analysis by Animal')
 
-maxline = max([nanmedian(datamat{1}), nanmedian(datamat{2})]);
-plot(1:2, (maxline+0.01)*ones(1,2), 'k', 'Linewidth', 2)
+maxline = cellfun(@max, Y);
+statline_increment = nanmedian(datamat{1})/5;
 
-[p,~] = ranksum(datamat{1},datamat{2});
-
-if p<0.05
-    text(1.4, maxline+0.05, ['* p =', num2str(p)])
-else
-    text(1.4, maxline+0.05, ['ns, p = ', num2str(p)])
+for i = [1,3]
+    [p,~] = ranksum(datamat{i},datamat{i+1});
+    if p<0.05
+        if p < 0.001
+            statsymbol = '***';
+        elseif p<0.01
+            statsymbol = '**';
+        elseif p<0.05
+            statsymbol = '*';
+        end
+        plot(i:i+1, (max(maxline(i:i+1))+0.01)*ones(1,2), '-', 'Linewidth', 2, 'Color', 'g')
+        text(mean([1,(i+1)])-0.1, max(maxline(i:i+1))+0.5, statsymbol)
+    else
+        plot(i:i+1, (max(maxline(i:i+1))+0.01)*ones(1,2), '-', 'Linewidth', 2, 'Color', 'r')
+        text(mean([i,(i+1)])-0.1, max(maxline(i:i+1))+0.5, 'ns')
+    end
 end
+
+ClustMovsbyField = horzcat(MovementswithClusteredCoActivity{:});
+OtherMovsbyField = horzcat(WithoutGroupMovements{:});
+
+for i = 1:length(ClustMovsbyField)
+    if~isempty(ClustMovsbyField{i})
+        FieldData{i} = zscore([ClustMovsbyField{i}'; OtherMovsbyField{i}'],[],2);
+        [fieldcoeffs{i}, fieldscores{i}, ~,~,fieldexplained{i}, ~] = pca(FieldData{i});
+        [NMFfieldcoeffs{i}, NMFfieldscores{i}] = nnmf(FieldData{i}', 10);
+        indbyfield{i} = size(ClustMovsbyField{i},2);
+    end
+end
+
+clustPC1scoresbyfield = cellfun(@nanmedian, cellfun(@abs, cellfun(@(x,y) x(1:y,1), fieldscores(~cellfun(@isempty, fieldscores)), indbyfield(~cellfun(@isempty, fieldscores)), 'uni', false), 'uni', false));
+otherPC1scoresbyfield = cellfun(@nanmedian, cellfun(@abs, cellfun(@(x,y) x(y+1:end,1), fieldscores(~cellfun(@isempty, fieldscores)), indbyfield(~cellfun(@isempty, fieldscores)), 'uni', false), 'uni', false));
+
+clustPC2scoresbyfield = cellfun(@nanmedian, cellfun(@abs, cellfun(@(x,y) x(1:y,2), fieldscores(~cellfun(@isempty, fieldscores)), indbyfield(~cellfun(@isempty, fieldscores)), 'uni', false), 'uni', false));
+otherPC2scoresbyfield = cellfun(@nanmedian, cellfun(@abs, cellfun(@(x,y) x(y+1:end,2), fieldscores(~cellfun(@isempty, fieldscores)), indbyfield(~cellfun(@isempty, fieldscores)), 'uni', false), 'uni', false));
+
+clustNNMFscoresbyfield = cellfun(@nanmedian, cellfun(@(x,y) x(1,1:y), NMFfieldscores(~cellfun(@isempty, NMFfieldscores)), indbyfield(~cellfun(@isempty, NMFfieldscores)), 'uni', false));
+otherNNMFscoresbyfield = cellfun(@nanmedian, cellfun(@(x,y) x(1,y+1:end), NMFfieldscores(~cellfun(@isempty, NMFfieldscores)), indbyfield(~cellfun(@isempty, NMFfieldscores)), 'uni', false));
+
+subplot(1,2,2)
+figure; subplot(1,2,1)
+datamat = [{clustPC1scoresbyanimal}, {otherPC1scoresbyanimal}, {clustPC2scoresbyanimal}, {otherPC2scoresbyanimal}];
+
+bar(1:length(datamat), cellfun(@nanmedian, datamat), 'FaceColor', lblue); hold on;
+Y = cell(1,length(datamat));
+for i = 1:length(datamat)
+    try
+        plot(linspace(i-0.25,i+0.25,length(datamat{i})), datamat{i}, '.k', 'Markersize', 14)
+        Y{i} = bootci(bootstrpnum, {@median, datamat{i}(~isnan(datamat{i}))}, 'alpha', 0.05);
+        line([i,i], [Y{i}(1), Y{i}(2)], 'linewidth', 0.5, 'color', 'r');
+    catch
+        Y{i} = [];
+    end
+end
+set(gca, 'XTick', [1:length(datamat)])
+set(gca, 'XTickLabel', {'Clust PC1', 'Other PC1', 'Clust PC2', 'Other PC2'})
+xtickangle(gca, 45)
+ylabel('Correlation')
+title('Principal Component Analysis by Animal')
+
+maxline = cellfun(@max, Y);
+statline_increment = nanmedian(datamat{1})/5;
+
+for i = [1,3]
+    [p,~] = ranksum(datamat{i},datamat{i+1});
+    if p<0.05
+        if p < 0.001
+            statsymbol = '***';
+        elseif p<0.01
+            statsymbol = '**';
+        elseif p<0.05
+            statsymbol = '*';
+        end
+        plot(i:i+1, (max(maxline(i:i+1))+0.01)*ones(1,2), '-', 'Linewidth', 2, 'Color', 'g')
+        text(mean([1,(i+1)])-0.1, max(maxline(i:i+1))+0.5, statsymbol)
+    else
+        plot(i:i+1, (max(maxline(i:i+1))+0.01)*ones(1,2), '-', 'Linewidth', 2, 'Color', 'r')
+        text(mean([i,(i+1)])-0.1, max(maxline(i:i+1))+0.5, 'ns')
+    end
+end
+set(gca, 'XTick', [1:length(datamat)])
+set(gca, 'XTickLabel', {'With CoActive Clusters', 'Any Clust Act', 'MRS only', 'NS only','MRSDM', 'Freq matched pairs','Without'})
+xtickangle(gca, 45)
+ylabel('Correlation')
+title('Mvmts comb by animal, ave by mv pairs')
 
 %==========================================================================
 
@@ -2193,7 +2351,7 @@ title('Corr. of Mvmts with Model')
 maxline = max([nanmedian(datamat{1}), nanmedian(datamat{2})]);
 plot(1:2, (maxline+0.01)*ones(1,2), 'k', 'Linewidth', 2)
 
-[p,~] = ranksum(datamat{1},datamat{2});
+[p,~] = signrank(datamat{1},datamat{2});
 
 if p<0.05
     text(1.4, maxline+0.05, ['* p =', num2str(p)])
@@ -2432,7 +2590,7 @@ end
 %%% Figure 20: Move Spine Frequency
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-figure; hold on; 
+figure; subplot(2,2,1); hold on; 
 datamat = [{cell2mat(ClusteredMoveSpineFrequency')}, {cell2mat(ClusteredNewSpineFrequency')}, {cell2mat(OtherSpineFrequencyOnDendswithClusters')}, {cell2mat(OtherSpineFrequencyOnDendswithoutClusters')},];
 
 bar(1:length(datamat), cell2mat(cellfun(@nanmedian, datamat, 'uni', false)), 'FaceColor', lgreen); hold on;
@@ -2449,15 +2607,76 @@ ylabel('Event Frequency (/min)')
 title('Frequency of Clusters vs. Other Spines')
 
 maxline = max([nanmax(datamat{1}), nanmax(datamat{2})]);
-plot(1:2, (maxline+0.01)*ones(1,2), 'k', 'Linewidth', 2)
+plot(1:3, (maxline+0.01)*ones(1,3), 'k', 'Linewidth', 2)
 
-[p,~] = ranksum(datamat{1},datamat{2});
+[p,~] = ranksum(datamat{1},datamat{3});
 
 if p<0.05
     text(1.4, maxline+0.05, ['* p =', num2str(p)])
 else
     text(1.4, maxline+0.05, ['ns, p = ', num2str(p)])
 end
+
+subplot(2,2,2); hold on;
+
+datamat = [{cell2mat(ClusteredMoveSpineDeltaFrequency')}, {cell2mat(OtherSpineDeltaFrequencyOnDendswithClusters')}, {cell2mat(OtherSpineDeltaFrequencyOnDendswithoutClusters')},];
+bar(1:length(datamat), cell2mat(cellfun(@nanmedian, datamat, 'uni', false)), 'FaceColor', lgreen); hold on;
+
+for i = 1:length(datamat)
+    plot(linspace(i-0.25,i+0.25,length(datamat{i})), datamat{i}, '.k', 'Markersize', 14)
+    Y = bootci(bootstrpnum, {@median, datamat{i}(~isnan(datamat{i}))}, 'alpha', 0.05);
+    line([i,i], [Y(1), Y(2)], 'linewidth', 0.5, 'color', 'r');
+end
+set(gca, 'XTick', [1:length(datamat)])
+set(gca, 'XTickLabel', {'Clust. Mov', 'Other on Clust Dends', 'Other'})
+xtickangle(gca, 45)
+ylabel('Event Frequency (/min)')
+title('Delta Frequency of Clusters vs. Other Spines')
+
+subplot(2,2,3)
+
+datamat = [{cell2mat(ClusteredMoveSpineAmplitude)}, {cell2mat(ClusteredNewSpineAmplitude)}, {cell2mat(OtherSpineAmplitudeOnDendswithClusters)}, {cell2mat(OtherSpineAmplitudeOnDendswithoutClusters)},];
+
+bar(1:length(datamat), cell2mat(cellfun(@nanmedian, datamat, 'uni', false)), 'FaceColor', lgreen); hold on;
+
+for i = 1:length(datamat)
+    plot(linspace(i-0.25,i+0.25,length(datamat{i})), datamat{i}, '.k', 'Markersize', 14)
+    Y = bootci(bootstrpnum, {@median, datamat{i}(~isnan(datamat{i}))}, 'alpha', 0.05);
+    line([i,i], [Y(1), Y(2)], 'linewidth', 0.5, 'color', 'r');
+end
+set(gca, 'XTick', [1:length(datamat)])
+set(gca, 'XTickLabel', {'Clust. Mov', 'Clust. New', 'Other on Clust Dends', 'Other'})
+xtickangle(gca, 45)
+ylabel('Event Amplitude')
+title('Amplitude of Clusters vs. Other Spines')
+
+maxline = max([nanmax(datamat{1}), nanmax(datamat{2})]);
+plot(1:3, (maxline+0.01)*ones(1,3), 'k', 'Linewidth', 2)
+
+[p,~] = ranksum(datamat{1},datamat{3});
+
+if p<0.05
+    text(1.4, maxline+0.05, ['* p =', num2str(p)])
+else
+    text(1.4, maxline+0.05, ['ns, p = ', num2str(p)])
+end
+
+subplot(2,2,4)
+
+datamat = [{cell2mat(ClusteredMoveSpineDeltaAmplitude)}, {cell2mat(OtherSpineDeltaAmplitudeOnDendswithClusters)}, {cell2mat(OtherSpineDeltaAmplitudeOnDendswithoutClusters)},];
+bar(1:length(datamat), cell2mat(cellfun(@nanmedian, datamat, 'uni', false)), 'FaceColor', lgreen); hold on;
+
+for i = 1:length(datamat)
+    plot(linspace(i-0.25,i+0.25,length(datamat{i})), datamat{i}, '.k', 'Markersize', 14)
+    Y = bootci(bootstrpnum, {@median, datamat{i}(~isnan(datamat{i}))}, 'alpha', 0.05);
+    line([i,i], [Y(1), Y(2)], 'linewidth', 0.5, 'color', 'r');
+end
+set(gca, 'XTick', [1:length(datamat)])
+set(gca, 'XTickLabel', {'Clust. Mov', 'Other on Clust Dends', 'Other'})
+xtickangle(gca, 45)
+ylabel('Event Amplitude')
+title('Delta Amplitude of Clusters vs. Other Spines')
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Figure 22: Fraction of Dendrites showing both types of spine dynamics
@@ -2466,7 +2685,7 @@ end
 FractionofDendswithBothDynamics = sum(cell2mat(DendsWithBothDynamics))/sum(NumberofImagedDendrites);
 FractionofDendswithBothClustDynamics = sum(cell2mat(DendsWithBothClustDynamics))/sum(NumberofImagedDendrites);
 
-NewSpinesOrganizedByDendritesImaged = cellfun(@(x) horzcat(x{:}), NewSpinesbyDendrite, 'uni', false);   %%% "NewSpinesbyDendrite" organizes by animal, field, then dendrite; this removes the field component and concatenates all dendrites imaged by animal
+NewSpinesOrganizedByDendritesImaged = cellfun(@(x) horzcat(x{:}), NewSpinesbyDendrite, 'uni', false);   %%% "NewSpinesbyDendrite" organizes by animal, >mindFoFtoconsiderCoActive, then dendrite; this removes the field component and concatenates all dendrites imaged by animal
 fullnewspinelist = cell2mat(cellfun(@(x) cell2mat(x(:)), NewSpinesOrganizedByDendritesImaged, 'uni', false)');
 ClusteredNewSpinesOrganizedByDendritesImaged = cellfun(@(x) horzcat(x{:}), ClusteredNewSpinesbyDendrite, 'uni', false);
 fullclusterednewspinelist = cell2mat(cellfun(@(x) cell2mat(x(:)), ClusteredNewSpinesOrganizedByDendritesImaged, 'uni', false)');

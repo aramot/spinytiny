@@ -739,7 +739,7 @@ if length(listpos) == 1
             eval(['currentsession = ', Act_dir(i).name(1:end-4), '.Session;'])
             Activity{currentsession} = Act_dir(i).name(1:end-4);
             cd('E:\Behavioral Data\All Summarized Behavior Files list');
-            if currentsession>16
+            if currentsession>14
                 continue
             end
             for j = 1:length(Beh_folder)
