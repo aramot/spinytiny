@@ -2,6 +2,8 @@ function warpmatrix = CompareImagePair(~,~)
 
 global gui_CaImageViewer
 
+gui_CaImageViewer.BeingDisplayed = 'SessionComparison';
+
 selectedaxes = findobj(gcf, 'XColor', [0 1 0]);     %%% Finds the selected axes based on the color set to 'XColor' in function HighLightAxis)
 
 figtitle = regexp(get(gcf, 'Name'), '[A-Z]{2,3}0+\d+', 'match');
@@ -33,6 +35,8 @@ else
     fieldnumber = str2num(possiblefieldnumbers);
 end
 
+gui_CaImageViewer.NewSpineAnalysisInfo.CurrentImagingField = fieldnumber;
+
 [~, ind] = sortrows(date); %% Sort images according to date
 im = im(ind);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -43,7 +47,9 @@ imageserieslength = length(im);
 %%% set the slider value to 2 so that they are scroll-able
 set(gui_CaImageViewer.figure.handles.ImageSlider_Slider, 'Min', 1);
 set(gui_CaImageViewer.figure.handles.ImageSlider_Slider, 'Max', imageserieslength);
-set(gui_CaImageViewer.figure.handles.ImageSlider_Slider, 'SliderStep', [1/(imageserieslength-1) imageserieslength/(imageserieslength-1)]);  %%% The Slider Step values indicate the minor and major transitions, which should be represented by (Desired Step)/(Max Step-Min Step)
+if imageserieslength>1
+    set(gui_CaImageViewer.figure.handles.ImageSlider_Slider, 'SliderStep', [1/(imageserieslength-1) imageserieslength/(imageserieslength-1)]);  %%% The Slider Step values indicate the minor and major transitions, which should be represented by (Desired Step)/(Max Step-Min Step)
+end
 set(gui_CaImageViewer.figure.handles.ImageSlider_Slider, 'Value', 1);
 
 set(gui_CaImageViewer.figure.handles.Frame_EditableText, 'String', '1');
@@ -55,11 +61,36 @@ warpmatrix = cell(1,length(im));
 shiftedimage = cell(1,length(im));
 %%%%%%%%%%%%%%%%%%%%%%%
 
+deconvchoice = get(findobj('Tag', 'Deconvolve_CheckBox'), 'Value');
+    if length(deconvchoice) > 1
+        disp('Multiple Muti-Session figures are open! Close all but most recent to ensure appropriate option selection!')
+        deconvchoice = deconvchoice{1};
+    end
+    
+if deconvchoice
+    psf_im = double(imread('C:\Users\Komiyama\Documents\GitHub\spinytiny\BScope1_PSF.tif'));
+    centeredimage = deconvblind(centeredimage, psf_im, 20);
+end
+
 alignchoice = get(findobj('Tag', 'Alignment_CheckBox'), 'Value');
+    if length(alignchoice) > 1
+        disp('Multiple Muti-Session figures are open! Close all but most recent to ensure appropriate option selection!')
+        alignchoice = alignchoice{1};
+    end
+refheight = size(centeredimage,1);
 
 if alignchoice 
     for al = 2:length(im)
         mobileimage = im{al};        %%% When moving ROIs, you usually move session 1 ROIs to match the position of session 2, so for this purpose it usually makes sense for the mobile image to be from session 1 
+        if deconvchoice
+            mobileimage = deconvblind(mobileimage,psf_im, 20);
+        end
+        imheight = size(mobileimage,1);
+        imwidth = size(mobileimage,2);
+        if imheight~=refheight
+            heightdiff = abs(refheight-imheight);
+            mobileimage = [zeros(heightdiff/2,imwidth); mobileimage; zeros(heightdiff/2,imwidth)];
+        end
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %[RESULTS, WARP, WARPEDiMAGE] = ECC(IMAGE, TEMPLATE, LEVELS, NOI, TRANSFORM, DELTA_P_INIT)
         levels = 5 ;
@@ -67,7 +98,7 @@ if alignchoice
         delta_p_init = zeros(2,3); delta_p_init(1,1) = 1; delta_p_init(2,2) = 1;
     %     [~, ~, shiftedimage] = ecc(mobileimage, centeredimage,levels,iterations, 'affine', delta_p_init);
         [~, ~, shiftedimage{al}] = ecc(mobileimage, centeredimage,levels,iterations, 'affine');
-        %%% Calculate inverse warp matrix to match the opposite direction for
+        %%% Calculate inverse warp matrix to match the *opposite* direction for
         %%% shifting ROIs
         ROIShift_centeredimage = mobileimage;
         ROIShift_mobileimage = centeredimage;
@@ -102,42 +133,45 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Figure 2: Images differences pre- and post- correction %%%%%%%%%%%%%%%%
 
-figure('Name', 'Image Difference Pre- and Post-Correction','Position', [336,255,1217,522], 'NumberTitle', 'off');  
-im_ax{ax_count} = axes('Units', 'Normalized','Position', [0.05 0.05 imwidth 0.9], 'XTick', [], 'YTick', []); 
-imshow(im2double(mobileimage)/max(im2double(mobileimage(:)))-im2double(centeredimage)/max(im2double(centeredimage(:))),[]); 
-title('Image difference pre-correction', 'Fontsize', 12)
-for al = 2:length(im)
-    x_pos = 0.05+((al-1)*0.05)+((al-1)*imwidth);
-    im_ax{ax_count} = axes('Units', 'Normalized','Position', [x_pos 0.05 imwidth 0.9], 'XTick', [], 'YTick', []); 
-    ax_count = ax_count+1;
-    imshow(im2double(shiftedimage{al})/max(im2double(shiftedimage{al}(:)))-im2double(centeredimage)/max(im2double(centeredimage(:))),[]);
-    title('Image difference post-correction', 'Fontsize', 12)
+if imageserieslength>1
+    figure('Name', 'Image Difference Pre- and Post-Correction','Position', [336,255,1217,522], 'NumberTitle', 'off');  
+    im_ax{ax_count} = axes('Units', 'Normalized','Position', [0.05 0.05 imwidth 0.9], 'XTick', [], 'YTick', []); 
+    imshow(im2double(mobileimage)/max(im2double(mobileimage(:)))-im2double(centeredimage)/max(im2double(centeredimage(:))),[]); 
+    title('Image difference pre-correction', 'Fontsize', 12)
+    for al = 2:length(im)
+        x_pos = 0.05+((al-1)*0.05)+((al-1)*imwidth);
+        im_ax{ax_count} = axes('Units', 'Normalized','Position', [x_pos 0.05 imwidth 0.9], 'XTick', [], 'YTick', []); 
+        ax_count = ax_count+1;
+        imshow(im2double(shiftedimage{al})/max(im2double(shiftedimage{al}(:)))-im2double(centeredimage)/max(im2double(centeredimage(:))),[]);
+        title('Image difference post-correction', 'Fontsize', 12)
+    end
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Figure 3: Color-coded alignment (RGB image corresponding to channels
-
-OverlapFig = figure('Name', 'RGB Overlap','Position', [336,255,1217,522], 'NumberTitle', 'off');  
-normalized_centeredimage = im2double(centeredimage)/max(im2double(centeredimage(:)));
-centeredimage_RGB = zeros(size(centeredimage,1),size(centeredimage,1), 3);
-centeredimage_RGB(1:end,1:end,1) = normalized_centeredimage;
-RGBim = centeredimage_RGB;
-for al = 2:length(im)
-    normalized_shiftedimage = im2double(shiftedimage{al})/max(im2double(shiftedimage{al}(:)));
-    shiftedimage_RGB = zeros(size(shiftedimage{al},1),size(shiftedimage{al},1), 3);
-    shiftedimage_RGB(1:end,1:end,al) = normalized_shiftedimage;
-    RGBim = RGBim+shiftedimage_RGB;
+if imageserieslength>1
+    OverlapFig = figure('Name', 'RGB Overlap','Position', [336,255,1217,522], 'NumberTitle', 'off');  
+    normalized_centeredimage = im2double(centeredimage)/max(im2double(centeredimage(:)));
+    centeredimage_RGB = zeros(size(centeredimage,1),size(centeredimage,1), 3);
+    centeredimage_RGB(1:end,1:end,1) = normalized_centeredimage;
+    RGBim = centeredimage_RGB;
+    for al = 2:length(im)
+        normalized_shiftedimage = im2double(shiftedimage{al})/max(im2double(shiftedimage{al}(:)));
+        shiftedimage_RGB = zeros(size(shiftedimage{al},1),size(shiftedimage{al},1), 3);
+        shiftedimage_RGB(1:end,1:end,al) = normalized_shiftedimage;
+        RGBim = RGBim+shiftedimage_RGB;
+    end
+    im_ax{ax_count} = axes('Units', 'Normalized','XTick', [], 'YTick', []);
+    imshow(RGBim)
+    title('Color-coded alignment', 'Fontsize', 12)
+    linkaxes([im_ax{:}, gui_CaImageViewer.figure.handles.GreenGraph], 'xy')
+    if length(im)==2
+        OverlapFig.UserData.CAxis = [0 0 0; 1 1 0.001];
+    elseif length(im)==3
+        OverlapFig.UserData.CAxis = [0 0 0; 1 1 1];
+    end
+    OverlapFig.UserData.OriginalImage = RGBim;
 end
-im_ax{ax_count} = axes('Units', 'Normalized','XTick', [], 'YTick', []);
-imshow(RGBim)
-title('Color-coded alignment', 'Fontsize', 12)
-linkaxes([im_ax{:}, gui_CaImageViewer.figure.handles.GreenGraph], 'xy')
-if length(im)==2
-    OverlapFig.UserData.CAxis = [0 0 0; 1 1 0.001];
-elseif length(im)==3
-    OverlapFig.UserData.CAxis = [0 0 0; 1 1 1];
-end
-OverlapFig.UserData.OriginalImage = RGBim;
 
 placeimage = cell(1,length(im));
 placeimage{1} = centeredimage;

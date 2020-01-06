@@ -3,9 +3,9 @@ function TimecourseSummary(varargin)
 h1 = waitbar(0, 'Initializing...');
 
 sensor = inputdlg('Enter Sensor', '', 1,{'GCaMP'});
-if strcmpi(sensor, 'GluSNFR')
-    ImagingFrequency = 58.3;
-elseif strcmpi(sensor, 'GCaMP')
+if contains(sensor, 'GluSNFR')
+    ImagingFrequency = 58.30;
+elseif contains(sensor, 'GCaMP')
     ImagingFrequency = 30.49;
 end
 
@@ -22,7 +22,7 @@ All_TotalActivity = [];
 
 for i = 1:ns
     waitbar(i/ns,h1, ['Animal ', num2str(i), '/', num2str(ns)])
-    files = fastdir('E:\ActivitySummary', varargin{i}, {'Poly', 'ZSeries'});
+    files = fastdir('E:\ActivitySummary', varargin{i}, {'Poly', 'ZSeries', 'Axon'});
     for j = 1:length(files)
         load(files{j})
         eval(['Session = ', files{j}(1:end-4), '.Session;'])
@@ -41,11 +41,25 @@ for i = 1:ns
         eval(['TA = sum(', files{j}(1:end-4), '.SynapseOnlyBinarized.*', files{j}(1:end-4), '.Processed_dFoF,2)./ImagingFrequency;'])
         TotalActivity(i,Session) = nanmedian(TA);
         All_TotalActivity = [All_TotalActivity; TA];
+        eval(['AA = ', files{j}(1:end-4), '.Processed_dFoF;'])
+        invalidrows = find(~any(AA(:,:)~=0,2));
+        AA(invalidrows,:) = nan;
+        if find(any(AA(:,:)>10))
+            k = 1;
+        end
+        AllActivity{i}{j} = AA;
         clear(files{j}(1:end-4));
     end
 end
 
 delete(h1)
+
+AllActConcat = [];
+for i = 1:length(AllActivity)
+    for j = 1:length(AllActivity{i})
+        AllActConcat = [AllActConcat; AllActivity{i}{j}(:)];
+    end
+end
 
 %%%%%%%%%%%%%%%%%%%%%%
 %%Color Information%%%
@@ -122,16 +136,22 @@ xlim([0 15])
 xlabel('Session')
 ylabel('dF/F')
 subcount = subcount+1;
-
+%==========================================================================
 ActivityDataBasics.AnimalList = varargin;
 ActivityDataBasics.Frequency = Frequency;
+ActivityDataBasics.AllFrequencyValues = AllFreq;
 ActivityDataBasics.Amplitude = Amp;
+ActivityDataBasics.PercentTimeActive = PercentTimeActive;
+ActivityDataBasics.AllPercentTimeActiveValues = All_PercentTimeActive;
+ActivityDataBasics.TotalIntegratedActivity = TotalActivity;
+ActivityDataBasics.AllTotalIntegratedActivityValues = All_TotalActivity;
 ActivityDataBasics.DendriticFrequency = Dendritic_Freq;
-ActivityDataBasics.DendriticAmplitude = Dendritic_Amp; 
+ActivityDataBasics.DendriticAmplitude = Dendritic_Amp;
+ActivityDataBasics.AllActivityValues = AllActConcat;
 date_string = datestr(datetime('today'));
 
 Notes = inputdlg('Any notes for this analysis?', '', 1,{'Analyzed using...'});
 
 ActivityDataBasics.Notes = Notes{1};
 
-save([sensor{1}, ' ActivityDataBasics ', date_string], 'ActivityDataBasics')
+save([sensor{1}, ' ActivityDataBasics ', date_string], 'ActivityDataBasics', '-v7.3')

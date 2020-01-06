@@ -1088,8 +1088,13 @@ for i = 1:length(varargin{firstdatainput})
 
         pixpermicron = 0.5;
         if isfield(currentfile, 'ZoomValue')
+            if ischar(currentfile.ZoomValue)
+                zoom = str2num(currentfile.ZoomValue);
+            else
+                zoom = currentfile.ZoomValue;
+            end
             if currentfile.ZoomValue ~= 0
-                pixpermicron = (pixpermicron*currentfile.ZoomValue);
+                pixpermicron = (pixpermicron*zoom);
             end
         end
 
@@ -1917,41 +1922,59 @@ for i = 1:length(varargin{firstdatainput})
 
 
         %%% Amplitude
-        AmpList = cellfun(@(x) nanmedian(x(x<100)), currentfile.AllSpineAmpData, 'Uni', false);
-        clusterAmp = nanmedian(cat(1,AmpList{cluster_ind-Spine1_address}));
-        nonclusteredAmp = nanmedian(cat(1,AmpList{nonclustered-Spine1_address}));
-        cueAmp = nanmedian(cat(1,AmpList{cue_cluster_ind-Spine1_address}));
-        movAmp = nanmedian(cat(1,AmpList{mov_cluster_ind-Spine1_address}));
-        movduringcueAmp = nanmedian(cat(1,AmpList{movduringcue_cluster_ind-Spine1_address}));
-        presucAmp = nanmedian(cat(1,AmpList{presuc_cluster_ind-Spine1_address}));
-        sucAmp = nanmedian(cat(1,AmpList{suc_cluster_ind-Spine1_address}));
-        rewAmp = nanmedian(cat(1,AmpList{rew_cluster_ind-Spine1_address}));
-        Caus_clusterAmp = nanmedian(cat(1,AmpList{Caus_cluster_ind-Spine1_address}));
-        Caus_nonclusteredAmp = nanmedian(cat(1,AmpList{causal_nonclustered-Spine1_address}));
-        Caus_cueAmp = nanmedian(cat(1,AmpList{Caus_cue_cluster_ind-Spine1_address}));
-        Caus_movAmp = nanmedian(cat(1,AmpList{Caus_mov_cluster_ind-Spine1_address}));
-        Caus_movduringcueAmp = nanmedian(cat(1,AmpList{Caus_movduringcue_cluster_ind-Spine1_address}));
-        Caus_presucAmp = nanmedian(cat(1,AmpList{Caus_presuc_cluster_ind-Spine1_address}));
-        Caus_sucAmp = nanmedian(cat(1,AmpList{Caus_suc_cluster_ind-Spine1_address}));
-        Caus_rewAmp = nanmedian(cat(1,AmpList{Caus_rew_cluster_ind-Spine1_address}));
+        if isfield(currentfile, 'AllSpineAmpData')
+            AmpList = cellfun(@(x) nanmedian(x(x<100)), currentfile.AllSpineAmpData, 'Uni', false);
+            clusterAmp = nanmedian(cat(1,AmpList{cluster_ind-Spine1_address}));
+            nonclusteredAmp = nanmedian(cat(1,AmpList{nonclustered-Spine1_address}));
+            cueAmp = nanmedian(cat(1,AmpList{cue_cluster_ind-Spine1_address}));
+            movAmp = nanmedian(cat(1,AmpList{mov_cluster_ind-Spine1_address}));
+            movduringcueAmp = nanmedian(cat(1,AmpList{movduringcue_cluster_ind-Spine1_address}));
+            presucAmp = nanmedian(cat(1,AmpList{presuc_cluster_ind-Spine1_address}));
+            sucAmp = nanmedian(cat(1,AmpList{suc_cluster_ind-Spine1_address}));
+            rewAmp = nanmedian(cat(1,AmpList{rew_cluster_ind-Spine1_address}));
+            Caus_clusterAmp = nanmedian(cat(1,AmpList{Caus_cluster_ind-Spine1_address}));
+            Caus_nonclusteredAmp = nanmedian(cat(1,AmpList{causal_nonclustered-Spine1_address}));
+            Caus_cueAmp = nanmedian(cat(1,AmpList{Caus_cue_cluster_ind-Spine1_address}));
+            Caus_movAmp = nanmedian(cat(1,AmpList{Caus_mov_cluster_ind-Spine1_address}));
+            Caus_movduringcueAmp = nanmedian(cat(1,AmpList{Caus_movduringcue_cluster_ind-Spine1_address}));
+            Caus_presucAmp = nanmedian(cat(1,AmpList{Caus_presuc_cluster_ind-Spine1_address}));
+            Caus_sucAmp = nanmedian(cat(1,AmpList{Caus_suc_cluster_ind-Spine1_address}));
+            Caus_rewAmp = nanmedian(cat(1,AmpList{Caus_rew_cluster_ind-Spine1_address}));
 
-            ClustAmp(1,session) = nanmean(clusterAmp);
-                NonClusteredAmp(1,session) = nanmean(nonclusteredAmp);
-            Caus_ClustAmp(1,session) = nanmean(Caus_clusterAmp);
-                Caus_NonClusteredAmp(1,session) = nanmean(Caus_nonclusteredAmp);
-            CueAmp(1,session) = nanmean(cueAmp);
-            Caus_CueAmp(1,session) = nanmean(Caus_cueAmp);
-            MovAmp(1,session) = nanmean(movAmp);
-            Caus_MovAmp(1,session) = nanmean(Caus_movAmp);
-            MovDuringCueAmp(1,session) = nanmean(movduringcueAmp);
-            Caus_MovDuringCueAmp(1,session) = nanmean(Caus_movduringcueAmp);
-            PreSucAmp(1,session) = nanmean(presucAmp);
-            Caus_PreSucAmp(1,session) = nanmean(Caus_presucAmp);
-            SucAmp(1,session) = nanmean(sucAmp);
-            Caus_SucAmp(1,session) = nanmean(Caus_sucAmp);
-            RewAmp(1,session) = nanmean(rewAmp);
-            Caus_RewAmp(1,session) = nanmean(Caus_rewAmp);
-
+                ClustAmp(1,session) = nanmean(clusterAmp);
+                    NonClusteredAmp(1,session) = nanmean(nonclusteredAmp);
+                Caus_ClustAmp(1,session) = nanmean(Caus_clusterAmp);
+                    Caus_NonClusteredAmp(1,session) = nanmean(Caus_nonclusteredAmp);
+                CueAmp(1,session) = nanmean(cueAmp);
+                Caus_CueAmp(1,session) = nanmean(Caus_cueAmp);
+                MovAmp(1,session) = nanmean(movAmp);
+                Caus_MovAmp(1,session) = nanmean(Caus_movAmp);
+                MovDuringCueAmp(1,session) = nanmean(movduringcueAmp);
+                Caus_MovDuringCueAmp(1,session) = nanmean(Caus_movduringcueAmp);
+                PreSucAmp(1,session) = nanmean(presucAmp);
+                Caus_PreSucAmp(1,session) = nanmean(Caus_presucAmp);
+                SucAmp(1,session) = nanmean(sucAmp);
+                Caus_SucAmp(1,session) = nanmean(Caus_sucAmp);
+                RewAmp(1,session) = nanmean(rewAmp);
+                Caus_RewAmp(1,session) = nanmean(Caus_rewAmp);
+        else
+                ClustAmp = [];
+                    NonClusteredAmp = [];
+                Caus_ClustAmp  = [];
+                    Caus_NonClusteredAmp  = [];
+                CueAmp  = [];
+                Caus_CueAmp  = [];
+                MovAmp  = [];
+                Caus_MovAmp  = [];
+                MovDuringCueAmp  = [];
+                Caus_MovDuringCueAmp  = [];
+                PreSucAmp  = [];
+                Caus_PreSucAmp  = [];
+                SucAmp  = [];
+                Caus_SucAmp  = [];
+                RewAmp  = [];
+                Caus_RewAmp  = [];
+        end
         %%
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
                             %%%%%%%%%%%%%%%%%
@@ -2200,17 +2223,17 @@ for i = 1:length(varargin{firstdatainput})
             end
         else
         end
-        if ~isempty(Caus_mov_cluster_ind)
-            for k = 1:numel(Caus_mov_cluster_ind)
-                Caus_movAmp(1,k) = nanmean(currentfile.AllSpineAmpData{Caus_mov_cluster_ind(k)-Spine1_address});
-                for m = 1:length(currentfile.SpineDendriteGrouping)
-                    if ~isempty(find(currentfile.SpineDendriteGrouping{m} == Caus_mov_cluster_ind(k)-Spine1_address))
-                        DendswithCausmovClusts = [DendswithCausmovClusts; m];
-                    end
-                end
-            end
-        else
-        end
+%         if ~isempty(Caus_mov_cluster_ind)
+%             for k = 1:numel(Caus_mov_cluster_ind)
+%                 Caus_movAmp(1,k) = nanmean(currentfile.AllSpineAmpData{Caus_mov_cluster_ind(k)-Spine1_address});
+%                 for m = 1:length(currentfile.SpineDendriteGrouping)
+%                     if ~isempty(find(currentfile.SpineDendriteGrouping{m} == Caus_mov_cluster_ind(k)-Spine1_address))
+%                         DendswithCausmovClusts = [DendswithCausmovClusts; m];
+%                     end
+%                 end
+%             end
+%         else
+%         end
 
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

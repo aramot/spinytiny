@@ -134,7 +134,7 @@ else
     else
     end
     gui_CaImageViewer.ROIlistener{ROInum+1} = listener(findobj(gui_CaImageViewer.ROI(ROInum+1)), 'DeletingROI', @DeleteROI);
-    addlistener(findobj(gui_CaImageViewer.ROI(ROInum+1)), 'ROIClicked', @DeclareROI)
+    addlistener(findobj(gui_CaImageViewer.ROI(ROInum+1)), 'ROIClicked', @DeclareROI);
 %     if gui_CaImageViewer.UsingSurroundBackground
 %         surroundoffset = gui_CaImageViewer.SurroundBackgroundBuffer;
 %         gui_CaImageViewer.BackgroundROI(ROInum+1) = rectangle('Position', [adjustedpos(1)-surroundoffset/2, adjustedpos(2)-surroundoffset/2, adjustedpos(3)+surroundoffset, adjustedpos(4)+surroundoffset], 'EdgeColor', 'w', 'Curvature', [1 1], 'Tag', ['BackgroundROI', num2str(ROInum)], 'Linewidth', 0.75);

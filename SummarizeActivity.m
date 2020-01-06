@@ -15,7 +15,7 @@ for i = 1:length(varargin)
     SpikeTimedEvents(1,session) = mean(varargin{i}.SpikeTimedEvents);
     varargin{i}.Dendritic_Frequency = varargin{i}.Dendritic_Frequency(varargin{i}.Dendritic_Frequency~=0)
     Dendritic_Freq(1,session) = mean(varargin{i}.Dendritic_Frequency);
-    varargin{i}.Dendritic_Amp = varargin{i}.Dendritic_Amp(varargin{i}.Dendritic_Amp~=0)
+    varargin{i}.Dendritic_Amp = varargin{i}.Dendritic_Amp(varargin{i}.Dendritic_Amp~=0);
     Dendritic_Amp(1,session) = mean(varargin{i}.Dendritic_Amp);
 end
 

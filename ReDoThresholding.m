@@ -1,5 +1,6 @@
 function ReDoThresholding(varargin)
 
+global gui_KomiyamaLabHub
 
 if isempty(varargin)
     foldertouse = 'E:\ActivitySummary';
@@ -21,8 +22,9 @@ if isempty(varargin)
         end
     end
 else
-    foldertouse = 'E:\ActivitySummary';
+    foldertouse = gui_KomiyamaLabHub.DefaultActivityFolder;
     cd(foldertouse)
+    tic
     for i = 1:length(varargin)
         files = fastdir(cd, varargin{i}, {'ZSeries', 'Poly'});
         for f = 1:length(files)
@@ -35,6 +37,7 @@ else
             clear(fname)
         end
     end
+    toc
 end
         
         

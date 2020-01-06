@@ -543,11 +543,16 @@ elseif strcmpi(CommandSource, 'Adjuster')
     end
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     OverlapFig = findobj('Type', 'figure', 'Name', 'RGB Overlap');
+    if length(OverlapFig)>1
+        OverlapFig = OverlapFig(1);
+    end
     if ImageNum<4
         if ~isempty(OverlapFig)
             AdjLow = GreenLower;
             AdjHigh = GreenUpper;
             OverlapAx = get(OverlapFig, 'Children');
+            
+            
             axes(OverlapAx)
             OverlapAxProp = get(OverlapAx);
             OverlapImage = OverlapFig.UserData.OriginalImage;

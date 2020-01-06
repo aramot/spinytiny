@@ -220,6 +220,7 @@ end
 gui_CaImageViewer.SelectedStopFrame = [];
 gui_CaImageViewer.IgnoreFrames = [];
 
+gui_CaImageViewer.BeingDisplayed = 'TimeSeries';
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%% Get File Information %%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -245,9 +246,12 @@ separation_indices = [0,seps];
 file_subdivs = mat2cell(pathname, 1, diff(separation_indices));
 
 
-
 experiment = regexp(gui_CaImageViewer.filename, '[A-Z]{2,3}\d+[_]\d+', 'match');
-experiment = experiment{1};
+if isempty(experiment)
+    experiment = gui_CaImageViewer.filename(1:end-4);
+else
+    experiment = experiment{1};
+end
 animal = experiment(1:5);
 date = regexp(pathname, '\d{6}', 'match'); date = date{1};
 date_address = find(cellfun(@any, regexp(file_subdivs, date)));
@@ -262,15 +266,20 @@ parent_folder = gui_CaImageViewer.save_directory(1:terminus);
 sample_image_file = fastdir(date_spec_folder, '1_summary.mat');
 try
     load([date_spec_folder, sample_image_file{1}], 'info_first');
+    zoomvalueline = regexp(info_first.Software, 'SI.hRoiManager.scanZoomFactor = (\d+)(\.\d*)*', 'match'); %%% Find a digit after the scan zoom factor, allow for decimals [ (\.\d*)* = zero or more instances of a decimal followed by zero or more digits]
+    zoomvalue = regexp(zoomvalueline{1}, '(\d+)(\.\d*)*', 'match'); zoomvalue = zoomvalue{1};
 catch
     cd(pathname)
     [rootfile, rootpath] = uigetfile('.mat', 'Select first image summary file in directory');
-    load([rootpath, rootfile], 'info_first')
+    try
+        load([rootpath, rootfile], 'info_first')
+        zoomvalueline = regexp(info_first.Software, 'SI.hRoiManager.scanZoomFactor = (\d+)(\.\d*)*', 'match');
+        zoomvalue = regexp(zoomvalueline{1}, '(\d+)(\.\d*)', 'match'); zoomvalue = zoomvalue{1};
+    catch
+        manualzoominput = inputdlg('No raw data files; enter zoom', 'Zoom value', 1, {'12.1'});
+        zoomvalue = str2num(manualzoominput{1});
+    end
 end
-
-zoomvalueline = regexp(info_first.Software, 'SI.hRoiManager.scanZoomFactor = \d+.\d+', 'match');
-zoomvalue = regexp(zoomvalueline{1}, '\d+.\d+', 'match'); zoomvalue = zoomvalue{1};
-
 set(gui_CaImageViewer.figure.handles.Zoom_EditableText, 'String', zoomvalue);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -653,6 +662,10 @@ function ClearROIS_PushButton_Callback(hObject, eventdata, handles)
 
 ClearROIs('Query')
 
+set(handles.EditDendrites_ToggleButton, 'Value', 0)
+set(handles.EditSpines_ToggleButton, 'Value', 0)
+set(handles.ShowLabels_ToggleButton, 'Value', 0)
+
 
 % --- Executes on button press in DrawOther_ToggleButton.
 function DrawOther_ToggleButton_Callback(hObject, eventdata, handles)
@@ -970,6 +983,7 @@ if ~found || ForceManual
             return
         end
         cd(roipath)
+        gui_CaImageViewer.save_directory = roipath;
     elseif strcmpi(choice, 'Auto')
         count = 1;
         roifile = [];
@@ -1485,8 +1499,8 @@ if gui_CaImageViewer.NewSpineAnalysis
         %%%%% Identify imaging field number
         currentimagingfield = gui_CaImageViewer.NewSpineAnalysisInfo.CurrentImagingField;
         if isempty(currentimagingfield)
-            currentimagingfield = inputdlg('What field number is this?', 'Designate field number', 1, '1');
-            currentimagingfield = str2num(currentimagingfield);
+            currentimagingfield = inputdlg('What field number is this?', 'Designate field number', 1, {'1'});
+            currentimagingfield = str2num(currentimagingfield{1});
         end
         %%%%% Identify current session of this field
         currentsession = gui_CaImageViewer.NewSpineAnalysisInfo.CurrentSession;
@@ -1779,6 +1793,8 @@ user_folder = regexp(directory, ['People', filesep, '\[A-Z]\w*'], 'match'); fold
 switch user
     case 'Assaf'
         dwnsampfoldername = '\motion_corrected_tiffs\GFP\summed';
+    case 'Pantong'
+        dwnsampfoldername = '\Snfr\summed';
     otherwise
         dwnsampfoldername = '\summed';
 end
@@ -1854,6 +1870,7 @@ uicontrol('Style', 'pushbutton', 'String', 'Tabulate spine lifetimes of selected
 uicontrol('Style', 'pushbutton', 'String', 'Deselect All Axes', 'Fontsize', 12, 'Units', 'Normalized', 'Position', [((6)*xint+10)/figpos(3), 0.05, 250/figpos(3), 0.05], 'Callback', @DeselectAxes)
 uicontrol('Style', 'pushbutton', 'String', 'Compare Image Pair', 'Fontsize', 12, 'Units', 'Normalized', 'Position', [(10)/figpos(3), 0.05, 250/figpos(3), 0.05], 'Callback', @CompareImagePair)
 uicontrol('Style', 'checkbox', 'String', 'Try image alignment?', 'Tag', 'Alignment_CheckBox', 'Units', 'Normalized', 'Position', [((2-1)*xint+10)/figpos(3), 0.05, 250/figpos(3), 0.05], 'BackgroundColor', get(gcf, 'Color'))
+uicontrol('Style', 'checkbox', 'String', 'Deconvolve images?', 'Tag', 'Deconvolve_CheckBox', 'Units', 'Normalized', 'Position', [((2-1)*xint+10)/figpos(3)+(250/figpos(3)), 0.05, 250/figpos(3), 0.05], 'BackgroundColor', get(gcf, 'Color'))
 
 delete(h1)
 
@@ -2141,7 +2158,7 @@ function ShiftROIsBetweenSessions_DropDown_Callback(hObject, eventdata, handles)
 % handles    structure with handles and user data (see GUIDATA)
 
 %%% To use this code, you need a 2x3 matrix, the "warp matrix", that is
-%%% dreived from motion correction between the two images. If you run
+%%% derived from motion correction between the two images. If you run
 %%% the "Compare Image Pair" code from the "Multiple Sessions Analysis"
 %%% window, or otherwise run the function ecc on two images, you can get
 %%% this matrix as an output. The "directionality" of the transformationF
@@ -2262,8 +2279,6 @@ if isfield(gui_CaImageViewer, 'ROIother')
         end
     end
 end
-
-set(gui_CaImageViewer.figure.handles.EditSpines_ToggleButton, 'Value', 1);
 
 
 
@@ -2437,6 +2452,7 @@ editopt = get(handles.EditSpines_ToggleButton, 'Value');
 ROIs = findobj(gui_CaImageViewer.figure.handles.GreenGraph, 'Type', 'images.roi.ellipse', '-and', '-not', {'-regexp', 'Tag', 'Dendrite'});
 
 if editopt
+    TurnOffTools
     for i = 1:length(ROIs)
         ROIs(i).InteractionsAllowed = 'all';
     end
@@ -2462,6 +2478,7 @@ editopt = get(handles.EditDendrites_ToggleButton, 'Value');
 ROIs = findobj(gui_CaImageViewer.figure.handles.GreenGraph, 'Type', 'images.roi.ellipse', '-and', {'-regexp', 'Tag', 'Dendrite'});
 
 if editopt
+    TurnOffTools
     for i = 1:length(ROIs)
         ROIs(i).InteractionsAllowed = 'all';
     end

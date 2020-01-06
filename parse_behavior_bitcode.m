@@ -84,7 +84,7 @@ else
         disp(['TRIAL NUMBER WARNING: Nonconsecutive trials']);
         hf=gcf;
         d=diff(rising_bitcode);
-        figure;
+        figure('Name', 'Trial Warning');
         subplot(2,1,1);hist(d(d<1000),1000);
         subplot(2,1,2);plot([behavior_trials.behavior_trial_num],'.');
         title(['Bitcode from session ', num2str(Session)])

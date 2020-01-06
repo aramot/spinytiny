@@ -97,10 +97,10 @@ else
         filename = regexp(File.Filename, '[A-Z]{2,3}0+\d+_\d{4,6}', 'match');
         filename = filename{1};
         session = File.Session;
-    ThirtyMinWindowinFrames = (1:30)*(ImagingFrequency*60); %%% 30 1-min demarcations in terms of imaging frames (for axis label)
+    ThirtyMinWindowinFrames = (0:0.5:30)*(ImagingFrequency*60); %%% 30 1-min demarcations in terms of imaging frames (for axis label)
     LastMinuteIdx = find(ThirtyMinWindowinFrames-length(File.Fluorescence_Measurement{SpineNo})>=0,1);
-    set(gca, 'XTick', [0,ThirtyMinWindowinFrames(1:LastMinuteIdx)])
-    MinDelimiters = 0:0.5:length(ThirtyMinWindowinFrames(1:LastMinuteIdx));
+    set(gca, 'XTick', [ThirtyMinWindowinFrames(1:LastMinuteIdx)])
+    MinDelimiters = 0:0.5:LastMinuteIdx;
     set(gca, 'XTickLabel', cellfun(@num2str, num2cell(MinDelimiters), 'uni', false))
     xlabel('Time (min)')
     title(['Comparison of traces for spine no. ', num2str(SpineNo), ' from ', filename, ' (Session ', num2str(session), ')'], 'Interpreter', 'none')
@@ -123,7 +123,7 @@ else
         case 3
             thresh_source = 'From Lower Min';
     end
-    set(gca, 'XTick', [0,ThirtyMinWindowinFrames(1:LastMinuteIdx)])
+    set(gca, 'XTick', [ThirtyMinWindowinFrames(1:LastMinuteIdx)])
     set(gca, 'XTickLabel', cellfun(@num2str, num2cell(MinDelimiters), 'uni', false))
     xlabel('Time (min)')
 

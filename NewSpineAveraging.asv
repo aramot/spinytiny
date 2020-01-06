@@ -22,7 +22,6 @@ for i = 1:length(experimentnames)
     SpineDendriteGrouping{i} = currentdata.SpineDendriteGrouping;
     AllMovementSpines{i} = currentdata.AllMovementSpines;
     NumberofEarlyMovementRelatedSpines(1,i) = currentdata.NumberofEarlyMovementRelatedSpines;
-    NumberofMidSessionMovementRelatedSpines(1,i) = currentdata.NumberofMidSessionMovementRelatedSpines;
     NumberofLateMovementRelatedSpines(1,i) = currentdata.NumberofLateMovementRelatedSpines;
     NumberofPersistentMovementRelatedSpines{i} = cell2mat(currentdata.NumberofPersistentMovementRelatedSpines);
     NumberofPersistentMovementSpinesClustered{i} = cell2mat(currentdata.NumberofPersistentMovementSpinesClustered);
@@ -571,7 +570,7 @@ title('Fraction of Persistent MRSs')
 ind = find(NumberofEarlyMovementRelatedSpines);
 
 PersistentMRSbyanimal = cell2mat(cellfun(@sum, NumberofPersistentMovementRelatedSpines, 'uni', false));
-PofA = PersistentMRSbyanimal(ind)./(NumberofEarlyMovementRelatedSpines(ind)+NumberofMidSessionMovementRelatedSpines(ind));                                                 %%% The probability of a MRS from early sessions being PERSISTENT
+PofA = PersistentMRSbyanimal(ind)./NumberofEarlyMovementRelatedSpines(ind);                                                 %%% The probability of a MRS from early sessions being PERSISTENT
 PofB = cell2mat(cellfun(@sum ,NumberofClusteredMoveSpines(ind), 'uni', false))./NumberofEarlyMovementRelatedSpines(ind);    %%% The probability of a MRS from early sessions being CLUSTERED (i.e. having a new spine form nearby)
 persistentandclustered = cell2mat(cellfun(@sum, NumberofPersistentMovementSpinesClustered, 'uni', false));
 PofAnB = persistentandclustered(ind)./NumberofEarlyMovementRelatedSpines(ind);
@@ -2198,7 +2197,7 @@ for i = 1:length(ClustMovsbyAnimal)
         [coeffs{i}, scores{i},~,~,explained{i}, ~] = pca(Data{i});
         clustcorrs = corrcoef([coeffs{i}(:,1), ClustMovsbyAnimal{i}]);
         clustcorrwithPC1{i} = nanmedian(clustcorrs(1,2:end));
-        othercorrs = corrcoef([coeffs{i}(:,1), OtherMovsbyAnimal{i}]);
+        othercorrs = corrcoef([coeffs{3}(:,1), OtherMovsbyAnimal{i}]);
         othercorrwithPC1{i} = nanmedian(othercorrs(1,2:end));
 %         PC1proj{i} = scores{i}(:,1)'*Data{i};
 %         PC2proj{i} = scores{i}(:,2)'*Data{i};
@@ -2241,7 +2240,7 @@ maxline = cellfun(@max, Y);
 statline_increment = nanmedian(datamat{1})/5;
 
 for i = [1,3]
-    [p,~] = signrank(datamat{i},datamat{i+1});
+    [p,~] = ranksum(datamat{i},datamat{i+1});
     if p<0.05
         if p < 0.001
             statsymbol = '***';
@@ -2280,7 +2279,8 @@ clustNNMFscoresbyfield = cellfun(@nanmedian, cellfun(@(x,y) x(1,1:y), NMFfieldsc
 otherNNMFscoresbyfield = cellfun(@nanmedian, cellfun(@(x,y) x(1,y+1:end), NMFfieldscores(~cellfun(@isempty, NMFfieldscores)), indbyfield(~cellfun(@isempty, NMFfieldscores)), 'uni', false));
 
 subplot(1,2,2)
-datamat = [{clustPC1scoresbyfield}, {otherPC1scoresbyfield}, {clustPC2scoresbyfield}, {otherPC2scoresbyfield}];
+figure; subplot(1,2,1)
+datamat = [{clustPC1scoresbyanimal}, {otherPC1scoresbyanimal}, {clustPC2scoresbyanimal}, {otherPC2scoresbyanimal}];
 
 bar(1:length(datamat), cellfun(@nanmedian, datamat), 'FaceColor', lblue); hold on;
 Y = cell(1,length(datamat));
@@ -2297,13 +2297,13 @@ set(gca, 'XTick', [1:length(datamat)])
 set(gca, 'XTickLabel', {'Clust PC1', 'Other PC1', 'Clust PC2', 'Other PC2'})
 xtickangle(gca, 45)
 ylabel('Correlation')
-title('Principal Component Analysis by Field')
+title('Principal Component Analysis by Animal')
 
 maxline = cellfun(@max, Y);
 statline_increment = nanmedian(datamat{1})/5;
 
 for i = [1,3]
-    [p,~] = signrank(datamat{i},datamat{i+1});
+    [p,~] = ranksum(datamat{i},datamat{i+1});
     if p<0.05
         if p < 0.001
             statsymbol = '***';
@@ -2319,6 +2319,11 @@ for i = [1,3]
         text(mean([i,(i+1)])-0.1, max(maxline(i:i+1))+0.5, 'ns')
     end
 end
+set(gca, 'XTick', [1:length(datamat)])
+set(gca, 'XTickLabel', {'With CoActive Clusters', 'Any Clust Act', 'MRS only', 'NS only','MRSDM', 'Freq matched pairs','Without'})
+xtickangle(gca, 45)
+ylabel('Correlation')
+title('Mvmts comb by animal, ave by mv pairs')
 
 %==========================================================================
 

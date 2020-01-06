@@ -2,15 +2,17 @@ function ThresholdMethodsSummary(varargin)
 
 h1 = waitbar(0, 'Initializing...');
 
+if strcmpi(getenv('computername'), 'Nathan-Lab-PC')
+    activitydir = 'E:\ActivitySummary';
+    cd(activitydir)
+end
+
 MethodsList = cell(1,length(varargin));
 
 for animal = 1:length(varargin)
     waitbar(animal/length(varargin),h1, ['Animal ', num2str(animal), '/', num2str(length(varargin))])
     experimentname = varargin{animal}; 
-    if strcmpi(getenv('computername'), 'Nathan-Lab-PC')
-        activitydir = 'E:\ActivitySummary';
-        cd(activitydir)
-    end
+
     activitydata = fastdir(activitydir, {experimentname, 'Summary'}, {'Poly', 'ZSeries'});
     for act = 1:length(activitydata)
         load(activitydata{act})

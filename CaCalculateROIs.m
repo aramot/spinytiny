@@ -102,7 +102,7 @@ for i = 1:length(D)
         timecourse_image_number = timecourse_image_number + 1;
         feat_sep = regexp(D(i).name, '_');
         for f = 1:length(feat_sep)-1
-            findacqpattern{f} = regexp(D(i).name(feat_sep(f)+1:feat_sep(f+1)-1), '[0]{2,5}\d');
+            findacqpattern{f} = regexp(D(i).name(feat_sep(f)+1:feat_sep(f+1)-1), '[0]{3,5}[0-9]*');
         end
         first_acquisition_delimiter = find(~cell2mat(cellfun(@isempty, findacqpattern, 'uni', false)),1,'first');
 %         acquisition_step = [acquisition_step; D(i).name(feat_sep(2)+1:feat_sep(3)-1)];
@@ -350,7 +350,7 @@ end
     default_upper = str2num(get(gui_CaImageViewer.figure.handles.UpperLUT_EditableText, 'String'));
     default_lower = str2num(get(gui_CaImageViewer.figure.handles.LowerLUT_EditableText, 'String'));
 
-    waitbar(3/steps, wb, 'Caclulating raw fluorescence values...');
+    waitbar(3/steps, wb, 'Calculating raw fluorescence values...');
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     %%% Calculate all ROI values %%%
@@ -388,7 +388,11 @@ end
             else
                 filepattern = [save_directory, gui_CaImageViewer.filename];
             end
-            CaImage_File_info = imfinfo(filepattern);
+            if isfile(filepattern)
+                CaImage_File_info = imfinfo(filepattern);
+            else
+            end
+            
             all_images = read_tiff(filepattern,CaImage_File_info);
 
             for k = 1:length(CaImage_File_info)
