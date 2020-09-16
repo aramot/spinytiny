@@ -1,0 +1,238 @@
+function [File,UsedTrialInfo, fault,IgnoredTrialInfo] = ProfileRewardedMovements(File, boundary_frames,session, trialnumber, rewards,cue_start, result_time, end_trial)
+
+global BehaviorParameters
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Discard any trials for which the animal is already moving 
+%%% (and record details about the nature of the movement)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+ExcludeFalseStartTrials = 1;
+
+%%% Include the period over which you're checking to exclude movements;
+%%% this will allow you to remove them in different contexts if you're just
+%%% wanting to a priori consider all movements 
+cue_alarm = cue_start-100;
+%==========================================================================
+if ExcludeFalseStartTrials
+    if any(File.lever_active(cue_alarm:cue_start))
+        trialleverforce = File.lever_force_smooth(cue_alarm:end_trial(trialnumber));
+        trialleverbin = File.lever_active(cue_alarm:end_trial(trialnumber));
+            leverbin_sep_by_movements = mat2cell(trialleverbin, diff(find(diff([Inf;trialleverbin;Inf])~=0)));
+        cuetrace = zeros(length(cue_alarm:end_trial(trialnumber)),1); cuetrace(cue_start-cue_alarm) = 1;
+            cuetrace_sep_by_movements = mat2cell(cuetrace, diff(find(diff([Inf;trialleverbin;Inf])~=0)));
+        cuealarmtrace = zeros(length(cue_alarm:end_trial(trialnumber)),1); cuealarmtrace(1:100) = 1;
+            cuealarmtrace_sep_by_movements = mat2cell(cuealarmtrace, diff(find(diff([Inf;trialleverbin;Inf])~=0)));
+        resulttrace = zeros(length(cue_alarm:end_trial(trialnumber)),1); resulttrace(result_time(trialnumber)-cue_alarm) = 1;
+            resulttrace_sep_by_movements = mat2cell(resulttrace, diff(find(diff([Inf;trialleverbin;Inf])~=0)));
+        IsRewardedMovementAlarmed = any(cellfun(@(w,x,y,z) any(w)&any(x)&any(y)&any(z), cuealarmtrace_sep_by_movements, leverbin_sep_by_movements, cuetrace_sep_by_movements, resulttrace_sep_by_movements));
+        if IsRewardedMovementAlarmed
+            disp(['Animal was moving at the beginning of trial ', num2str(trialnumber), ' from session ', num2str(session)]);
+            File.SuccessfulMovements{rewards} = [];
+            UsedTrialInfo.trial_length = [];
+            UsedTrialInfo.cs2r = [];
+            UsedTrialInfo.rxnTime = [];
+            fault = 1;  %%% Classify fault as type 1; still works as boolean operator, but can be used to count different error types ;
+            movestartbeforecue = find(diff(File.lever_active(1:cue_start))>0,1, 'last');
+            IgnoredTrialInfo.movedurationbeforecue = length(movestartbeforecue:cue_start);
+            if trialnumber>1
+                if result_time(trialnumber-1) == 0
+                    result_time(trialnumber-1) = 1;
+                end
+                IgnoredTrialInfo.FractionITISpentMoving = sum(File.lever_active(result_time(trialnumber-1):cue_start))/length(File.lever_active(result_time(trialnumber-1):cue_start));
+                if IgnoredTrialInfo.FractionITISpentMoving == 1
+                    IgnoredTrialInfo.numberofmovementssincelasttrial = 1;
+                else
+                    IgnoredTrialInfo.numberofmovementssincelasttrial = length(find(diff(File.lever_active(result_time(trialnumber-1):cue_start))>0));
+                end
+            else
+                IgnoredTrialInfo.FractionITISpentMoving = sum(File.lever_active(1:cue_start))/length(File.lever_active(1:cue_start));
+                if IgnoredTrialInfo.FractionITISpentMoving == 1
+                    IgnoredTrialInfo.numberofmovementssincelasttrial = 1;
+                else
+                    IgnoredTrialInfo.numberofmovementssincelasttrial = length(find(diff(File.lever_active(1:cue_start))>0));
+                end
+            end
+            return
+        else
+        end
+    else
+        IgnoredTrialInfo.movedurationbeforecue = 0;
+    end
+else
+    IgnoredTrialInfo.movedurationbeforecue = 0;
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Discard any trials for which the animal has a slower reaction time than
+%%% a designated cut-off
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+reactionTimeCutoff = 2000;
+
+%==========================================================================
+ExcludeSlowReactionTrials = 0;
+
+if ExcludeSlowReactionTrials
+    if result_time-cue_start>reactionTimeCutoff
+        File.SuccessfulMovements{rewards} = [];
+        UsedTrialInfo.trial_length = [];
+        UsedTrialInfo.cs2r = [];
+        UsedTrialInfo.rxnTime = [];
+        IgnoredTrialInfo = [];
+        fault = 2;
+        movestartbeforecue = find(diff(File.lever_active(1:cue_start))>0,1, 'last');
+        IgnoredTrialInfo.movedurationbeforecue = length(movestartbeforecue:cue_start);
+        if trialnumber>1
+            if result_time(trialnumber-1) == 0
+                result_time(trialnumber-1) = 1;
+            end
+            IgnoredTrialInfo.FractionITISpentMoving = sum(File.lever_active(result_time(trialnumber-1):cue_start))/length(File.lever_active(result_time(trialnumber-1):cue_start));
+            if IgnoredTrialInfo.FractionITISpentMoving == 1
+                IgnoredTrialInfo.numberofmovementssincelasttrial = 1;
+            else
+                IgnoredTrialInfo.numberofmovementssincelasttrial = length(find(diff(File.lever_active(result_time(trialnumber-1):cue_start))>0));
+            end
+        else
+            IgnoredTrialInfo.FractionITISpentMoving = sum(File.lever_active(1:cue_start))/length(File.lever_active(1:cue_start));
+            if IgnoredTrialInfo.FractionITISpentMoving == 1
+                IgnoredTrialInfo.numberofmovementssincelasttrial = 1;
+            else
+                IgnoredTrialInfo.numberofmovementssincelasttrial = length(find(diff(File.lever_active(1:cue_start))>0));
+            end
+        end
+        return
+    end
+end
+%==========================================================================
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%% Characterize the ITI for successful trials 
+
+UsedTrialInfo.numberofmovementssincelasttrial = length(find(diff(File.lever_active(1:cue_start))>0));
+
+if trialnumber>1
+    if result_time(trialnumber-1) == 0
+        result_time(trialnumber-1) = 1;
+    end
+    UsedTrialInfo.FractionITISpentMoving = sum(File.lever_active(result_time(trialnumber-1):cue_start))/length(File.lever_active(result_time(trialnumber-1):cue_start));
+    if UsedTrialInfo.FractionITISpentMoving == 1
+        UsedTrialInfo.numberofmovementssincelasttrial = 1;
+    else
+        UsedTrialInfo.numberofmovementssincelasttrial = length(find(diff(File.lever_active(result_time(trialnumber-1):cue_start))>0));
+    end
+else
+    UsedTrialInfo.FractionITISpentMoving = sum(File.lever_active(1:cue_start))/length(File.lever_active(1:cue_start));
+    if UsedTrialInfo.FractionITISpentMoving == 1
+        UsedTrialInfo.numberofmovementssincelasttrial = 1;
+    else
+        UsedTrialInfo.numberofmovementssincelasttrial = length(find(diff(File.lever_active(1:cue_start))>0));
+    end
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% %%% Keep uncommented only if NOT ignoring any movements 
+% IgnoredTrialInfo.movedurationbeforecue = 0;
+% %%%
+
+if length(File.movement{rewards}) < 1000 || cue_start == end_trial(trialnumber)
+    File.SuccessfulMovements{rewards} = [];
+    UsedTrialInfo.cs2r = [];
+    UsedTrialInfo.trial_length = [];
+    UsedTrialInfo.rxnTime = [];
+    fault = 3;  %%% Classify fault as type 2; still works as boolean operator, but can be used to count different error types ;
+	return
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+File.CueStarttoReward{rewards} = File.lever_force_smooth(cue_start:result_time(trialnumber));
+UsedTrialInfo.cs2r = length(File.CueStarttoReward{rewards})/1000;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%==========================================================================
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Define the beginning of a successful movement window
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%% Choose how to define the "zero point", to which the data will be
+%%%% aligned
+%==========================================================================
+%%% Align by when the lever rises above threshold the last time before
+%%% reward (i.e. the contiguous movement leading up to the reward
+designatedzeropoint = find(boundary_frames < result_time(trialnumber));     %%% This uses the boundaries for all contiguous movements. Using this as a criterion means that the time from movement start to reward can be very variable
+if isempty(designatedzeropoint)
+    File.SuccessfulMovements{rewards} = [];
+    UsedTrialInfo.cs2r = [];
+    UsedTrialInfo.trial_length = [];
+    UsedTrialInfo.rxnTime = [];
+    fault = 4;  %%% Classify fault as type 3; still works as boolean operator, but can be used to count different error types ;
+    return
+end
+designatedzeropoint = boundary_frames(designatedzeropoint(end));
+%==========================================================================
+%%% Align to reward
+% designatedzeropoint = result_time(trialnumber);
+%==========================================================================
+
+target_premovement_window = BehaviorParameters.PreMovementWindow;
+
+if designatedzeropoint<target_premovement_window
+    baseLine_start = length(1:boundary_frames(designatedzeropoint));
+    shift = abs(baseLine_start-target_premovement_window);
+    startbuffer = nan(shift,1);
+else
+    shift = 0;
+    startbuffer = [];
+    baseLine_start = target_premovement_window;
+end
+
+successful_mvmt_start = designatedzeropoint-baseLine_start; 
+if successful_mvmt_start <= 0
+    successful_mvmt_start = 1;
+end
+
+trialstopwindow = target_premovement_window+BehaviorParameters.PostMovementStartWindow;
+
+if successful_mvmt_start+(trialstopwindow-shift) > length(File.lever_force_smooth)
+    trialstopwindow = length(File.lever_force_smooth)- successful_mvmt_start;
+    endingbuffer = nan(abs(length(File.lever_force_smooth)-(successful_mvmt_start+(trialstopwindow-shift))),1);
+else
+    endingbuffer = [];
+end
+    
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+File.SuccessfulMovements{rewards} = [startbuffer;File.lever_force_smooth(successful_mvmt_start:successful_mvmt_start+(trialstopwindow-shift));endingbuffer];
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+UsedTrialInfo.trial_length = length(File.SuccessfulMovements{rewards});
+if UsedTrialInfo.trial_length == 0
+    dbstop
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+UsedTrialInfo.rxnTime = find(File.PastThreshRewTrials{rewards}, 1, 'first')/1000; %%% Reaction time in seconds (Starts at cue and ends at motion start) (note that this data is downsampled from ephus' 10,000Hz to 1,000Hz by Andy's code)
+
+if isempty(UsedTrialInfo.rxnTime)
+    UsedTrialInfo.rxnTime = 0;
+end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%% Repeat the above for licking data, if available 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+trialstopwindow = 5000;
+if successful_mvmt_start+(trialstopwindow-shift) > length(File.lick_data_smooth)
+    endingbuffer = nan(abs(length(File.lick_data_smooth)-(successful_mvmt_start+(trialstopwindow-shift))),1);
+    File.lick_data_smooth = [File.lick_data_smooth; endingbuffer];
+end
+if ~isempty(File.lick_data_smooth)
+    File.PostSuccessLicking{rewards} = [nan(shift,1); File.lick_data_smooth(successful_mvmt_start:successful_mvmt_start+(trialstopwindow-shift))];
+else
+    File.PostSuccessLicking{rewards} = [];
+end
+
+fault = 0;

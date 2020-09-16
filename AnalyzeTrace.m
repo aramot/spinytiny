@@ -89,19 +89,32 @@ if strcmpi(Options.ImagingSensor, 'GluSNFR')
 end
 
 %%% Replace Designated parts of the trace with noise (last-ditch manual
-%%% artifact exclusion)
+%%% artifact exclusion) *** ONLY USE WHEN OBVIOUSLY ARTIFACTUAL, SUCH AS MANUAL Z
+%%% MOTION CORRECTION
+
 % start = 17600;
-% stop = 17900;
+% stop = 18000;
 % raw(start:stop) = est_base(start:stop)+(nanstd(raw)*randn(1,length(start:stop)));
-% start = 11500;
-% stop = 12600;
-% raw(start:stop) = est_base(start:stop)+nanstd(raw)*randn(1,length(start:stop));
-% start = 25400;
-% stop = 25630; 
-% raw(start:stop) = est_base(start:stop)+nanstd(raw)*randn(1,length(start:stop));
-% start = 19000;
+% start = 20300;
 % stop = 20500;
 % raw(start:stop) = est_base(start:stop)+nanstd(raw)*randn(1,length(start:stop));
+% start = 20850;
+% stop = 21000; 
+% raw(start:stop) = est_base(start:stop)+nanstd(raw)*randn(1,length(start:stop));
+% start = 24440;
+% stop = 24790;
+% raw(start:stop) = est_base(start:stop)+nanstd(raw)*randn(1,length(start:stop));
+% start = 25330;
+% stop = 25450;
+% raw(start:stop) = est_base(start:stop)+nanstd(raw)*randn(1,length(start:stop));
+% start = 29400;
+% stop = 29520;
+% raw(start:stop) = est_base(start:stop)+nanstd(raw)*randn(1,length(start:stop));
+% start = 33150;
+% stop = 33510;
+% raw(start:stop) = est_base(start:stop)+nanstd(raw)*randn(1,length(start:stop));
+
+
 
 pad_length = 1000;
 paddeddata = [est_base(randi([1 1000], 1,pad_length)), raw, est_base(randi([length(est_base)-pad_length, length(est_base)], 1,pad_length))];

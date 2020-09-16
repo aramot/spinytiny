@@ -9,6 +9,7 @@ MoveDurationBeforeIgnoredTrials = nan(length(varargin),14);
 NumberofMovementsDuringITIPreIgnoredTrials = nan(length(varargin),14);
 FractionITISpentMoving = nan(length(varargin),14);
 VarExpbyFirstComp = nan(length(varargin),14);
+AcrossSessionsVarExpbyPC1 = nan(length(varargin),13);
 
 %%%%%%%%%%%%%%%%%%%%%%
 %%Color Information%%%
@@ -37,7 +38,7 @@ FractionITISpentMovingPreRewardedTrials = nan(length(varargin), 14);
 
 for i = 1:length(varargin)
     %%%%
-    FilteredSessions = find(cellfun(@(x) size(x,1),varargin{i}.MovementMat)>10);
+    FilteredSessions = find(cellfun(@(x) size(x,1),varargin{i}.MovementMat)>=5);
     FilteredSessions = FilteredSessions(FilteredSessions<=14);
     %%%
     rewards(i,FilteredSessions) = varargin{i}.rewards(FilteredSessions);
@@ -50,6 +51,8 @@ for i = 1:length(varargin)
     FractionITISpentMovingPreIgnoredTrials(i,FilteredSessions) = varargin{i}.FractionITISpentMovingPreIgnoredTrials(FilteredSessions);
     NumberofMovementsDuringITIPreRewardedTrials(i,FilteredSessions) = varargin{i}.NumberofMovementsDuringITIPreRewardedTrials(FilteredSessions);
     FractionITISpentMovingPreRewardedTrials(i,FilteredSessions) = varargin{i}.FractionITISpentMovingPreRewardedTrials(FilteredSessions);
+%     AllMovementDuration{i} = varargin{i}.MovementDuration;
+%     CuedRewardedMovementDuration{i} = varargin{i}.CuedRewardedMovementDuration;
 
     
     if ~isempty(missingsessions)
@@ -68,7 +71,10 @@ for i = 1:length(varargin)
         varargin{i}.MovementCorrelation = newmat;
     end
     MovementCorrelation(:,:,i) = varargin{i}.MovementCorrelation(1:14,1:14);
-    VarExpbyFirstComp(i,FilteredSessions) = cellfun(@(x) x(1), varargin{i}.PCA_VarianceExplained(FilteredSessions));
+    FilteredSessions2 = FilteredSessions(ismember(FilteredSessions,find(~cellfun(@isempty, varargin{i}.PCA_VarianceExplained))));
+    VarExpbyFirstComp(i,FilteredSessions2) = cellfun(@(x) x(1), varargin{i}.PCA_VarianceExplained(FilteredSessions2));
+%     FilteredSessions3 = FilteredSessions(ismember(FilteredSessions,find(~cellfun(@isempty, varargin{i}.PCA_AcrossSessions_VarianceExplained))));
+%     AcrossSessionsVarExpbyPC1(i,FilteredSessions3(1:end-1)) = cellfun(@(x) x(1), varargin{i}.PCA_AcrossSessions_VarianceExplained(FilteredSessions3(1:end-1)));
 end
 
 rewards = rewards(:,1:14);
@@ -94,12 +100,12 @@ if usefiltering
     laterewards = rewards(:,11:14);
     LateRewbyAnimal = nanmedian(laterewards,2);
 
-    prct_correct_cutoff = 95;
-    animalstouse = LateRewbyAnimal>prct_correct_cutoff;
+    prct_correct_cutoff = 50;
+    animalstouse = logical(LateRewbyAnimal>prct_correct_cutoff);
 
     disp([num2str(sum(animalstouse)), '/', num2str(length(animalstouse)), ' animals are preserved using a cutoff of ', num2str(prct_correct_cutoff)])
 else
-    animalstouse = ones(size(rewards,1),1);
+    animalstouse = logical(ones(size(rewards,1),1));
 end
 %==========================================================================
 
@@ -170,13 +176,13 @@ data = source(logical(~isnan(source)));
 session = 1:14;
 session = repmat(session,size(source,1),1);
 sesh = session(logical(~isnan(source)));
-[~, p] = corrcoef(data, sesh);
-if p(2,1) < 0.05
-    statmessage = ['* ',num2str(p(2,1))];
-else
-    statmessage = ['n.s. (', num2str(p(2,1)), ')'];
-end
-text(14.5, max(nanmean(source,1)), statmessage)
+% [~, p] = corrcoef(data, sesh);
+% if p(2,1) < 0.05
+%     statmessage = ['* ',num2str(p(2,1))];
+% else
+%     statmessage = ['n.s. (', num2str(p(2,1)), ')'];
+% end
+% text(14.5, max(nanmean(source,1)), statmessage)
 
 
 source = across;
@@ -184,15 +190,16 @@ data = source(logical(~isnan(source)));
 session = 1:14;
 session = repmat(session,size(source,1),1);
 sesh = session(logical(~isnan(source)));
-[~, p] = corrcoef(data, sesh);
-if p(2,1) < 0.05
-    statmessage = ['* ',num2str(p(2,1))];
-else
-    statmessage = ['n.s. (', num2str(p(2,1)), ')'];
-end
-text(14.5, max(nanmean(source,1)), statmessage, 'Color', [0.5 0.5 0.5])
+% [~, p] = corrcoef(data, sesh);
+% if p(2,1) < 0.05
+%     statmessage = ['* ',num2str(p(2,1))];
+% else
+%     statmessage = ['n.s. (', num2str(p(2,1)), ')'];
+% end
+% text(14.5, max(nanmean(source,1)), statmessage, 'Color', [0.5 0.5 0.5])
 
 PCAplot = flex_plot(1:14, VarExpbyFirstComp./100, stattype, 'r', 4);
+% AcrossPCAplot = flex_plot(2:14, AcrossSessionsVarExpbyPC1./100, stattype, 'g', 4);
 
 legend([withinplot, acrossplot, PCAplot], {'Within sessions', 'Across sessions', 'Expl. by PC1'})
 ylabel('Correlation')

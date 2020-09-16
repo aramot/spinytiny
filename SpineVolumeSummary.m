@@ -71,6 +71,7 @@ for animal = 1:length(varargin)
     if ~isdir(voldatadir)
         continue
     end
+    shiftedfieldcount = 1; %%% useful for data structures that don't match the {field}{new spine} organization
     for fieldcount = 1:NumFields
         currentFieldNumber = FieldData{animal}{fieldcount}.FieldNumber;
         FieldChanges{fieldcount} = diff(FieldData{animal}{fieldcount}.Data,1,2);
@@ -126,12 +127,17 @@ for animal = 1:length(varargin)
             %%% loading the whole thing is too expensive to memory
             FieldData{animal}{fieldcount}.CalciumData{cdate}.NumberofSpines = currentactdata.NumberofSpines; NumberofSpines = currentactdata.NumberofSpines;
             FieldData{animal}{fieldcount}.CalciumData{cdate}.SpineDendriteGrouping = currentactdata.SpineDendriteGrouping;
+            FieldData{animal}{fieldcount}.CalciumData{cdate}.Frequency = currentactdata.Frequency;
+            FieldData{animal}{fieldcount}.CalciumData{cdate}.MeanEventAmp = currentactdata.MeanEventAmp';
             FieldData{animal}{fieldcount}.CalciumData{cdate}.Session = currentactdata.Session;
+            FieldData{animal}{fieldcount}.CalciumData{cdate}.PolyROIPosition = currentactdata.PolyLinePos;
+            FieldData{animal}{fieldcount}.CalciumData{cdate}.ROIPosition = currentactdata.ROIPosition;
+            FieldData{animal}{fieldcount}.CalciumData{cdate}.ZoomValue = currentactdata.ZoomValue;
             clear currentactdata)
             clear(correspfile(1:end-4))
         end
         FieldData{animal}{fieldcount}.CalciumData = FieldData{animal}{fieldcount}.CalciumData(~cellfun(@isempty, FieldData{animal}{fieldcount}.CalciumData));
-        sessionstouse = find(~cellfun(@isempty, FieldData{animal}{fieldcount}.CalciumData));
+        sessionstouse = find(~cellfun(@isempty, FieldData{animal}{fieldcount}.CalciumData));   %%% This is only getting an address to access the sessions, and doesn't correspond to the session numbers themselves!
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %%%%%%%%%%%%%%% Load Statistical classification data %%%%%%%%%%%%%%%%%%
@@ -195,7 +201,7 @@ for animal = 1:length(varargin)
         NewSpines = SpineDynamics.NewSpines{fieldcount};
         ElimSpines = SpineDynamics.ElimSpines{fieldcount};
         
-        ClusteredEarlyMovementSpines = SpineDynamics.ClusteredEarlyMoveSpines{fieldcount};
+        ClusteredEarlyMovementSpines = SpineDynamics.ClusteredEarlyMoveSpines{fieldcount}; %%% Note: this includes both early and mid-session cMRSs (as per NewSpineAnalysis.m)
         ClusteredLateMovementSpines = SpineDynamics.ClusteredLateMoveSpines{fieldcount};
         ClusteredNewSpines = SpineDynamics.ClusteredNewSpines{fieldcount};
         AntiClusteredMovementSpines = SpineDynamics.AntiClusteredMoveSpines{fieldcount};
@@ -204,20 +210,41 @@ for animal = 1:length(varargin)
         %%% Find the change in spine volume
         DeltaSpineVolume = [];
         DeltaSpineVolume{fieldcount} = FieldData{animal}{fieldcount}.SpineVolumeData(:,:)./FieldData{animal}{fieldcount}.SpineVolumeData(:,1);
+        if any(DeltaSpineVolume{fieldcount}==Inf)
+            k = 1;
+        end
+        DeltaSpineVolume{fieldcount}(DeltaSpineVolume{fieldcount}==Inf) = NaN;
         CueSpines = logical(sum(cell2mat(cellfun(@(x) x.OverallCueSpines, FieldData{animal}{fieldcount}.StatClass(1), 'uni', false)),2));
-        MovementSpines = find(logical(sum(cell2mat(cellfun(@(x) x.OverallMovementSpines, FieldData{animal}{fieldcount}.StatClass(1), 'uni', false)),2)));   %%% Make sure you pay attention to whether you're looking at just early MRSs or all of them
-        MovementSpines = setdiff(MovementSpines, DynamicSpines);
+        %==================================================================
+%         MovementSpines = find(logical(sum(cell2mat(cellfun(@(x) x.OverallMovementSpines, FieldData{animal}{fieldcount}.StatClass(1), 'uni', false)),2)));   %%% Make sure you pay attention to whether you're looking at just early MRSs or all of them
+        MovementSpines = find(logical(sum(cell2mat(cellfun(@(x) x.DendSub_MovementSpines, FieldData{animal}{fieldcount}.StatClass(1), 'uni', false)),2)));   %%% Make sure you pay attention to whether you're looking at just early MRSs or all of them
+        %%% Movement Spine Filtering!!=====================================
+        MovementSpines = setdiff(MovementSpines, DynamicSpines); 
+        MovementSpines = setdiff(MovementSpines, ClusteredEarlyMovementSpines);
+            %%% Filter for distance from the edge
+            MovementSpinesClosetoEdge = [];
+            if ischar(FieldData{animal}{fieldcount}.CalciumData{cdate}.ZoomValue)
+                ZoomValue = str2num(FieldData{animal}{fieldcount}.CalciumData{cdate}.ZoomValue);
+            else
+                ZoomValue = FieldData{animal}{fieldcount}.CalciumData{cdate}.ZoomValue;
+            end
+            pixpermicron = 0.5*ZoomValue; %% 0.5 corresponds to the pixel/micron value at 512x512 at 1x zoom on BScope 1
+            for ms = 1:length(MovementSpines)
+                [~,closestPolyROI] = min(cellfun(@(x) sqrt((FieldData{animal}{fieldcount}.CalciumData{1}.ROIPosition{MovementSpines(ms)+1}(1)-x(1))^2+(FieldData{animal}{fieldcount}.CalciumData{1}.ROIPosition{MovementSpines(ms)+1}(2)-x(2))^2), FieldData{animal}{fieldcount}.CalciumData{1}.PolyROIPosition));
+                closestPolyROIPosition = FieldData{animal}{fieldcount}.CalciumData{1}.PolyROIPosition{closestPolyROI};
+                BranchEnd1 = FieldData{animal}{fieldcount}.CalciumData{1}.PolyROIPosition{1}; BranchEnd2 = FieldData{animal}{fieldcount}.CalciumData{1}.PolyROIPosition{end};
+                if (sqrt((closestPolyROIPosition(1)-BranchEnd1(1))^2+(closestPolyROIPosition(2)-BranchEnd1(2))^2)/pixpermicron)<15 || (sqrt((closestPolyROIPosition(1)-BranchEnd2(1))^2+(closestPolyROIPosition(2)-BranchEnd2(2))^2)/pixpermicron)<15
+                    MovementSpinesClosetoEdge = [MovementSpinesClosetoEdge, MovementSpines(ms)];
+                end
+            end
+            FractionofSpinesExcludedonDistance{animal}{fieldcount} = length(MovementSpinesClosetoEdge)/length(MovementSpines);
+            MovementSpines = setdiff(MovementSpines, MovementSpinesClosetoEdge);
+        %==================================================================
         DSMovementSpines = find(logical(sum(cell2mat(cellfun(@(x) x.DendSub_MovementSpines, FieldData{animal}{fieldcount}.StatClass, 'uni', false)),2))); %%% Assumes movement-related spine identity at ANY POINT DURING TRAINING
         DSMovementSpines = setdiff(DSMovementSpines, DynamicSpines);    %%% Don't include any dynamic spines, the spine volume calculation of which doesn't make any sense
         CSDeltaVolume{animal}{fieldcount} = DeltaSpineVolume{fieldcount}(CueSpines,:);
         MRSDeltaVolume{animal}{fieldcount} = DeltaSpineVolume{fieldcount}(MovementSpines,:);
         DS_MRSDeltaVolume{animal}{fieldcount} = DeltaSpineVolume{fieldcount}(DSMovementSpines,:);
-        if ~isempty(ClusteredEarlyMovementSpines)
-%             ClusteredEarlyMovementSpines = setdiff(ClusteredEarlyMovementSpines, AntiClusteredMovementSpines);
-            cMRSDeltaVolume{animal}{fieldcount} = DeltaSpineVolume{fieldcount}(ClusteredEarlyMovementSpines,:);
-        else
-            cMRSDeltaVolume{animal}{fieldcount} = NaN;
-        end
         if ~isempty(AntiClusteredMovementSpines)
             aMRSDeltaVolume{animal}{fieldcount} = DeltaSpineVolume{fieldcount}(AntiClusteredMovementSpines,:);
         else
@@ -226,20 +253,75 @@ for animal = 1:length(varargin)
         OtherSpines = setdiff(setdiff(1:NumberofSpines,MovementSpines), DynamicSpines);
         OtherSpinesDeltaVolume{animal}{fieldcount} = DeltaSpineVolume{fieldcount}(OtherSpines,:);
         if ~isempty(SpineDynamics.ClusteredMovementSpineVolume{fieldcount})
-            MRSvolume = SpineDynamics.ClusteredMovementSpineVolume{fieldcount};
+            cMRSvolume = SpineDynamics.ClusteredMovementSpineVolume{fieldcount};
+            cMRSDeltaVolume{animal}{fieldcount} = cMRSvolume;
+            for search = 1:length(cMRSvolume)
+                if any(cMRSvolume{search}==Inf)
+                    k = 1;
+                end
+                cMRSvolume{search}(cMRSvolume{search}==Inf) = nan;
+            end
             ClusterCorrelation = SpineDynamics.AllClusterCorrelationsbyNewSpine{fieldcount};
+            AllClusterCorrelation{animal}{fieldcount} = ClusterCorrelation;
             NoiseCorrelation = SpineDynamics.AllMoveCentricClusterCorrelationsbyNewSpine{fieldcount};
+            SeedlingMovementSimilarity = SpineDynamics.SimilarityofClusteredMovementwithSeedlingMRSMovement{fieldcount};
             validNS = cellfun(@(x) any(~isnan(x)), ClusterCorrelation);
-            MRSDeltaVolumebyMaxCorr{animal}{fieldcount} = unique(cellfun(@(x,y) x(y==nanmax(y)), MRSvolume(validNS), ClusterCorrelation(validNS)));
-            MRSDeltaVolumebyHighCorr{animal}{fieldcount} = unique(cell2mat(cellfun(@(x,y) x(y>0.05), MRSvolume(validNS), NoiseCorrelation(validNS), 'uni', false)));
-            MRSDeltaVolumebyMaxNoiseCorr{animal}{fieldcount} = unique(cellfun(@(x,y) x(y==nanmax(y)), MRSvolume(validNS), NoiseCorrelation(validNS)));
-            MRSDeltaVolumebyHighNoiseCorr{animal}{fieldcount} = unique(cell2mat(cellfun(@(x,y) x(y>0.05), MRSvolume(validNS), NoiseCorrelation(validNS), 'uni', false)));
-            MaxDeltaVolume{animal}{fieldcount} = unique(cellfun(@nanmax, MRSvolume));
+            MRSDeltaVolumebyMaxCorr{animal}{fieldcount} = unique(cellfun(@(x,y) x(y==nanmax(y)), cMRSvolume(validNS), ClusterCorrelation(validNS)));
+            MRSDeltaVolumebyHighCorr{animal}{fieldcount} = unique(cell2mat(cellfun(@(x,y) x(y>0.05), cMRSvolume(validNS), ClusterCorrelation(validNS), 'uni', false)));
+            MRSDeltaVolumebyLowCorr{animal}{fieldcount} = unique(cell2mat(cellfun(@(x,y) x(y<0.05), cMRSvolume(validNS), ClusterCorrelation(validNS), 'uni', false)));
+            MRSDeltaVolumebyMaxNoiseCorr{animal}{fieldcount} = unique(cellfun(@(x,y) x(y==nanmax(y)), cMRSvolume(validNS), NoiseCorrelation(validNS)));
+            MRSDeltaVolumebyHighNoiseCorr{animal}{fieldcount} = unique(cell2mat(cellfun(@(x,y) x(y>0.05), cMRSvolume(validNS), NoiseCorrelation(validNS), 'uni', false)));
+            MRSDeltaVolumebyLowNoiseCorr{animal}{fieldcount} = unique(cell2mat(cellfun(@(x,y) x(y<0.05), cMRSvolume(validNS), NoiseCorrelation(validNS), 'uni', false)));
+            MRSDeltaVolumebySeedlingMovementSimilarity{animal}{fieldcount} = unique(cell2mat(cellfun(@(x,y) x(y>0.1), cMRSvolume(validNS), SeedlingMovementSimilarity(validNS), 'uni', false)));
+            MaxDeltaVolume{animal}{fieldcount} = cellfun(@nanmax, cMRSvolume);
         else
             MRSDeltaVolumebyMaxCorr{animal}{fieldcount} = NaN;
         end
-        
-        
+
+        %%% Delta Frequency 
+        DeltaSpineFrequency{fieldcount} = FieldData{animal}{fieldcount}.CalciumData{end}.Frequency./FieldData{animal}{fieldcount}.CalciumData{1}.Frequency; 
+        DeltaSpineFrequency{fieldcount}(DeltaSpineFrequency{fieldcount}==Inf) = nan;
+        OtherSpinesDeltaFrequency{animal}{fieldcount} = DeltaSpineFrequency{fieldcount}(OtherSpines,:);
+        MRSDeltaFrequency{animal}{fieldcount} = DeltaSpineFrequency{fieldcount}(MovementSpines,:);
+        if ~isempty(SpineDynamics.ClusteredMovementSpineDeltaFrequency{fieldcount})
+            cMRSfreq = SpineDynamics.ClusteredMovementSpineDeltaFrequency{fieldcount};
+            cMRSDeltaFreqbyMaxCorr{animal}{fieldcount} = unique(cellfun(@(x,y) x(y==nanmax(y)), cMRSfreq(validNS), ClusterCorrelation(validNS)));
+            cMRSDeltaFreqbyHighCorr{animal}{fieldcount} = unique(cell2mat(cellfun(@(x,y) x(y>0.05), cMRSfreq(validNS), ClusterCorrelation(validNS), 'uni', false)));
+            cMRSDeltaFreqbyMaxNoiseCorr{animal}{fieldcount} = unique(cellfun(@(x,y) x(y==nanmax(y)), cMRSfreq(validNS), NoiseCorrelation(validNS)));
+            cMRSDeltaFreqbyHighNoiseCorr{animal}{fieldcount} = unique(cell2mat(cellfun(@(x,y) x(y>0.05), cMRSfreq(validNS), NoiseCorrelation(validNS), 'uni', false)));
+            MRSDeltaFreqbySeedlingMovementSimilarity{animal}{fieldcount} = unique(cell2mat(cellfun(@(x,y) x(y>0.1), cMRSfreq(validNS), SeedlingMovementSimilarity(validNS), 'uni', false)));
+            MaxDeltaFreq{animal}{fieldcount} = unique(cellfun(@nanmax, cMRSfreq));
+        else
+            MRSDeltaVolumebyMaxCorr{animal}{fieldcount} = NaN;
+        end
+        if ~isempty(AntiClusteredMovementSpines)
+            aMRSDeltaFreq{animal}{fieldcount} = DeltaSpineFrequency{fieldcount}(AntiClusteredMovementSpines,:);
+        else
+            aMRSDeltaFreq{animal}{fieldcount} = NaN;
+        end
+
+        %%% Delta Amplitude
+        DeltaSpineAmp{fieldcount} = FieldData{animal}{fieldcount}.CalciumData{end}.MeanEventAmp./FieldData{animal}{fieldcount}.CalciumData{1}.MeanEventAmp; 
+        DeltaSpineAmp{fieldcount}(DeltaSpineAmp{fieldcount}==Inf) = nan;
+        OtherSpinesDeltaAmp{animal}{fieldcount} = DeltaSpineAmp{fieldcount}(OtherSpines,:);
+        MRSDeltaAmp{animal}{fieldcount} = DeltaSpineAmp{fieldcount}(MovementSpines,:);
+        if ~isempty(SpineDynamics.ClusteredMovementSpineDeltaFrequency{fieldcount})
+            cMRSamp = SpineDynamics.ClusteredMovementSpineDeltaAmplitude{fieldcount};
+            cMRSDeltaAmpbyMaxCorr{animal}{fieldcount} = unique(cellfun(@(x,y) x(y==nanmax(y)), cMRSamp(validNS), ClusterCorrelation(validNS)));
+            cMRSDeltaAmpbyHighCorr{animal}{fieldcount} = unique(cell2mat(cellfun(@(x,y) x(y>0.05), cMRSamp(validNS), ClusterCorrelation(validNS), 'uni', false)));
+            cMRSDeltaAmpbyMaxNoiseCorr{animal}{fieldcount} = unique(cellfun(@(x,y) x(y==nanmax(y)), cMRSamp(validNS), NoiseCorrelation(validNS)));
+            cMRSDeltaAmpbyHighNoiseCorr{animal}{fieldcount} = unique(cell2mat(cellfun(@(x,y) x(y>0.05), cMRSamp(validNS), NoiseCorrelation(validNS), 'uni', false)));
+            MRSDeltaAmpbySeedlingMovementSimilarity{animal}{fieldcount} = unique(cell2mat(cellfun(@(x,y) x(y>0.1), cMRSamp(validNS), SeedlingMovementSimilarity(validNS), 'uni', false)));
+            MaxDeltaAmp{animal}{fieldcount} = unique(cellfun(@nanmax, cMRSamp));
+        else
+            MRSDeltaVolumebyMaxCorr{animal}{fieldcount} = NaN;
+        end
+        if ~isempty(AntiClusteredMovementSpines)
+            aMRSDeltaAmp{animal}{fieldcount} = DeltaSpineAmp{fieldcount}(AntiClusteredMovementSpines,:);
+        else
+            aMRSDeltaAmp{animal}{fieldcount} = NaN;
+        end
+
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %%%%%%%%%%%%%%%%%% Plasticity score by dendrite %%%%%%%%%%%%%%%%%%%
         
@@ -250,8 +332,8 @@ for animal = 1:length(varargin)
             DendriteData(overalldendritecount,10:18) = FieldData{animal}{fieldcount}.Correlations{end}.DendSubtractedSpineCorrelations(1:9, Spine1Address+NumberofSpines+(d-1)); %%% Dendrite behavioral feature correlation FROM LATE SESSIONS
             DendriteData(overalldendritecount,19) = sum(ismember(NewSpines, DGrouping{d}))/length(DGrouping{d}); %%% Number of spine additions (normalized by total spine number on dendrite)
             DendriteData(overalldendritecount,20) = sum(ismember(ElimSpines, DGrouping{d}))/length(DGrouping{d}); %%% Number of spine eliminations (normalized by total spine number on dendrite)
-            DendriteData(overalldendritecount,21) = sum(nanmean(DeltaSpineVolume{fieldcount}(DGrouping{d},2:end),2)>=1)/length(DGrouping{d}); %%% Number of spines showing stable or increased volume (normalized by total spine number on dend)
-            DendriteData(overalldendritecount,22) = sum(nanmean(DeltaSpineVolume{fieldcount}(DGrouping{d},2:end),2)<1)/length(DGrouping{d}); %%% Number of spines showing decreased volume (normalized by total spine number on dend)
+            DendriteData(overalldendritecount,21) = sum(nanmedian(DeltaSpineVolume{fieldcount}(DGrouping{d},2:end),2)>=1)/length(DGrouping{d}); %%% Number of spines showing stable or increased volume (normalized by total spine number on dend)
+            DendriteData(overalldendritecount,22) = sum(nanmedian(DeltaSpineVolume{fieldcount}(DGrouping{d},2:end),2)<1)/length(DGrouping{d}); %%% Number of spines showing decreased volume (normalized by total spine number on dend)
             DendriteData(overalldendritecount,23) = sum(ismember(DSMovementSpines, DGrouping{d}))/length(DGrouping{d});  %%% Fraction of spines that are movement-related
             DendriteData(overalldendritecount,24) = sum(ismember(ClusteredEarlyMovementSpines, DGrouping{d}))/length(DGrouping{d}); %%% Fraction of spines that are clustered movement-related spines from early sessions
             DendriteData(overalldendritecount,25) = sum(ismember(ClusteredLateMovementSpines, DGrouping{d}))/length(DGrouping{d}); %%% Fraction of spines that are clustered movement-related spines from late sessions
@@ -271,95 +353,95 @@ close(h1)
 cd(OutputDataFolder)
 save('DendriteSummaryData', 'DendriteData')
 
-AllMat = []; CSMat = []; MRSMat = [];MRSMatMid = []; DS_MRSMat = [];DS_MRSMatMid = []; cMRSMat = [];cMRSMatMid = []; aMRSMat = []; aMRSMatMid = []; OtherMat = []; OtherMatMid = [];
-for i = 1:length(FieldData)
-    for j = 1:length(FieldData{i})
-        if isfield(FieldData{i}{j}, 'SpineVolumeData')
-            AllMat = [AllMat; FieldData{i}{j}.SpineVolumeData(:,end)];
-            if ~isempty(CSDeltaVolume{i})
-                if ~isempty(CSDeltaVolume{i}{j})
-                    CSMat = [CSMat; CSDeltaVolume{i}{j}(:,end)];
-                end
-            end
-            if ~isempty(MRSDeltaVolume{i})
-                if ~isempty(MRSDeltaVolume{i}{j})
-                    if size(MRSDeltaVolume{i}{j},2)>2
-                        MRSMatMid = [MRSMatMid; MRSDeltaVolume{i}{j}(:,2)];
-                    end
-                    MRSMat = [MRSMat; MRSDeltaVolume{i}{j}(:,end)];
-                end
-            end
-            if ~isempty(DS_MRSDeltaVolume{i})
-                if ~isempty(DS_MRSDeltaVolume{i}{j})
-                    if size(DS_MRSDeltaVolume{i}{j},2)>2
-                        DS_MRSMatMid = [DS_MRSMatMid; DS_MRSDeltaVolume{i}{j}(:,2)];
-                    end
-                    DS_MRSMat = [DS_MRSMat; DS_MRSDeltaVolume{i}{j}(:,end)];
-                end
-            end
-            if ~isempty(cMRSDeltaVolume{i})
-                if ~isempty(cMRSDeltaVolume{i}{j})
-                    if size(cMRSDeltaVolume{i}{j},2)>2
-                        cMRSMatMid = [cMRSMatMid; cMRSDeltaVolume{i}{j}(:,2)];
-                    end
-                    cMRSMat = [cMRSMat; cMRSDeltaVolume{i}{j}(:,end)];
-                end
-            end
-            if ~isempty(aMRSDeltaVolume{i})
-                if ~isempty(aMRSDeltaVolume{i}{j})
-                    if size(aMRSDeltaVolume{i}{j},2)>2
-                        aMRSMatMid = [aMRSMatMid; aMRSDeltaVolume{i}{j}(:,2)];
-                    end
-                    aMRSMat = [aMRSMat; aMRSDeltaVolume{i}{j}(:,end)];
-                end
-            end
-            if ~isempty(OtherSpinesDeltaVolume{i})
-                if ~isempty(OtherSpinesDeltaVolume{i}{j})
-                    if size(OtherSpinesDeltaVolume{i}{j},2)>2
-                        OtherMatMid = [OtherMatMid; OtherSpinesDeltaVolume{i}{j}(:,2)];
-                    end
-                    OtherMat = [OtherMat; OtherSpinesDeltaVolume{i}{j}(:,end)];
-                end
-            end
-        end
-    end
-end
-SelectedClusters = cell2mat(horzcat(MRSDeltaVolumebyMaxCorr{:}));
-SelectedClusters2 = cell2mat(horzcat(MRSDeltaVolumebyHighCorr{:}));
-SelectedClusters3 = cell2mat(horzcat(MRSDeltaVolumebyMaxNoiseCorr{:}));
-SelectedClusters4 = cell2mat(horzcat(MRSDeltaVolumebyHighNoiseCorr{:}));
-SelectedClusters5 = cell2mat(horzcat(MaxDeltaVolume{:}));
+% AllMat = []; CSMat = []; MRSMat = [];MRSMatMid = []; DS_MRSMat = [];DS_MRSMatMid = []; cMRSMat = [];cMRSMatMid = []; aMRSMat = []; aMRSMatMid = []; OtherMat = []; OtherMatMid = [];
+% for i = 1:length(FieldData)
+%     for j = 1:length(FieldData{i})
+%         if isfield(FieldData{i}{j}, 'SpineVolumeData')
+%             AllMat = [AllMat; FieldData{i}{j}.SpineVolumeData(:,end)];
+%             if ~isempty(CSDeltaVolume{i})
+%                 if ~isempty(CSDeltaVolume{i}{j})
+%                     CSMat = [CSMat; CSDeltaVolume{i}{j}(:,end)];
+%                 end
+%             end
+%             if ~isempty(MRSDeltaVolume{i})
+%                 if ~isempty(MRSDeltaVolume{i}{j})
+%                     if size(MRSDeltaVolume{i}{j},2)>2
+%                         MRSMatMid = [MRSMatMid; MRSDeltaVolume{i}{j}(:,2)];
+%                     end
+%                     MRSMat = [MRSMat; MRSDeltaVolume{i}{j}(:,end)];
+%                 end
+%             end
+%             if ~isempty(DS_MRSDeltaVolume{i})
+%                 if ~isempty(DS_MRSDeltaVolume{i}{j})
+%                     if size(DS_MRSDeltaVolume{i}{j},2)>2
+%                         DS_MRSMatMid = [DS_MRSMatMid; DS_MRSDeltaVolume{i}{j}(:,2)];
+%                     end
+%                     DS_MRSMat = [DS_MRSMat; DS_MRSDeltaVolume{i}{j}(:,end)];
+%                 end
+%             end
+%             if ~isempty(cMRSDeltaVolume{i})
+%                 if ~isempty(cMRSDeltaVolume{i}{j})
+%                     if size(cMRSDeltaVolume{i}{j},2)>2
+%                         cMRSMatMid = [cMRSMatMid; cMRSDeltaVolume{i}{j}(:,2)];
+%                     end
+%                     cMRSMat = [cMRSMat; cMRSDeltaVolume{i}{j}(:,end)];
+%                 end
+%             end
+%             if ~isempty(aMRSDeltaVolume{i})
+%                 if ~isempty(aMRSDeltaVolume{i}{j})
+%                     if size(aMRSDeltaVolume{i}{j},2)>2
+%                         aMRSMatMid = [aMRSMatMid; aMRSDeltaVolume{i}{j}(:,2)];
+%                     end
+%                     aMRSMat = [aMRSMat; aMRSDeltaVolume{i}{j}(:,end)];
+%                 end
+%             end
+%             if ~isempty(OtherSpinesDeltaVolume{i})
+%                 if ~isempty(OtherSpinesDeltaVolume{i}{j})
+%                     if size(OtherSpinesDeltaVolume{i}{j},2)>2
+%                         OtherMatMid = [OtherMatMid; OtherSpinesDeltaVolume{i}{j}(:,2)];
+%                     end
+%                     OtherMat = [OtherMat; OtherSpinesDeltaVolume{i}{j}(:,end)];
+%                 end
+%             end
+%         end
+%     end
+% end
+% SelectedClusters = cell2mat(horzcat(MRSDeltaVolumebyMaxCorr{:}));
+% SelectedClusters2 = cell2mat(horzcat(MRSDeltaVolumebyHighCorr{:}));
+% SelectedClusters3 = cell2mat(horzcat(MRSDeltaVolumebyMaxNoiseCorr{:}));
+% SelectedClusters4 = cell2mat(horzcat(MRSDeltaVolumebyHighNoiseCorr{:}));
+% SelectedClusters5 = cell2mat(horzcat(MaxDeltaVolume{:}));
+% 
+% OtherMat(OtherMat<=0) = NaN;    %OtherMat(isoutlier(OtherMat))= NaN;
+% OtherMatMid(OtherMatMid<=0)=NaN; %OtherMatMid(isoutlier(OtherMatMid)) = NaN;
+% CSMat(CSMat<=0) = NaN;
+% MRSMat(MRSMat<=0) = NaN;
+% % MRSMatMid(MRSMatMid<=0) = NaN;
+% DS_MRSMat(DS_MRSMat<=0) = NaN;  %MRSMat(isoutlier(MRSMat)) = NaN;
+% DS_MRSMatMid(DS_MRSMatMid<=0) = NaN; %MRSMatMid(isoutlier(MRSMatMid)) = NaN;
+% cMRSMat(cMRSMat<=0) = NaN;  %cMRSMat(isoutlier(cMRSMat)) = NaN;
+% cMRSMatMid(cMRSMatMid<=0) = NaN; %cMRSMatMid(isoutlier(cMRSMatMid)) = 0;
+% aMRSMat(aMRSMat<=0) = NaN;% aMRSMat(isoutlier(aMRSMat)) = NaN;
+% aMRSMatMid(aMRSMatMid<=0) = NaN; %aMRSMatMid(isoutlier(aMRSMatMid)) = NaN;
+% 
+% % figure; plot(linspace(0.75,1.25, length(DS_MRSMat)), DS_MRSMat', '.', 'Markersize', 14)
+% % hold on; plot(linspace(1.75, 2.25, length(OtherMat)), OtherMat', '.', 'Markersize', 14)
+% % plot(linspace(2.75,3.25,length(cMRSMat)), cMRSMat', '.', 'Markersize', 14)
+% % plot(linspace(3.75,4.25,length(aMRSMat)), aMRSMat', '.', 'Markersize', 14)
+% datamat = [{OtherMat},{MRSMat}, {cMRSMat}, {SelectedClusters},{SelectedClusters2},{SelectedClusters3}, {SelectedClusters4}, {SelectedClusters5}, {aMRSMat}];
+% figure; bar(1:length(datamat), cell2mat(cellfun(@nanmedian, datamat, 'uni', false)), 'FaceColor','k')
+% bootstrpnum = 1000;
+% alphaforbootstrap = 0.05;
+% for i = 1:length(datamat)
+%     Y = bootci(bootstrpnum, {@median, datamat{i}(~isnan(datamat{i}))}, 'alpha', alphaforbootstrap);
+%     line([i,i], [Y(1), Y(2)], 'linewidth', 0.5, 'color', 'k');
+% end
+% set(gca, 'XTickLabel', {'All Other Spines','Movement Spines', 'Putative cMRS', 'cMRS with Max Corr', 'cMRS with High Corr', 'cMRS max Noise Corr', 'cMRS high Noise Corr', 'max \DeltaV', 'anti-Clustered MRS'})
+% ylabel('\Delta Spine Volume (Late/Early)')
+% xtickangle(gca, 45)
 
-OtherMat(OtherMat<=0) = NaN;    %OtherMat(isoutlier(OtherMat))= NaN;
-OtherMatMid(OtherMatMid<=0)=NaN; %OtherMatMid(isoutlier(OtherMatMid)) = NaN;
-CSMat(CSMat<=0) = NaN;
-MRSMat(MRSMat<=0) = NaN;
-% MRSMatMid(MRSMatMid<=0) = NaN;
-DS_MRSMat(DS_MRSMat<=0) = NaN;  %MRSMat(isoutlier(MRSMat)) = NaN;
-DS_MRSMatMid(DS_MRSMatMid<=0) = NaN; %MRSMatMid(isoutlier(MRSMatMid)) = NaN;
-cMRSMat(cMRSMat<=0) = NaN;  %cMRSMat(isoutlier(cMRSMat)) = NaN;
-cMRSMatMid(cMRSMatMid<=0) = NaN; %cMRSMatMid(isoutlier(cMRSMatMid)) = 0;
-aMRSMat(aMRSMat<=0) = NaN;% aMRSMat(isoutlier(aMRSMat)) = NaN;
-aMRSMatMid(aMRSMatMid<=0) = NaN; %aMRSMatMid(isoutlier(aMRSMatMid)) = NaN;
-
-% figure; plot(linspace(0.75,1.25, length(DS_MRSMat)), DS_MRSMat', '.', 'Markersize', 14)
-% hold on; plot(linspace(1.75, 2.25, length(OtherMat)), OtherMat', '.', 'Markersize', 14)
-% plot(linspace(2.75,3.25,length(cMRSMat)), cMRSMat', '.', 'Markersize', 14)
-% plot(linspace(3.75,4.25,length(aMRSMat)), aMRSMat', '.', 'Markersize', 14)
-datamat = [{OtherMat},{MRSMat}, {cMRSMat}, {SelectedClusters},{SelectedClusters2},{SelectedClusters3}, {SelectedClusters4}, {SelectedClusters5}, {aMRSMat}];
-figure; bar(1:length(datamat), cell2mat(cellfun(@nanmedian, datamat, 'uni', false)), 'FaceColor','k')
-bootstrpnum = 1000;
-alphaforbootstrap = 0.05;
-for i = 1:length(datamat)
-    Y = bootci(bootstrpnum, {@median, datamat{i}(~isnan(datamat{i}))}, 'alpha', alphaforbootstrap);
-    line([i,i], [Y(1), Y(2)], 'linewidth', 0.5, 'color', 'k');
-end
-set(gca, 'XTickLabel', {'All Other Spines','Movement Spines', 'Putative cMRS', 'cMRS with Max Corr', 'cMRS with High Corr', 'cMRS max Noise Corr', 'cMRS high Noise Corr', 'max \DeltaV', 'anti-Clustered MRS'})
-ylabel('\Delta Spine Volume (Late/Early)')
-xtickangle(gca, 45)
-
-
-%% organize by animal
+%==========================================================================
+%% Delta Volume by animal
 temp = OtherSpinesDeltaVolume(~cellfun(@isempty, OtherSpinesDeltaVolume));
 OtherSpinesbyAnimal = [];
 for i =1:length(temp)
@@ -371,15 +453,15 @@ for i = 1:length(temp)
     currentdata = temp{i}(~cellfun(@isempty, temp{i}));
     MRSbyAnimal{i} = cell2mat(cellfun(@(x) x(:,end), currentdata, 'uni', false)');
 end
-temp = MRSDeltaVolumebyMaxCorr(~cellfun(@isempty, MRSDeltaVolumebyMaxCorr));
+temp = MRSDeltaVolumebyHighCorr(~cellfun(@isempty, MRSDeltaVolumebyHighCorr));
 for i = 1:length(temp)
     currentdata = temp{i}(~cellfun(@isempty, temp{i}));
-    MRSDeltaVolumebyMaxCorrbyAnimal{i} = cell2mat(cellfun(@(x) x(:,end), currentdata, 'uni', false)');
+    MRSDeltaVolumebyMaxCorrbyAnimal{i} = cell2mat(cellfun(@(x) x(:), currentdata, 'uni', false)');
 end
-temp = MRSDeltaVolumebyMaxNoiseCorr(~cellfun(@isempty, MRSDeltaVolumebyMaxNoiseCorr));
+temp = MRSDeltaVolumebyHighNoiseCorr(~cellfun(@isempty, MRSDeltaVolumebyHighNoiseCorr));
 for i = 1:length(temp)
     currentdata = temp{i}(~cellfun(@isempty, temp{i}));
-    MRSDeltaVolumebyMaxNoiseCorrbyAnimal{i} = cell2mat(cellfun(@(x) x(:,end), currentdata, 'uni', false)');
+    MRSDeltaVolumebyMaxNoiseCorrbyAnimal{i} = cell2mat(cellfun(@(x) x(:), currentdata, 'uni', false)');
 end
 temp = aMRSDeltaVolume(~cellfun(@isempty, aMRSDeltaVolume));
 for i = 1:length(temp)
@@ -391,11 +473,208 @@ figure; bar(1:length(datamat), cell2mat(cellfun(@nanmedian, datamat, 'uni', fals
 bootstrpnum = 1000;
 alphaforbootstrap = 0.05;
 for i = 1:length(datamat)
+    Y = bootci(bootstrpnum, {@nanmedian, datamat{i}(~isnan(datamat{i}))}, 'alpha', alphaforbootstrap);
+    line([i,i], [Y(1), Y(2)], 'linewidth', 0.5, 'color', 'k');
+end
+set(gca, 'XTickLabel', {'All Other Spines','Movement Spines', 'cMRS by Corr', 'cMRS by Noise Corr', 'aMRS'})
+ylabel('\Delta Spine Volume (Late/Early)')
+xtickangle(gca, 45)
+
+%==========================================================================
+%% Delta Volume by field
+temp = horzcat(OtherSpinesDeltaVolume{:});
+OtherSpinesbyField = temp(~cellfun(@isempty, temp));
+OtherSpinesbyField = cellfun(@(x) x(:,end), OtherSpinesbyField, 'uni', false);
+
+temp = horzcat(MRSDeltaVolume{:});
+MRSbyField = temp(~cellfun(@isempty, temp));
+MRSbyField = cellfun(@(x) x(:,end), MRSbyField, 'uni', false);
+
+temp = horzcat(cMRSDeltaVolume{:});
+cMRSbyField = temp(~cellfun(@isempty, temp));
+cMRSbyField = cellfun(@cell2mat, cMRSbyField, 'uni', false);
+
+temp = horzcat(MRSDeltaVolumebySeedlingMovementSimilarity{:});
+MRSDeltaVolumebyMaxCorrbyField = temp(~cellfun(@isempty, temp));
+
+temp = horzcat(MRSDeltaVolumebyHighNoiseCorr{:});
+MRSDeltaVolumebyMaxNoiseCorrbyField = temp(~cellfun(@isempty, temp));
+
+temp = horzcat(aMRSDeltaVolume{:});
+aMRSDeltaVolumebyField = temp(~cellfun(@isempty, temp));
+aMRSDeltaVolumebyField = cellfun(@(x) x(:,end), aMRSDeltaVolumebyField, 'uni', false);
+
+datamat = [{cellfun(@nanmedian, OtherSpinesbyField)},{cellfun(@nanmedian, MRSbyField)},{cellfun(@nanmedian, cMRSbyField)},{cellfun(@nanmedian, MRSDeltaVolumebyMaxCorrbyField)}, {cellfun(@nanmedian, MRSDeltaVolumebyMaxNoiseCorrbyField)}, {cellfun(@nanmedian, aMRSDeltaVolumebyField)}];
+figure; bar(1:length(datamat), cell2mat(cellfun(@nanmedian, datamat, 'uni', false)), 'FaceColor','r')
+bootstrpnum = 1000;
+alphaforbootstrap = 0.05;
+for i = 1:length(datamat)
+    Y = bootci(bootstrpnum, {@median, datamat{i}(~isnan(datamat{i}))}, 'alpha', alphaforbootstrap);
+    line([i,i], [Y(1), Y(2)], 'linewidth', 0.5, 'color', 'k');
+end
+set(gca, 'XTickLabel', {'All Other Spines','Movement Spines', 'cMRS', 'cMRS by Corr', 'cMRS by Noise Corr', 'aMRS'})
+ylabel('\Delta Spine Volume (Late/Early)')
+xtickangle(gca, 45)
+
+%==========================================================================
+%% Delta Frequency by animal
+temp = OtherSpinesDeltaFrequency(~cellfun(@isempty, OtherSpinesDeltaFrequency));
+OtherSpinesbyAnimal = [];
+for i =1:length(temp)
+    currentdata = temp{i}(~cellfun(@isempty, temp{i}));
+    OtherSpinesbyAnimal{i} = cell2mat(cellfun(@(x) x(:), currentdata, 'uni', false)');
+end
+
+temp = MRSDeltaFrequency(~cellfun(@isempty, MRSDeltaFrequency));
+MRSsbyAnimal = [];
+for i =1:length(temp)
+    currentdata = temp{i}(~cellfun(@isempty, temp{i}));
+    MRSsbyAnimal{i} = cell2mat(cellfun(@(x) x(:), currentdata, 'uni', false)');
+end
+
+temp = cMRSDeltaFreqbyHighCorr(~cellfun(@isempty, cMRSDeltaFreqbyHighCorr));
+ClustSpinesbyAnimal = [];
+for i =1:length(temp)
+    currentdata = temp{i}(~cellfun(@isempty, temp{i}));
+    ClustSpinesbyAnimal{i} = cell2mat(cellfun(@(x) x(:), currentdata, 'uni', false)');
+end
+
+temp = cMRSDeltaFreqbyHighNoiseCorr(~cellfun(@isempty, cMRSDeltaFreqbyHighNoiseCorr));
+ClustSpinesNoiseCorrbyAnimal = [];
+for i =1:length(temp)
+    currentdata = temp{i}(~cellfun(@isempty, temp{i}));
+    ClustSpinesNoiseCorrbyAnimal{i} = cell2mat(cellfun(@(x) x(:), currentdata, 'uni', false)');
+end
+
+temp = aMRSDeltaFreq(~cellfun(@isempty, aMRSDeltaFreq));
+antiClustSpinesbyAnimal = [];
+for i =1:length(temp)
+    currentdata = temp{i}(~cellfun(@isempty, temp{i}));
+    antiClustSpinesbyAnimal{i} = cell2mat(cellfun(@(x) x(:), currentdata, 'uni', false)');
+end
+
+datamat = [{cellfun(@nanmedian, OtherSpinesbyAnimal)},{cellfun(@nanmedian, MRSsbyAnimal)},{cellfun(@nanmedian, ClustSpinesbyAnimal)},{cellfun(@nanmedian, ClustSpinesNoiseCorrbyAnimal)},{cellfun(@nanmedian, antiClustSpinesbyAnimal)}];
+figure; bar(1:length(datamat), cell2mat(cellfun(@nanmedian, datamat, 'uni', false)), 'FaceColor','k')
+bootstrpnum = 1000;
+alphaforbootstrap = 0.05;
+for i = 1:length(datamat)
+    Y = bootci(bootstrpnum, {@median, datamat{i}(~isnan(datamat{i}))}, 'alpha', alphaforbootstrap);
+    line([i,i], [Y(1), Y(2)], 'linewidth', 0.5, 'color', 'k');
+end
+set(gca, 'XTickLabel', {'All Other Spines','All MRSs', 'cMRS by Corr', 'cMRS by Noise Corr', 'aMRS'})
+ylabel('\Delta Frequency (Late/Early)')
+xtickangle(gca, 45)
+
+%==========================================================================
+%% Delta Frequency by field
+temp = horzcat(OtherSpinesDeltaFrequency{:});
+OtherSpinesbyField = temp(~cellfun(@isempty, temp));
+OtherSpinesbyField = cellfun(@(x) x(:,end), OtherSpinesbyField, 'uni', false);
+
+temp = horzcat(MRSDeltaFrequency{:});
+MRSbyField = temp(~cellfun(@isempty, temp));
+MRSbyField = cellfun(@(x) x(:,end), MRSbyField, 'uni', false);
+
+temp = horzcat(cMRSDeltaFreqbyHighCorr{:});
+MRSDeltaVolumebyMaxCorrbyField = temp(~cellfun(@isempty, temp));
+
+temp = horzcat(cMRSDeltaFreqbyHighNoiseCorr{:});
+MRSDeltaVolumebyMaxNoiseCorrbyField = temp(~cellfun(@isempty, temp));
+
+temp = horzcat(aMRSDeltaFreq{:});
+aMRSDeltaVolumebyField = temp(~cellfun(@isempty, temp));
+aMRSDeltaVolumebyField = cellfun(@(x) x(:,end), aMRSDeltaVolumebyField, 'uni', false);
+
+datamat = [{cellfun(@nanmedian, OtherSpinesbyField)},{cellfun(@nanmedian, MRSbyField)},{cellfun(@nanmedian, MRSDeltaVolumebyMaxCorrbyField)}, {cellfun(@nanmedian, MRSDeltaVolumebyMaxNoiseCorrbyField)}, {cellfun(@nanmedian, aMRSDeltaVolumebyField)}];
+figure; bar(1:length(datamat), cell2mat(cellfun(@nanmedian, datamat, 'uni', false)), 'FaceColor','r')
+bootstrpnum = 1000;
+alphaforbootstrap = 0.05;
+for i = 1:length(datamat)
     Y = bootci(bootstrpnum, {@median, datamat{i}(~isnan(datamat{i}))}, 'alpha', alphaforbootstrap);
     line([i,i], [Y(1), Y(2)], 'linewidth', 0.5, 'color', 'k');
 end
 set(gca, 'XTickLabel', {'All Other Spines','Movement Spines', 'cMRS with Max Corr', 'cMRS max Noise Corr', 'aMRS'})
-ylabel('\Delta Spine Volume (Late/Early)')
+ylabel('\Delta Frequency (Late/Early)')
+xtickangle(gca, 45)
+
+%==========================================================================
+%% Delta Amplitude
+temp = OtherSpinesDeltaAmp(~cellfun(@isempty, OtherSpinesDeltaAmp));
+OtherSpinesbyAnimal = [];
+for i =1:length(temp)
+    currentdata = temp{i}(~cellfun(@isempty, temp{i}));
+    OtherSpinesbyAnimal{i} = cell2mat(cellfun(@(x) x(:), currentdata, 'uni', false)');
+end
+
+temp = MRSDeltaAmp(~cellfun(@isempty, MRSDeltaAmp));
+MRSsbyAnimal = [];
+for i =1:length(temp)
+    currentdata = temp{i}(~cellfun(@isempty, temp{i}));
+    MRSsbyAnimal{i} = cell2mat(cellfun(@(x) x(:), currentdata, 'uni', false)');
+end
+
+temp = cMRSDeltaAmpbyHighCorr(~cellfun(@isempty, cMRSDeltaAmpbyHighCorr));
+ClustSpinesbyAnimal = [];
+for i =1:length(temp)
+    currentdata = temp{i}(~cellfun(@isempty, temp{i}));
+    ClustSpinesbyAnimal{i} = cell2mat(cellfun(@(x) x(:), currentdata, 'uni', false)');
+end
+
+temp = cMRSDeltaAmpbyHighNoiseCorr(~cellfun(@isempty, cMRSDeltaAmpbyHighNoiseCorr));
+ClustSpinesNoiseCorrbyAnimal = [];
+for i =1:length(temp)
+    currentdata = temp{i}(~cellfun(@isempty, temp{i}));
+    ClustSpinesNoiseCorrbyAnimal{i} = cell2mat(cellfun(@(x) x(:), currentdata, 'uni', false)');
+end
+
+temp = aMRSDeltaAmp(~cellfun(@isempty, aMRSDeltaAmp));
+antiClustSpinesbyAnimal = [];
+for i =1:length(temp)
+    currentdata = temp{i}(~cellfun(@isempty, temp{i}));
+    antiClustSpinesbyAnimal{i} = cell2mat(cellfun(@(x) x(:), currentdata, 'uni', false)');
+end
+
+datamat = [{cellfun(@nanmedian, OtherSpinesbyAnimal)},{cellfun(@nanmedian, MRSsbyAnimal)},{cellfun(@nanmedian, ClustSpinesbyAnimal)},{cellfun(@nanmedian, ClustSpinesNoiseCorrbyAnimal)},{cellfun(@nanmedian, antiClustSpinesbyAnimal)}];
+figure; bar(1:length(datamat), cell2mat(cellfun(@nanmedian, datamat, 'uni', false)), 'FaceColor','k')
+bootstrpnum = 1000;
+alphaforbootstrap = 0.05;
+for i = 1:length(datamat)
+    Y = bootci(bootstrpnum, {@median, datamat{i}(~isnan(datamat{i}))}, 'alpha', alphaforbootstrap);
+    line([i,i], [Y(1), Y(2)], 'linewidth', 0.5, 'color', 'k');
+end
+set(gca, 'XTickLabel', {'All Other Spines','All MRSs', 'cMRS', 'cMRS by Max Noise Corr', 'aMRS'})
+ylabel('\Delta Amplitude (Late/Early)')
+xtickangle(gca, 45)
+%==========================================================================
+%% Delta Amp by field
+temp = horzcat(OtherSpinesDeltaAmp{:});
+OtherSpinesbyField = temp(~cellfun(@isempty, temp));
+OtherSpinesbyField = cellfun(@(x) x(:,end), OtherSpinesbyField, 'uni', false);
+
+temp = horzcat(MRSDeltaAmp{:});
+MRSbyField = temp(~cellfun(@isempty, temp));
+MRSbyField = cellfun(@(x) x(:,end), MRSbyField, 'uni', false);
+
+temp = horzcat(cMRSDeltaAmpbyHighCorr{:});
+MRSDeltaVolumebyMaxCorrbyField = temp(~cellfun(@isempty, temp));
+
+temp = horzcat(cMRSDeltaAmpbyHighNoiseCorr{:});
+MRSDeltaVolumebyMaxNoiseCorrbyField = temp(~cellfun(@isempty, temp));
+
+temp = horzcat(aMRSDeltaAmp{:});
+aMRSDeltaVolumebyField = temp(~cellfun(@isempty, temp));
+aMRSDeltaVolumebyField = cellfun(@(x) x(:,end), aMRSDeltaVolumebyField, 'uni', false);
+
+datamat = [{cellfun(@nanmedian, OtherSpinesbyField)},{cellfun(@nanmedian, MRSbyField)},{cellfun(@nanmedian, MRSDeltaVolumebyMaxCorrbyField)}, {cellfun(@nanmedian, MRSDeltaVolumebyMaxNoiseCorrbyField)}, {cellfun(@nanmedian, aMRSDeltaVolumebyField)}];
+figure; bar(1:length(datamat), cell2mat(cellfun(@nanmedian, datamat, 'uni', false)), 'FaceColor','r')
+bootstrpnum = 1000;
+alphaforbootstrap = 0.05;
+for i = 1:length(datamat)
+    Y = bootci(bootstrpnum, {@median, datamat{i}(~isnan(datamat{i}))}, 'alpha', alphaforbootstrap);
+    line([i,i], [Y(1), Y(2)], 'linewidth', 0.5, 'color', 'k');
+end
+set(gca, 'XTickLabel', {'All Other Spines','Movement Spines', 'cMRS with Max Corr', 'cMRS max Noise Corr', 'aMRS'})
+ylabel('\Delta Amp (Late/Early)')
 xtickangle(gca, 45)
 
 %==========================================================================

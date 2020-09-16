@@ -39,10 +39,10 @@ NewSpinesByAnimal = cell(1,14);
 if strcmpi(sensorused, 'GCaMP')
     ImagingFrequency = 30;
 elseif strcmpi(sensorused, 'GluSNFR')
-    ImagingFrequency = 60;
+    ImagingFrequency = 58.3;
 end
 SecondsPreMovement = 2;
-SecondsPostMovement = 2;
+SecondsPostMovement = 3;
 
 startwindow = round(ImagingFrequency*SecondsPreMovement);   %%% Time (in frames) to subtract from the initiation of movement for inspection of beginning of trace
 stopwindow = round(ImagingFrequency*SecondsPostMovement);    %%% Time (in frames) to add to the initiation of movement for inspection of end of trace
@@ -76,22 +76,33 @@ for sample = 1:animalnumber
     count = 1;
     found = 0;
     waitbar(sample/animalnumber, h1, ['Collecting trial information for ', varargin{sample}]);
-    while found<4 %%% If you add features to be found, make sure to change this value (should match the number of "or" clauses below
-        if count>length(files)
-            continue
-        end
-        if ~isempty(strfind(files(count).name, [varargin{sample}, '_TrialInformation'])) || ~isempty(strfind(files(count).name, [varargin{sample}, '_SpineCorrelationTimecourse'])) || ~isempty(strfind(files(count).name, [varargin{sample}, '_StatClassified'])) || ~isempty(strfind(files(count).name, [varargin{sample}, '_SpineDynamicsSummary']))
-            found = found+1;
-            load(files(count).name);
-        end
-        count = count+1;
-    end
-    eval(['clusteredspines = ', varargin{sample}, '_SpineCorrelationTimecourse.ClusteredSpines;'])
+    a = fastdir(cd,[varargin{sample}, '_TrialInformation']);
+    load(a{1});
+    b = fastdir(cd,[varargin{sample}, '_StatClassified']);
+    load(b{1});
+    c = fastdir(cd,[varargin{sample}, '_SpineDynamicsSummary']);
+    load(c{1});
+    d = fastdir(cd,[varargin{sample}, '_Aligned']);
+    load(d{1});
+%     while found<4 %%% If you add features to be found, make sure to change this value (should match the number of "or" clauses below
+%         if count>length(files)
+%             continue
+%         end
+%         if ~isempty(strfind(files(count).name, [varargin{sample}, '_TrialInformation'])) || ~isempty(strfind(files(count).name, [varargin{sample}, '_SpineCorrelationTimecourse'])) || ~isempty(strfind(files(count).name, [varargin{sample}, '_StatClassified'])) || ~isempty(strfind(files(count).name, [varargin{sample}, '_SpineDynamicsSummary']))
+%             found = found+1;
+%             load(files(count).name);
+%         end
+%         count = count+1;
+%     end
 %     eval(['clusteredspines = ', varargin{sample}, '_SpineCorrelationTimecourse.ClusteredSpines;'])
-    ClusteredSpinesAll = clusteredspines;
+%     eval(['clusteredspines = ', varargin{sample}, '_SpineCorrelationTimecourse.ClusteredSpines;'])
+%     ClusteredSpinesAll = clusteredspines;
+
     clear([varargin{sample}, '_SpineCorrelationTimecourse'])
     eval(['spinestatclass = ', varargin{sample}, '_StatClassified;']);
     clear([varargin{sample}, '_StatClassified'])
+    eval(['Aligned = ', varargin{sample}, '_Aligned;'])
+    clear([varargin{sample}, '_Aligned'])
     alignedtomovement = cell(1,14);
     alignedtofailure = cell(1,14);
     dendritealignedtomovement = cell(1,14);
@@ -105,6 +116,7 @@ for sample = 1:animalnumber
     end
     for session = 1:length(currentfile)
         statspines{session} = [];
+        newspines{session} = []; 
         statdends{session} = [];
         locator = 0;
         if session>14
@@ -137,14 +149,16 @@ for sample = 1:animalnumber
                 trialscounted = find(~cell2mat(cellfun(@isempty, currentfile{session}, 'uni', false)));
                 numspines(sample, session) = size(currentfile{session}{trialscounted(1)}.trialactivity,1);        %%% Usually can count on data at session 20 (random, and can be changed according to need)
                 numdends(sample, session) = size(currentfile{session}{trialscounted(1)}.DendriteActivity,1);
-                ClusteredSpinesByAnimal{session}{sample} = cell2mat(ClusteredSpinesAll{session}');
+%                 ClusteredSpinesByAnimal{session}{sample} = cell2mat(ClusteredSpinesAll{session}');
                 StatSpinesByAnimal{session}{sample} = statspines{session};
                 if sample > 1
-                    ClusteredSpinesAll{session} = cell2mat(ClusteredSpinesAll{session}') + sum(numspines(1,session):numspines(sample-1,session));
+%                     ClusteredSpinesAll{session} = cell2mat(ClusteredSpinesAll{session}') + sum(numspines(1,session):numspines(sample-1,session));
                     statspines{session} = statspines{session} + sum(numspines(1,session):numspines(sample-1,session));
                 else
-                    ClusteredSpinesAll{session} = cell2mat(ClusteredSpinesAll{session}');
+%                     ClusteredSpinesAll{session} = cell2mat(ClusteredSpinesAll{session}');
                 end
+                field_address = cellfun(@(x) ismember(session,x),spinedynamicssummary.SessionsbyField);
+                
                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %                 spinestoanalyze =
 %                 1:numspines(sample,session);
@@ -157,11 +171,12 @@ for sample = 1:animalnumber
                     if ~isempty(currentfile{session}{trial})
                         result = currentfile{session}{trial}.Result;
                         if strcmpi(result, 'Reward')
-                            CueStart = currentfile{session}{trial}.CueStart;
+                            TrialStart = currentfile{session}{trial}.TrialStart;
+                            CueStart = TrialStart+currentfile{session}{trial}.CueStart;
                             if CueStart ==0
                                 CueStart = 1;
                             end
-                            MovementStart = currentfile{session}{trial}.MovementStart; % + currentfile{session}{trial}.TrialStart;   %%% The new method of behavior/imaging alignment subtracts the trial start each time to get relative frames; this will be redone in the future, so you will need to remove the addition
+                            MovementStart = TrialStart+currentfile{session}{trial}.MovementStart; % + currentfile{session}{trial}.TrialStart;   %%% The new method of behavior/imaging alignment subtracts the trial start each time to get relative frames; this will be redone in the future, so you will need to remove the addition
                             
                             %%% Select when to end the inspection period %%
 %                             MovementEnd = currentfile{session}{trial}.MovementEnd;
@@ -169,13 +184,13 @@ for sample = 1:animalnumber
                             MovementLengthDistribution{session}{sample}(trial) = currentfile{session}{trial}.MovementEnd-MovementStart;
                             %%%
                             
-                            if MovementEnd > size(currentfile{session}{trial}.trialdendsubactivity,2)
-                                MovementEnd = size(currentfile{session}{trial}.trialdendsubactivity,2);
+                            if MovementEnd > length(Aligned{session}.ProcessedSpineActivity)
+                                MovementEnd = length(Aligned{session}.ProcessedSpineActivity);
                             end
                             if isempty(MovementEnd)
                                 MovementEnd = currentfile{session}{trial}.CueEnd+currentfile{session}{trial}.TrialStart;
                             end
-                            if isempty(MovementStart) || MovementStart > 1000 || MovementEnd > 1000
+                            if isempty(MovementStart) 
                                 continue
                             end
                             %%%
@@ -190,12 +205,12 @@ for sample = 1:animalnumber
                                 case 'Subtract'
                                     alignedtomovement{1,session}(1:length(spinestoanalyze),ChosenStart-MovementStart+centermovement:MovementEnd-MovementStart+centermovement,trial) =  zscore(currentfile{session}{trial}.trialdendsubactivity(spinestoanalyze, ChosenStart:MovementEnd),[],2);
                                 case 'Ignore'
-                                    alignedtomovement{1,session}(1:length(spinestoanalyze),ChosenStart-MovementStart+centermovement:MovementEnd-MovementStart+centermovement,trial) =  zscore(currentfile{session}{trial}.trialactivity(spinestoanalyze, ChosenStart:MovementEnd),[],2);
+                                    alignedtomovement{1,session}(1:length(spinestoanalyze),ChosenStart-MovementStart+centermovement:MovementEnd-MovementStart+centermovement,trial) =  zscore(Aligned{session}.ProcessedSpineActivity(spinestoanalyze, ChosenStart:MovementEnd),[],2);
                             end
-                            dendritealignedtomovement{1,session}(1:numdends(sample,session),ChosenStart-MovementStart+centermovement:MovementEnd-MovementStart+centermovement,trial) =  zscore(currentfile{session}{trial}.DendriteActivity(1:numdends(sample,session), ChosenStart:MovementEnd),[],2);
-                            if any(alignedtomovement{1,session}(1:length(spinestoanalyze),ChosenStart-MovementStart+centermovement:MovementEnd-MovementStart+centermovement,trial)<0)
-                                k = 'hey stop here there are sometimes errors';
-                            end
+%                             dendritealignedtomovement{1,session}(1:numdends(sample,session),ChosenStart-MovementStart+centermovement:MovementEnd-MovementStart+centermovement,trial) =  zscore(currentfile{session}{trial}.DendriteActivity(1:numdends(sample,session), ChosenStart:MovementEnd),[],2);
+%                             if any(alignedtomovement{1,session}(1:length(spinestoanalyze),ChosenStart-MovementStart+centermovement:MovementEnd-MovementStart+centermovement,trial)<0)
+%                                 k = 'hey stop here there are sometimes errors';
+%                             end
 %                             figure; imagesc(currentfile{session}{trial}.trialdendsubactivity(1:numspines(sample,session), ChosenStart:MovementEnd))
 %                         elseif strcmpi(result, 'Punish')
 %                             TrialStart = currentfile{session}{trial}.TrialStart;
@@ -224,7 +239,7 @@ for sample = 1:animalnumber
         else
             ClusteredSpinesAll{session} = [];
         end
-        sessionClusteredSpines{1,session} = [sessionClusteredSpines{1,session}; ClusteredSpinesAll{session}];
+%         sessionClusteredSpines{1,session} = [sessionClusteredSpines{1,session}; ClusteredSpinesAll{session}];
         trialaverage{1,session} = [trialaverage{1,session}; nanmean(alignedtomovement{1,session},3)];
         trialaveragebyanimal{session}{sample} = nanmean(alignedtomovement{1,session},3);
         sessionStatSpines{1,session} = [sessionStatSpines{1,session}; statspines{session}];
@@ -253,8 +268,8 @@ for sample = 1:animalnumber
     clear([varargin{sample}, '_TrialInformation'])
 end
 
-TrialFeatures.ClusteredSpines = sessionClusteredSpines;
-TrialFeatures.ClusteredSpinesbyAnimal = ClusteredSpinesByAnimal;
+% TrialFeatures.ClusteredSpines = sessionClusteredSpines;
+% TrialFeatures.ClusteredSpinesbyAnimal = ClusteredSpinesByAnimal;
 TrialFeatures.StatSpinesbyAnimal = StatSpinesByAnimal;
 TrialFeatures.NewSpines = sessionNewSpines;
 TrialFeatures.NewSpinesbyAnimal = NewSpinesByAnimal;
@@ -300,31 +315,31 @@ for i = 1:14
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%^
         %%% Pick the type of spine you want to label 
-        spinesofinterest = sessionStatSpines{i};
+%         spinesofinterest = sessionStatSpines{i};
 %         spinesofinterest = sessionClusteredSpines{i};
-%         spinesofinterest = sessionNewSpines{i};
+        spinesofinterest = sessionNewSpines{i};
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
-%         ispines = ismember(indsort, spinesofinterest);
-%         ispinesloc = find(ispines);
-%         ispinestiming{i} = (valsort(ispinesloc)-centermovement)/30;    %%% Subtract zero point and convert to seconds
-%         arrows = repmat('-->', length(ispinesloc),1);
-%         %%% Label all spines of interest with an arrow, but make exceptions
-%         %%% for the first and last spines, for ease of reading
-%         if isempty(find(ispinesloc==1)) && isempty(find(ispinesloc==size(trialaverage{1,i},1)))
-%             set(gca, 'YTick', [1;ispinesloc; size(trialaverage{1,i},1)])
-%             set(gca, 'YTickLabel', {'1', arrows, num2str(size(trialaverage{1,i},1))});
-%         elseif ~isempty(find(ispinesloc==1)) && isempty(find(ispinesloc==size(trialaverage{1,i},1)))
-%             set(gca, 'YTick', [ispinesloc; size(trialaverage{1,i},1)]);
-%             set(gca, 'YTickLabel', {arrows, num2str(size(trialaverage{1,i},1))});
-%         elseif isempty(find(ispinesloc==1)) && ~isempty(find(ispinesloc==size(trialaverage{1,i},1)))
-%             set(gca, 'YTick', [1;ispinesloc]);
-%             set(gca, 'YTickLabel', {'1', arrows(1:end-1,:), ['-->', num2str(size(trialaverage{1,i},1))]});
-%         end    
+        ispines = ismember(indsort, spinesofinterest);
+        ispinesloc = find(ispines);
+        ispinestiming{i} = (valsort(ispinesloc)-centermovement)/30;    %%% Subtract zero point and convert to seconds
+        arrows = repmat('-->', length(ispinesloc),1);
+        %%% Label all spines of interest with an arrow, but make exceptions
+        %%% for the first and last spines, for ease of reading
+        if isempty(find(ispinesloc==1)) && isempty(find(ispinesloc==size(trialaverage{1,i},1)))
+            set(gca, 'YTick', [1;ispinesloc; size(trialaverage{1,i},1)])
+            set(gca, 'YTickLabel', {'1', arrows, num2str(size(trialaverage{1,i},1))});
+        elseif ~isempty(find(ispinesloc==1)) && isempty(find(ispinesloc==size(trialaverage{1,i},1)))
+            set(gca, 'YTick', [ispinesloc; size(trialaverage{1,i},1)]);
+            set(gca, 'YTickLabel', {arrows, num2str(size(trialaverage{1,i},1))});
+        elseif isempty(find(ispinesloc==1)) && ~isempty(find(ispinesloc==size(trialaverage{1,i},1)))
+            set(gca, 'YTick', [1;ispinesloc]);
+            set(gca, 'YTickLabel', {'1', arrows(1:end-1,:), ['-->', num2str(size(trialaverage{1,i},1))]});
+        end    
         ylim([0 size(trialaverage{1,i},1)])
 %         xlim([centermovement/2, centermovement*2])
         set(gca, 'XTick', [(centermovement)/2 centermovement centermovement+(centermovement/2), centermovement*2])
-        set(gca, 'XTickLabel', {num2str(((centermovement/2)-centermovement)/30), '0', num2str((centermovement/2)/30), num2str(centermovement/30)})
+        set(gca, 'XTickLabel', {num2str(((centermovement/2)-centermovement)/ImagingFrequency), '0', num2str((centermovement/2)/ImagingFrequency), num2str(centermovement/ImagingFrequency)})
     end
 end
 

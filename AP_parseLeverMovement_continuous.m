@@ -36,13 +36,13 @@ lever_active = lever_velocity_envelope_smooth > movethresh;
 
 %==========================================================================
 % give leeway on both ends to all movements 
-movement_leeway = 1; % ms to extend movement total (half on each end)   %% NH changed from 150ms to 0ms on 8/27/2019
+movement_leeway = 150; % ms to extend movement total (half on each end)   %% NH changed from 150ms to 0ms on 8/27/2019 %% Changed back to 150ms on 1/9/2020
 movement_leeway_filt = ones(movement_leeway,1);
 lever_active = logical(conv2(+lever_active,movement_leeway_filt,'same'));
 
 % close gaps of determined size
-gap_allowance = 200; %ms %% NH Changed from 500 to 200ms on 8/27/19
-% gap_allowance = 50; %ms %% NH changed from 200 to 100ms on 9/2/19
+% gap_allowance = 200; %ms %% NH Changed from 500 to 200ms on 8/27/19
+gap_allowance = 500; %ms %% NH changed back to 500ms on 1/9/2020
 
 lever_active_switch = diff([0;lever_active;0]);
 lever_active_starts = find(lever_active_switch == 1);

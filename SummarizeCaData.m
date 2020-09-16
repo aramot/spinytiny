@@ -289,6 +289,9 @@ Options.BeingAnalyzed = 'Spine';
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 for i = 1:numberofSpines
+    if i == 25
+        k = 1;
+    end
     [spinedriftbaseline(i,:), processed_dFoF(i,:)] = AnalyzeTrace(spinedatatouse{i}, Options);
 end
 
@@ -721,7 +724,7 @@ seps = strfind(dirtouse, filesep);
 separation_indices = [0,seps,length(dirtouse)];
 file_subdivs = mat2cell(dirtouse, 1, diff(separation_indices));
 
-experiment = regexp(FileInfo.filetoload, '[A-Z]{2,3}\d+[_]\d+', 'match');
+experiment = regexp(FileInfo.filetoload, '[A-Z]{2,3}\w+[_]\d+', 'match');
 experiment = experiment{1};
 animal = experiment(1:5);
 date = regexp(dirtouse, '\d{6}', 'match'); 
@@ -769,7 +772,7 @@ end
 
 switch Router
     case 'Original'
-        pixpermicron = 0.5;
+        pixpermicronat1xzoom = 0.5;
 %         if ~isempty(strfind(File.Filename, 'ZL')) || ~isempty(strfind(File.Filename, 'PY'))
 %             File.ZoomValue = 8.5;
 %         end
@@ -777,8 +780,10 @@ switch Router
             if File.ZoomValue ~= 0
                 if ischar(File.ZoomValue)
                     File.ZoomValue = str2num(File.ZoomValue);
+                else
+                    File.ZoomValue = File.ZoomValue;
                 end
-                pixpermicron = (pixpermicron*File.ZoomValue);
+                pixpermicron = (pixpermicronat1xzoom*File.ZoomValue);
             end
         end
         SpineToSpineDistance = nan(numberofSpines,numberofSpines);

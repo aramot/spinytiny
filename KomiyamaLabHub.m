@@ -424,7 +424,7 @@ elseif Activity && Behavior
         cd(datafolder);
         h1 = waitbar(0, 'Initializing...');
         selection = list{listpos(L)}; animal = regexp(selection, '[\r\f\n]', 'split'); animal = animal{1};
-        targetfiles = fastdir(cd, animal, {'Poly', 'ZSeries'});
+        targetfiles = fastdir(cd, animal, {'Poly', 'ZSeries', 'Axon'});
         for i = 1:length(targetfiles)
             load(targetfiles{i})
             eval(['filesesh = ', targetfiles{i}(1:end-4), '.Session;']);
@@ -579,6 +579,8 @@ if length(listpos) ==1
         FractionITISpentMovingPreIgnoredTrials(1,sessions(i)) = nanmedian(Behavior.FractionITISpentMovingPreIgnoredTrials);
         NumberofMovementsDuringITIPreRewardedTrials(1,sessions(i)) = nanmedian(Behavior.NumberofMovementsDuringITIPreRewardedTrials);
         FractionITISpentMovingPreRewardedTrials(1,sessions(i)) = nanmedian(Behavior.FractionITISpentMovingPreRewardedTrials);
+        MovementDuration{sessions(i)} = Behavior.MovementDuration;
+        CuedRewardedMovementDuration{sessions(i)} = Behavior.CuedRewardedMovementDuration;
 
           
         wrkspc = who;
@@ -600,11 +602,26 @@ if length(listpos) ==1
     xlabel('Session')
     
     for i = sessions
-        reducedMovementMat = MovementMat{i}(any(~isnan(MovementMat{i}),2),:);
-        if size(reducedMovementMat,1)>10
-            [coeffs{i}, scores{i}, ~, ~, explained{i}] = pca(reducedMovementMat);
+        reducedMovementMat{i} = MovementMat{i}(any(~isnan(MovementMat{i}),2),:);
+        if size(reducedMovementMat{i},1)>=5
+            [coeffs{i}, scores{i}, ~, ~, explained{i}] = pca(reducedMovementMat{i}, 'centered', true);
         else
-            coeffs{i} = nan; scores{i} = nan; explained{i} = nan;
+            coeffs{i} = []; scores{i} = []; explained{i} = [];
+        end
+    end
+    
+    for i = sessions(1):sessions(end-1)
+        if ~isempty(scores{i}) && ~isempty(scores{i+1})
+%             reducedMovementMat = [MovementMat{i}(any(~isnan(MovementMat{i}),2),:); MovementMat{i+1}(any(~isnan(MovementMat{i+1}),2),:)]; %%% concatenate consecutive days
+%             if size(reducedMovementMat,1)>=5
+%                 [across_coeffs{i}, across_scores{i}, ~, ~, across_explained{i}] = pca(reducedMovementMat);
+%             else
+%                 across_coeffs{i} = []; across_scores{i} = []; across_explained{i} = [];
+%             end
+            across_coeffs{i} = []; across_scores{i} = []; 
+            across_explained{i} = var(scores{i}(:,1))/sum(var(scores{i+1},[],2));
+        else
+            across_coeffs{i} = []; across_scores{i} = []; across_explained{i} = [];
         end
     end
 
@@ -612,7 +629,10 @@ if length(listpos) ==1
     
     valid_pca_sessions = find(~cellfun(@isempty, explained));
     plot(sessions(ismember(sessions, valid_pca_sessions)), cellfun(@(x) x(1)./100, explained(valid_pca_sessions)), 'r', 'linewidth', 2)
-    legend({'Within Sessions', 'Across Sessions', 'Expl. by PC1'})
+    
+    valid_across_pca_sessions = find(~cellfun(@isempty, across_explained));
+    plot(sessions(ismember(sessions, valid_across_pca_sessions))+1, cellfun(@(x) x(1)./100, across_explained(valid_across_pca_sessions)), 'g', 'linewidth', 2)
+    legend({'Within Sessions', 'Across Sessions', 'Expl. by PC1', 'Across by PC1'})
     
     subplot(2,2,2); plot(MoveDurationBeforeIgnoredTrials);
     xlabel('Session')
@@ -637,6 +657,9 @@ if length(listpos) ==1
     a.PCA_Coefficients = coeffs;
     a.PCA_Scores = scores;
     a.PCA_VarianceExplained = explained;
+    a.PCA_AcrossSessions_Coefficients = across_coeffs;
+    a.PCA_AcrossSessions_Scores = across_scores;
+    a.PCA_AcrossSessions_VarianceExplained = across_explained;
     a.UsedSessions = UsedSessions;
     a.CuetoReward = CuetoReward;
     a.MoveDurationBeforeIgnoredTrials = MoveDurationBeforeIgnoredTrials;
@@ -644,6 +667,8 @@ if length(listpos) ==1
     a.FractionITISpentMovingPreIgnoredTrials =FractionITISpentMovingPreIgnoredTrials;
     a.NumberofMovementsDuringITIPreRewardedTrials = NumberofMovementsDuringITIPreRewardedTrials;
     a.FractionITISpentMovingPreRewardedTrials =FractionITISpentMovingPreRewardedTrials;
+    a.MovementDuration = MovementDuration;
+    a.CuedRewardedMovementDuration = CuedRewardedMovementDuration;
     
     eval([animal, '_SummarizedBehavior = a']);
     targetsavedir = gui_KomiyamaLabHub.DefaultOutputFolder;
@@ -710,8 +735,8 @@ listpos = get(handles.AnimalName_ListBox, 'Value');
 list = get(handles.AnimalName_ListBox, 'String');
 h1 = waitbar(0, 'Initializing...');
 
-Behavior = cell(14,1);
-Activity = cell(14,1);
+Behavior = cell(16,1);
+Activity = cell(16,1);
 
 Beh_folder = dir('E:\Behavioral Data\All Summarized Behavior Files list');
 % storeddata = getappdata(KomiyamaLabHub);
@@ -801,12 +826,17 @@ else
             ismatch = strfind(Act_dir(i).name, animal);
             wrongfile = strfind(Act_dir(i).name, 'Poly');
             wrongfile2 = strfind(Act_dir(i).name, 'ZSeries');
-            if ~isempty(ismatch) && isempty(wrongfile) && isempty(wrongfile2)
+            wrongfile3 = strfind(Act_dir(i).name, 'Axon');
+            if ~isempty(ismatch) && isempty(wrongfile) && isempty(wrongfile2) && isempty(wrongfile3)
                 cd(activityfolder);
                 load(Act_dir(i).name)
                 eval(['currentsession = ', Act_dir(i).name(1:end-4), '.Session;'])
                 Activity{currentsession} = Act_dir(i).name(1:end-4);
                 cd('E:\Behavioral Data\All Summarized Behavior Files list');
+                
+                if currentsession>16
+                    continue
+                end
                 for j = 1:length(Beh_folder)
                     areboth = strncmp(Beh_folder(j).name, Activity(currentsession), 12);
                     if areboth
@@ -1133,9 +1163,12 @@ filestoanalyze =  filestoanalyze(2:end);
 
 sensor = inputdlg('Enter Sensor', '', 1,{'GCaMP'});
 
-tic
-eval(['NewSpineAnalysis(', filestoanalyze,',', '''', sensor{1}, ''')']);
-toc
+if ~isempty(sensor)
+    tic
+    eval(['NewSpineAnalysis(', filestoanalyze,',', '''', sensor{1}, ''')']);
+    toc
+else
+end
 
 
 

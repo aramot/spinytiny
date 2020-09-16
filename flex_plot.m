@@ -43,18 +43,18 @@ if strcmpi(stattype, 'parametric')
         %%% Automatically perform regression-based statistics
         
         X = repmat(x,size(y,sample_dim),1);
-        y = y(find(~isnan(y)));
-        X = X(find(~isnan(y)));
+        X = X(~isnan(y));
+        y = y(~isnan(y));
         [~,p] = corrcoef(y,X);
         if length(p)>1
             if p(1,2) < 0.05
                 ydata = get(line_handle, 'YData');
                 text(x(end)+1, ydata(find(~isnan(ydata), 1,'last')), '*', 'color', colorS, 'Fontsize', 16)
-                text(x(end)+1.1, ydata(find(~isnan(ydata), 1,'last')), ['p = ', num2str(p(1,2))], 'color', colorS, 'Fontsize', 6)
+                text(x(end)+1.1, ydata(find(~isnan(ydata), 1,'last')), ['p = ', num2str(p(1,2))], 'color', colorS, 'Fontsize', 12)
             else
                 ydata = get(line_handle, 'YData');
                 if any(~isnan(ydata))
-                    text(x(end)+1, ydata(find(~isnan(ydata), 1,'last')), ['p = ', num2str(p(1,2))], 'color', colorS, 'Fontsize', 6)
+                    text(x(end)+1, ydata(find(~isnan(ydata), 1,'last')), ['p = ', num2str(p(1,2))], 'color', colorS, 'Fontsize', 12)
                 end
             end
         end

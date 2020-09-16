@@ -24,7 +24,7 @@ unused_days = setdiff(sessions(1):sessions(end),sessions);
 sessionswithanymovements = ~cellfun(@isempty, MovementMat);
 NumberofMovementsfromEachSession = zeros(1,length(MovementMat));
 NumberofMovementsfromEachSession(sessionswithanymovements) = cellfun(@(x) sum(~isnan(x(:,1))), MovementMat(sessionswithanymovements));
-MinMovementNumberforConsideration = 10;
+MinMovementNumberforConsideration = 2;
 SessionsatCriterion = NumberofMovementsfromEachSession>=MinMovementNumberforConsideration;
 totalnumberofmovements = sum(NumberofMovementsfromEachSession(SessionsatCriterion));
 movementsduration = unique(cellfun(@length, MovementMat)); movementsduration = max(movementsduration);

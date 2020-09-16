@@ -58,6 +58,6 @@ for i = firstpos:2:length(bound)
     catch
     end
 end
-quilt = patch('Faces', f, 'Vertices', v, 'Facecolor', patchcolor, 'FaceAlpha', 0.5, 'EdgeColor', 'none');
+quilt = patch('Faces', f, 'Vertices', v, 'Facecolor', patchcolor, 'FaceAlpha', 0.75, 'EdgeColor', 'none');
 
 uistack(quilt, 'bottom')

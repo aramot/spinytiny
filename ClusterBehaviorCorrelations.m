@@ -2316,17 +2316,10 @@ for i = 1:length(varargin{firstdatainput})
                     lastspine = currentfile.SpineDendriteGrouping{j}(end);
 
                     if length(currentfile.SpineDendriteGrouping{j})>mindendsize
-                        if strcmpi(laplaciantouse, 'Normalized')
-                            L = currentfile.NormalizedLaplacian{j};
-                        elseif strcmpi(laplaciantouse, 'Original')
-                            L = currentfile.LaplacianMatrix{j};
-                        end
-                        eigenvalues = eig(L);
-                        Fiedlerval = min(eigenvalues(~ismember(eigenvalues,min(eigenvalues)))); %%% Finds the second smallest eigenvalue (the Fiedler value, or measure or algebraic connectivity)
 
-                        temporalvalues = eig(Temporal_Laplacian{session}{j});
-                        temporalvalues(temporalvalues==min(temporalvalues)) = nan;
-                        [TemporalFiedlerval, ~] = min(temporalvalues);
+                        Fiedlerval = SpectralData.SpatialFiedler; %%% Finds the second smallest eigenvalue (the Fiedler value, or measure or algebraic connectivity)
+
+                        TemporalFiedlerval = SpectralData.TemporalFiedler;
 
                         if StatClass{session}.MovementDends(j)
                             DendClust_Deg{session}(counter,1) = real(Fiedlerval);
@@ -2367,13 +2360,9 @@ for i = 1:length(varargin{firstdatainput})
                     lastspine = currentfile.SpineDendriteGrouping{j}(end);
 
                     if length(currentfile.SpineDendriteGrouping{j})>mindendsize
-                        if strcmpi(laplaciantouse, 'Normalized')
-                            L = currentfile.NormalizedLaplacian{j};
-                        elseif strcmpi(laplaciantouse, 'Original')
-                            L = currentfile.LaplacianMatrix{j};
-                        end
-                        eigenvalues = eig(L);
-                        Fiedlerval = min(eigenvalues(~ismember(eigenvalues,min(eigenvalues)))); %%% Finds the second smallest eigenvalue (the Fiedler value, or measure or algebraic connectivity)
+                        Fiedlerval = SpectralData.SpatialFiedler; %%% Finds the second smallest eigenvalue (the Fiedler value, or measure or algebraic connectivity)
+
+                        TemporalFiedlerval = SpectralData.TemporalFiedler;
 
                         temporalvalues = eig(Temporal_Laplacian{session}{j});
                         temporalvalues(temporalvalues==min(temporalvalues)) = nan;
@@ -2779,11 +2768,11 @@ for i = 1:length(varargin{firstdatainput})
 
 
         %%% Amplitude
-        AmpList = cellfun(@(x) nanmean(x(x<100)), currentfile.AllSpineAmpData, 'Uni', false);
-        clusterAmp = nanmean(cat(1,AmpList{cluster_ind-Spine1_address}));
-        nonclusteredAmp = nanmean(cat(1,AmpList{nonclustered-Spine1_address}));
-        Caus_clusterAmp = nanmean(cat(1,AmpList{Caus_cluster_ind-Spine1_address}));
-        Caus_nonclusteredAmp = nanmean(cat(1,AmpList{causal_nonclustered-Spine1_address}));
+        AmpList = currentfile.MeanEventAmp;
+        clusterAmp = nanmean(AmpList(cluster_ind-Spine1_address));
+        nonclusteredAmp = nanmean(AmpList(nonclustered-Spine1_address));
+        Caus_clusterAmp = nanmean(AmpList(Caus_cluster_ind-Spine1_address));
+        Caus_nonclusteredAmp = nanmean(AmpList(causal_nonclustered-Spine1_address));
 
             ClustAmp(1,session) = nanmean(clusterAmp);
                 NonClusteredAmp(1,session) = nanmean(nonclusteredAmp);
@@ -2905,7 +2894,7 @@ for i = 1:length(varargin{firstdatainput})
 
         if ~isempty(cluster_ind)
             for k = 1:numel(cluster_ind)
-                clusterAmp(1,k) = nanmean(currentfile.AllSpineAmpData{cluster_ind(k)-Spine1_address});
+                clusterAmp(1,k) = nanmean(currentfile.MeanEventAmp(cluster_ind(k)-Spine1_address));
                 for m = 1:length(currentfile.SpineDendriteGrouping)
                     if ~isempty(find(currentfile.SpineDendriteGrouping{m} == cluster_ind(k)-Spine1_address))
                         DendswithClusts = [DendswithClusts; m];
@@ -2918,7 +2907,7 @@ for i = 1:length(varargin{firstdatainput})
 
         if ~isempty(Caus_cluster_ind)
             for k = 1:numel(Caus_cluster_ind)
-                Caus_clusterAmp(1,k) = nanmean(currentfile.AllSpineAmpData{Caus_cluster_ind(k)-Spine1_address});
+                Caus_clusterAmp(1,k) = nanmean(currentfile.MeanEventAmp(Caus_cluster_ind(k)-Spine1_address));
                 for m = 1:length(currentfile.SpineDendriteGrouping)
                     if ~isempty(find(currentfile.SpineDendriteGrouping{m} == Caus_cluster_ind(k)-Spine1_address))
                         DendswithCausClusts = [DendswithCausClusts; m];

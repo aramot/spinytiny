@@ -18,6 +18,7 @@ function [Aligned, Correlations, Classified, Trial, PredictionModel] = NHanalyAl
 %%% BEHAVIOR FRAME at which the cue was given. 
 
 global LeverTracePlots
+global gui_KomiyamaLabHub
 
 Correlations = [];
 Classified = [];
@@ -48,6 +49,22 @@ else
     Behavior = va{2};
     Fluor = va{1};
 end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Broaden select binarized variables' activity window
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+switch Fluor.ImagingSensor
+    case 'GCaMP'
+        ImagingFrequency = 30.03;
+    case 'GluSNFR' 
+        ImagingFrequency = 58.3;
+end
+PreMovementWindow = round(ImagingFrequency*1);
+BroaderMovementWindow = round(ImagingFrequency*0.15); %%% 150ms taken from Peters et al., 2014
+MuchBroaderWindow = round(ImagingFrequency*0.5);
+RewardWindow = round(ImagingFrequency*1);
+        
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Determine the framework of all of the data acquisition, as defined by
@@ -255,7 +272,11 @@ for i = firsttrial:lasttrial
         if startreward == 0
             startreward = 1;
         end
-        reward_period{i}(startreward:endtrial_imframes) = 1;
+        if startreward+RewardWindow > endtrial_imframes
+            reward_period{i}(startreward:endtrial_imframes) = 1;
+        else
+            reward_period{i}(startreward:startreward+RewardWindow) = 1;
+        end
         startmovement = startcue+find(sign(diff(trial_binary_behavior_downsampled{i}(startcue:startreward))) == 1, 1,'last');   %%% needs to be in terms of imaging frames, so use downsampled
         if isempty(startmovement)
             startmovement = startcue;
@@ -382,21 +403,6 @@ floored_dendsub_spine_data = DendSubBinarized.*DendSub_Spine_Data;
 floored_dend_data = DendBinarized.*Dendrite_Data;
 
 %%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Broaden select binarized variables' activity window
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-switch Fluor.ImagingSensor
-    case 'GCaMP'
-        ImagingFrequency = 30.03;
-    case 'GluSNFR' 
-        ImagingFrequency = 58.3;
-end
-PreMovementWindow = round(ImagingFrequency*1);
-BroaderMovementWindow = round(ImagingFrequency*0.15); %%% 150ms taken from Peters et al., 2014
-MuchBroaderWindow = round(ImagingFrequency*0.5);
-RewardWindow = round(ImagingFrequency*0.15);
-        
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Pre - Movement Activity %%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -522,6 +528,7 @@ Aligned.BinarizedOverallSpineData = OverallSpine_Data_Binarized;
 Aligned.DendSubSpineActivity = DendSub_Spine_Data;
 Aligned.SynapseOnlyBinarized = synapseonlyBinarized;
 Aligned.DendSubSynapseOnlyBinarized = DendSubBinarized;
+Aligned.ProcessedDendriteData = Dendrite_Data;
 Aligned.BinaryDendrite = DendBinarized;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -604,7 +611,7 @@ end
 
 %%% Overall data (only processed, not considering dendrite signal)
 [Classified.OverallCueSpines,~,~] = mv_related_classifi(OverallDatatouse, binarycue, 'cue');
-[Classified.OverallMovementSpines,~, ~] = mv_related_classifi(OverallDatatouse, binary_behavior', 'movement');
+[Classified.OverallMovementSpines,~, Classified.OverallMovementRank] = mv_related_classifi(OverallDatatouse, binary_behavior', 'movement');
 [Classified.OverallMovementDuringCueSpines, ~,~] = mv_related_classifi(OverallDatatouse, movementduringcue, 'movement-during-cue');
 [Classified.OverallPreSuccessSpines,~,~] = mv_related_classifi(OverallDatatouse, premovement, 'premovement');
 [Classified.OverallSuccessSpines,~,~] = mv_related_classifi(OverallDatatouse, successful_behavior', 'successful movement');
@@ -613,7 +620,7 @@ end
 
 %%% "Synapse only" data (i.e. dendrite signal periods excluded)
 [Classified.CueSpines,~,~] = mv_related_classifi(spinedatatouse, binarycue, 'cue');
-[Classified.MovementSpines,~, ~] = mv_related_classifi(spinedatatouse, binary_behavior', 'movement');
+[Classified.MovementSpines,~, Classified.MovementRank] = mv_related_classifi(spinedatatouse, binary_behavior', 'movement');
 [Classified.MovementDuringCueSpines, ~,~] = mv_related_classifi(spinedatatouse, movementduringcue, 'movement-during-cue');
 [Classified.PreSuccessSpines,~,~] = mv_related_classifi(spinedatatouse, premovement, 'premovement');
 [Classified.SuccessSpines,~,~] = mv_related_classifi(spinedatatouse, successful_behavior', 'successful movement');
@@ -622,7 +629,7 @@ end
 
 %%% Dendrite-subttracted data
 [Classified.DendSub_CueSpines,~,~] = mv_related_classifi(DendSubspinedatatouse, binarycue, 'cue');
-[Classified.DendSub_MovementSpines,~, ~] = mv_related_classifi(DendSubspinedatatouse, binary_behavior', 'movement');
+[Classified.DendSub_MovementSpines,~, Classified.DendSub_MovementRank] = mv_related_classifi(DendSubspinedatatouse, binary_behavior', 'movement');
 [Classified.DendSub_MovementDuringCueSpines, ~,~] = mv_related_classifi(DendSubspinedatatouse, movementduringcue, 'movement-during-cue');
 [Classified.DendSub_PreSuccessSpines,~,~] = mv_related_classifi(DendSubspinedatatouse, premovement, 'premovement');
 [Classified.DendSub_SuccessSpines,~,~] = mv_related_classifi(DendSubspinedatatouse, successful_behavior', 'successful movement');

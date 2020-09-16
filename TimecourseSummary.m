@@ -19,6 +19,8 @@ PercentTimeActive = nan(ns,14);
 All_PercentTimeActive = [];
 TotalActivity = nan(ns,14);
 All_TotalActivity = [];
+AllCorrelationValues = []; 
+AllDistanceValues = []; 
 
 for i = 1:ns
     waitbar(i/ns,h1, ['Animal ', num2str(i), '/', num2str(ns)])
@@ -26,6 +28,9 @@ for i = 1:ns
     for j = 1:length(files)
         load(files{j})
         eval(['Session = ', files{j}(1:end-4), '.Session;'])
+        if Session > 14
+            break
+        end
         eval(['freq = ', files{j}(1:end-4), '.Frequency_DendriteSubtracted;'])
         AllFreq = [AllFreq; freq];
         Frequency(i,Session) = nanmedian(freq);
@@ -38,16 +43,28 @@ for i = 1:ns
         eval(['pta = (sum(', files{j}(1:end-4), '.SynapseOnlyBinarized,2)./ImagingFrequency)/(length(', files{j}(1:end-4), '.Fluorescence_Measurement{1})/(ImagingFrequency));'])
         PercentTimeActive(i,Session) = nanmedian(pta);
         All_PercentTimeActive = [All_PercentTimeActive; pta];
-        eval(['TA = sum(', files{j}(1:end-4), '.SynapseOnlyBinarized.*', files{j}(1:end-4), '.Processed_dFoF,2)./ImagingFrequency;'])
-        TotalActivity(i,Session) = nanmedian(TA);
-        All_TotalActivity = [All_TotalActivity; TA];
         eval(['AA = ', files{j}(1:end-4), '.Processed_dFoF;'])
+        eval(['ABA = ', files{j}(1:end-4), '.SynapseOnlyBinarized;'])
         invalidrows = find(~any(AA(:,:)~=0,2));
         AA(invalidrows,:) = nan;
+        ABA(invalidrows,:) = nan;
         if find(any(AA(:,:)>10))
             k = 1;
         end
         AllActivity{i}{j} = AA;
+        
+        eval(['TA = sum(', files{j}(1:end-4), '.SynapseOnlyBinarized.*', files{j}(1:end-4), '.Processed_dFoF,2)./length(', files{j}(1:end-4), '.Fluorescence_Measurement{1});'])
+        TA(invalidrows,:) = nan;
+        TotalActivity(i,Session) = nanmedian(TA);
+        All_TotalActivity = [All_TotalActivity; TA];
+
+        AllBinarizedActivity{i}{j} = ABA;
+        eval(['AllCorrData = ', files{j}(1:end-4), '.CorrelationHeatMap;']) %%% As coded, the CorrelationHeatMap field uses dendrite subtracted data, so this is probably not the best choice
+        AllCorrelationValues = [AllCorrelationValues; AllCorrData(:)];
+        eval(['AllDistData = ', files{j}(1:end-4), '.DistanceHeatMap;'])
+        DistanceHeatMaps{i}{j} = AllDistData;
+        AllDistanceValues = [AllDistanceValues; AllDistData(:)];
+        eval(['SpineDendriteGrouping{', num2str(i), '}{', num2str(j), '} = ', files{j}(1:end-4), '.SpineDendriteGrouping;'])
         clear(files{j}(1:end-4));
     end
 end
@@ -55,9 +72,51 @@ end
 delete(h1)
 
 AllActConcat = [];
+AllBinConcat = []; 
 for i = 1:length(AllActivity)
     for j = 1:length(AllActivity{i})
         AllActConcat = [AllActConcat; AllActivity{i}{j}(:)];
+        AllBinConcat = [AllBinConcat; AllBinarizedActivity{i}{j}(:)];
+    end
+end
+
+for animal = 1:length(AllActivity)
+    for session = 1:length(AllActivity{animal})
+        numspines = size(AllActivity{animal}{session},1);
+        spine_count = 1;
+        for dendrite = 1:length(SpineDendriteGrouping{animal}{session})
+            spines_on_this_dend = SpineDendriteGrouping{animal}{session}{dendrite};
+            spine_combos = nchoosek(spines_on_this_dend,2);
+            for spc = 1:size(spine_combos,1)
+                sp1act = AllBinarizedActivity{animal}{session}(spine_combos(spc,1),:);
+                sp1freq = numel(find(diff(sp1act)>0))/(length(sp1act)/(ImagingFrequency*60));
+                sp2act = AllBinarizedActivity{animal}{session}(spine_combos(spc,2),:);
+                sp2freq = numel(find(diff(sp2act)>0))/(length(sp2act)/(ImagingFrequency*60));
+                if ~any(~isnan(sp1act)) || ~any(~isnan(sp2act))
+                    CoActiveRate{animal}{session}(1,spine_count) = nan;
+                    CoActiveRateNormalized{animal}{session}(1,spine_count) = nan;
+                    TestCorr{animal}{session}(1,spine_count) = nan;
+                    PairedDistance{animal}{session}(1,spine_count) = nan;
+                    spine_count = spine_count+1;
+                    continue
+                end
+                binarycoactivity = sp1act & sp2act;
+    %             sp1Act = AllActivity{animal}{session}(spine_combos(spc,1),:); sp1Act(sp1Act<0) = 0;
+    %             sp2Act = AllActivity{animal}{session}(spine_combos(spc,2),:); sp2Act(sp2Act<0) = 0;
+    %             analogCoATrace = sp1Act.*sp2Act;
+    %             coactivethresh = prctile(analogCoATrace, 95,2);
+    %             contingA = analogCoATrace>coactivethresh;
+    %             contingB = sp1Act>0.3;
+    %             contingC = sp2Act>0.3;
+    %             newbinarycoactivity = (contingA & contingB & contingC) | binarycoactivity;
+                tc = corrcoef([sp1act', sp2act']);
+                TestCorr{animal}{session}(1,spine_count) = tc(1,2);
+                CoActiveRate{animal}{session}(1,spine_count) = numel(find(diff(binarycoactivity)>0))/(length(binarycoactivity)/(ImagingFrequency*60));
+                CoActiveRateNormalized{animal}{session}(1,spine_count) = CoActiveRate{animal}{session}(1,spine_count)/sqrt(sp1freq*sp2freq);
+                PairedDistance{animal}{session}(1,spine_count) = DistanceHeatMaps{animal}{session}(spine_combos(spc,1),spine_combos(spc,2));
+                spine_count = spine_count+1;
+            end
+        end
     end
 end
 
@@ -147,7 +206,14 @@ ActivityDataBasics.TotalIntegratedActivity = TotalActivity;
 ActivityDataBasics.AllTotalIntegratedActivityValues = All_TotalActivity;
 ActivityDataBasics.DendriticFrequency = Dendritic_Freq;
 ActivityDataBasics.DendriticAmplitude = Dendritic_Amp;
-ActivityDataBasics.AllActivityValues = AllActConcat;
+% ActivityDataBasics.AllActivityValues = AllActConcat;
+ActivityDataBasics.AllCorrelationValues = AllCorrelationValues;
+ActivityDataBasics.AllDistanceValues = AllDistanceValues;
+ActivityDataBasics.CoActivityRate = CoActiveRate; 
+ActivityDataBasics.CoActivityRateNormalized = CoActiveRateNormalized;
+ActivityDataBasics.RealCorrelation = TestCorr;
+ActivityDataBasics.PairedDistance = PairedDistance;
+
 date_string = datestr(datetime('today'));
 
 Notes = inputdlg('Any notes for this analysis?', '', 1,{'Analyzed using...'});

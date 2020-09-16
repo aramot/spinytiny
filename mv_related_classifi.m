@@ -62,7 +62,7 @@ clear lever_active_shuffle
 movement_rank = tiedrank([movement_activity shuffle_movement_activity]')';
 movement_p = movement_rank(:,1)/(num_rep+1);
 movement_cells = movement_p > 0.975;
-quiescent_cells = movement_p < 0.025;
+quiescent_cells = movement_p < 0.05;
 
 return
 %% plot

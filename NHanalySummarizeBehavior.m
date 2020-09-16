@@ -73,8 +73,20 @@ boundary_frames = find(diff([Inf; File.lever_active;Inf])~=0);
 %     boundary_frames = boundary_frames(2:end);
 % end
 
+%==========================================================================
+lever_bound_separated = mat2cell(File.lever_active, diff(boundary_frames));
+
+MovementBlocks = lever_bound_separated(cell2mat(cellfun(@any, lever_bound_separated, 'uni', false)));
+
+MovementDuration = cellfun(@length, MovementBlocks);
+
+%==========================================================================
+
+
 bitcode_offset = [bitcode.behavior_trial_num]-(1:length(bitcode));
-for trialnumber = 1:length(File.DispatcherData.saved_history.ProtocolsSection_parsed_events) %%% For every trial(the first trial often has incorrect information)
+numtrials = length(File.DispatcherData.saved_history.ProtocolsSection_parsed_events)
+CRMovementDuration = nan(1,numtrials);
+for trialnumber = 1:numtrials %%% For every trial(the first trial often has incorrect information)
     if trialnumber>maxtrialnum
         continue
     end
@@ -120,6 +132,7 @@ for trialnumber = 1:length(File.DispatcherData.saved_history.ProtocolsSection_pa
         %%%%%%%%%%%%%%%%%%%%%%%%%
         %==================================================================
         [File,UsedTrialInfo, fault,IgnoredTrialInfo] = ProfileRewardedMovements(File, boundary_frames,session, trialnumber, rewards,cue_start, result_time, end_trial);
+        CRMovementDuration(trialnumber) = UsedTrialInfo.CRMovementLength;
         %==================================================================
         %%%%%%%%%%%%%%%%%%%%%%%%%
         
@@ -206,6 +219,8 @@ end
 
 a.MovementMat = MovementMat;
 a.MovementAve = MovementAve;
+a.MovementDuration = MovementDuration;
+a.CuedRewardedMovementDuration = CRMovementDuration;
 a.rewards = rewards;
 a.MovingAtTrialStartFaults = moveatstartfault;
 a.AveRxnTime = AveRxnTime;

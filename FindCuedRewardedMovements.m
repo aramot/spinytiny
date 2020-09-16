@@ -47,27 +47,16 @@ rew_during_moveperiods = rew_move_separated(cellfun(@any, allperiodsM));
     
     %%% Cued Rewarded Movements
 
-    AcceptedCRTrials = find(cellfun(@(x,y) any(x)&~any(y), rew_during_moveperiods, preCueTrace_sep_by_movements));
+    AcceptedCRTrials = find(cellfun(@(x,y) any(x), rew_during_moveperiods));
     CewRewMovements = length(AcceptedCRTrials);
 
 
     %%% Method 2: Ignores entire trial if animal made pre-emptive
     %%% movement
-%     boundPC = find(diff([Inf; preCue'; Inf])~=0);
-%     allperiodsPC = mat2cell(preCue', diff(boundPC)); %%% Separate data based on pre-cue periods, which should be equal to the number of trials.
-%     TrialPCperiods = allperiodsPC(cellfun(@any, allperiodsPC));
 % 
-%     movement_sep_by_PCperiods = mat2cell(binarizedlever, diff(boundPC));
-%     movement_during_PCperiods = movement_sep_by_PCperiods(cellfun(@any, allperiodsPC));
-%     TrialswithPreTrialMovement = find(cellfun(@any, movement_during_PCperiods));
-% 
-%     %%% Find frames corresponding to each cue period/trial
-%     flaggedframes = cell2mat(framesduringcueperiods(TrialswithPreTrialMovement)); %%% Frames that occur during cue periods that were flagged (e.g. by movement occurring before the cue)
-% 
-% 
-%     AcceptedTrials = find(cellfun(@(x,y) any(x)&~any(ismember(y,flaggedframes)), rew_during_moveperiods, frames_during_movements));
-%     CueRewMovements = length(AcceptedTrials);
-% %==================================================================
+%     AcceptedCRTrials = find(cellfun(@(x,y) any(x)&~any(y), rew_during_moveperiods, preCueTrace_sep_by_movements));
+%     CewRewMovements = length(AcceptedCRTrials);
+
 
 %==========================================================================
 

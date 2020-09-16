@@ -34,6 +34,7 @@ if ExcludeFalseStartTrials
             UsedTrialInfo.trial_length = [];
             UsedTrialInfo.cs2r = [];
             UsedTrialInfo.rxnTime = [];
+            UsedTrialInfo.CRMovementLength = NaN;
             fault = 1;  %%% Classify fault as type 1; still works as boolean operator, but can be used to count different error types ;
             movestartbeforecue = find(diff(File.lever_active(1:cue_start))>0,1, 'last');
             IgnoredTrialInfo.movedurationbeforecue = length(movestartbeforecue:cue_start);
@@ -82,6 +83,7 @@ if ExcludeSlowReactionTrials
         UsedTrialInfo.trial_length = [];
         UsedTrialInfo.cs2r = [];
         UsedTrialInfo.rxnTime = [];
+        UsedTrialInfo.CRMovementLength = NaN;
         IgnoredTrialInfo = [];
         fault = 2;
         movestartbeforecue = find(diff(File.lever_active(1:cue_start))>0,1, 'last');
@@ -170,10 +172,14 @@ if isempty(designatedzeropoint)
     UsedTrialInfo.cs2r = [];
     UsedTrialInfo.trial_length = [];
     UsedTrialInfo.rxnTime = [];
+    UsedTrialInfo.CRMovementLength = NaN;
     fault = 4;  %%% Classify fault as type 3; still works as boolean operator, but can be used to count different error types ;
     return
 end
+endCRMovement = boundary_frames(designatedzeropoint(end)+1);
 designatedzeropoint = boundary_frames(designatedzeropoint(end));
+
+UsedTrialInfo.CRMovementLength = endCRMovement-designatedzeropoint;
 %==========================================================================
 %%% Align to reward
 % designatedzeropoint = result_time(trialnumber);

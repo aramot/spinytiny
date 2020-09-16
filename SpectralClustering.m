@@ -37,28 +37,34 @@ for j = 1:DendNum
 %         end
 %     end
     if firstspine ~= lastspine
-        fullDist = full(triu(inputData.DistanceHeatMap));
-        ad = fullDist(firstspine:lastspine, firstspine:lastspine);
-        ad(ad<1) = 1;
-        ad = 1./exp(ad./SpectralLengthConstant);          %%% Adjacency matrix --> 1/e^x, where x = distance
-        ad(isnan(ad)) = 0;                                %%% Since the diagonal of the laplacian == the degree, set NaNs in A to be zero to maintain this identity;
+        fullDist = full(triu(inputData.DistanceHeatMap))+full(triu(inputData.DistanceHeatMap))';
+        adj_mat = fullDist(firstspine:lastspine, firstspine:lastspine);
+        adj_mat(adj_mat<1) = 1;
+        adj_mat = 1./exp(adj_mat./SpectralLengthConstant);          %%% Adjacency matrix --> 1/e^x, where x = distance
+        adj_mat(isnan(adj_mat)) = 0;                                %%% Since the diagonal of the laplacian == the degree, set NaNs in A to be zero to maintain this identity;
 %         ad = inputData.AdjacencyMatrix{j};
-        ad(ad==0) = nan;
-        Spatial_Deg{j} = nanmean(ad,2);
+        adj_mat(adj_mat==0) = eps;
+        Spatial_Deg{j} = nanmean(adj_mat,2);
+        deg_mat = diag(Spatial_Deg{j});
         if strcmpi(Choices.LaplacianToUse, 'Normalized')
-            L = inputData.NormalizedLaplacian{j};
+            L = deg_mat-adj_mat;
+            deg_mat(deg_mat==0) = eps;
+            invSpatDeg = inv(deg_mat+eye(size(deg_mat,1))*1e-4);                         %%% Inverse D for calculating normalized laplacian (add small values to identity to prevent from inv of zeros resulting in inf
+            L = invSpatDeg.*L;  %%% Normalize the Laplacian by multiplying by the inverse degree matrix
         elseif strcmpi(Choices.LaplacianToUse, 'Original')
-            L = inputData.LaplacianMatrix{j};
+            L = deg_mat-adj_mat;
         end
-        [eigenvector, ~] = eigs(L, 1, 'lm'); %% Find largest real magnitude eigenvector
-            Spatial_FirstEigenvector{j} = abs(eigenvector);
+        [eigenvector, eigenvals] = eigs(L, 1, 'lm'); %% Find largest real magnitude eigenvector
+        SpectralData.SpatialFiedler = min(eigenvals);
+        
+        Spatial_FirstEigenvector{j} = abs(eigenvector);
 
-            %%% The temporal correlation matrix will serve as
-            %%% the temporal version of the adjacency matrix...
-            corrmat = Correlations(Choices.Spine1_Address+firstspine:Choices.Spine1_Address+lastspine, Choices.Spine1_Address+firstspine:Choices.Spine1_Address+lastspine);
-            corrmat(corrmat==1) = 0;
-            corrmat(isnan(corrmat)) = 0;
-            corrmat(corrmat<0) = 0;
+        %%% The temporal correlation matrix will serve as
+        %%% the temporal version of the adjacency matrix...
+        corrmat = Correlations(Choices.Spine1_Address+firstspine:Choices.Spine1_Address+lastspine, Choices.Spine1_Address+firstspine:Choices.Spine1_Address+lastspine);
+        corrmat(corrmat==1) = 0;
+        corrmat(isnan(corrmat)) = 0;
+        corrmat(corrmat<0) = 0;
 
 %                     Spatial_Deg{session}{j}(Spatial_Deg{session}{j} == 0) = nan;
 
@@ -69,14 +75,15 @@ for j = 1:DendNum
             fullmat = diag(Temporal_Deg{j});
             fullmat(fullmat==0) = eps;
             invTempDeg = inv(fullmat+eye(size(fullmat,1))*1e-4);                         %%% Inverse D for calculating normalized laplacian (add small values to identity to prevent from inv of zeros resulting in inf
-            Temporal_Laplacian{j} = invTempDeg*Temporal_Laplacian{j};  %%% Normalize the Laplacian by multiplying by the inverse degree matrix
+            Temporal_Laplacian{j} = invTempDeg.*Temporal_Laplacian{j};  %%% Normalize the Laplacian by multiplying by the inverse degree matrix
         else
         end
-        [tvecs, ~] = eigs(Temporal_Laplacian{j}, 1, 'lm');
-            Temporal_FirstEigenvector{j} = abs(tvecs(:,1));
+        [tvecs, tvals] = eigs(Temporal_Laplacian{j}, 1, 'lm');
+        SpectralData.TemporalFiedler = min(tvals);
+        Temporal_FirstEigenvector{j} = abs(tvecs(:,1));
         Spatiotemporal_Deg{j} = Spatial_Deg{j}.*Temporal_Deg{j};
 %                     Spatiotemporal_Deg{session}{j} = Spatiotemporal_Deg{session}{j}(find(Spatiotemporal_Deg{session}{j}));
-        Spatiotemporal_Adjacency{j} = inputData.AdjacencyMatrix{j}.*corrmat;
+        Spatiotemporal_Adjacency{j} = adj_mat.*corrmat;
         Spatiotemporal_Adjacency{j}(isnan(Spatiotemporal_Adjacency{j})) = 0;
         Spatiotemporal_Laplacian{j} = full(diag(Spatiotemporal_Deg{j}))-Spatiotemporal_Adjacency{j};
         if strcmpi(Choices.LaplacianToUse, 'Normalized')
@@ -89,15 +96,18 @@ for j = 1:DendNum
             [stvecs, stvals] = eig(Spatiotemporal_Laplacian{j});
             stvals = diag(stvals);
             stvals(stvals == min(stvals)) = nan;
-            [val ind] = min(stvals);
+            [val,ind] = min(stvals);
                 SpatioTemporalFiedler(1,j) = val;
                 SpatioTemporalPartition{j} = stvecs(:,ind);
-            [val ind] = max(stvals);
+            [val,ind] = max(stvals);
                 SpatioTemporal_FirstEigenvector{j} = stvecs(:,ind);
 
         MovementCorrelationsforAllSpinesonDend{j} = Correlations(Choices.MovementAddress,Choices.Spine1_Address+firstspine:Choices.Spine1_Address+lastspine)';
         
         rowcount = 1; 
+        if length(StatClass)<session
+            StatClass{session} = [];
+        end
         for row = firstspine:lastspine
             colcount = 1;
             for column = firstspine:lastspine
@@ -164,7 +174,7 @@ SpectralData.Spatiotemporal_Deg = Spatiotemporal_Deg;
 
 SpectralData.SpatioTemporalFiedler = SpatioTemporalFiedler;
 
-SpectralData.Temporal_Laplacian = Temporal_Laplacian;
+SpectralData.Spatial_Laplacian = L;
 
 SpectralData.Temporal_Laplacian = Temporal_Laplacian ;
 
